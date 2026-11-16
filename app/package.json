@@ -1,7 +1,7 @@
 {
   "name": "sensei-hakuun",
   "productName": "Sensei Hakuun",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Sensei Hakuun \u2014 a ghost koi sensei for your desktop",
   "main": "main.js",
   "author": "Gabriel",

@@ -1,1 +1,31 @@
-{"version": 1, "minShell": "0.1.0", "notes": "First preview: desktop Sensei, launcher, phone Wii remote.", "files": ["overlay.html", "palette.html", "pair.html", "remote.html", "sensei-model.js", "vendor/three.module.min.js"]}
+{
+ "version": 2,
+ "shellApi": 2,
+ "notes": "Calibrated phone aiming, voice commands, the garden built in, a real ghost voice, Settings, lighter on CPU.",
+ "files": [
+  "brain-client.js",
+  "core.js",
+  "garden.html",
+  "overlay.html",
+  "overlay.js",
+  "pair.html",
+  "palette.html",
+  "pointer.html",
+  "remote.html",
+  "sensei-model.js",
+  "settings.html",
+  "vendor/addons/controls/OrbitControls.js",
+  "vendor/addons/postprocessing/EffectComposer.js",
+  "vendor/addons/postprocessing/MaskPass.js",
+  "vendor/addons/postprocessing/OutputPass.js",
+  "vendor/addons/postprocessing/Pass.js",
+  "vendor/addons/postprocessing/RenderPass.js",
+  "vendor/addons/postprocessing/ShaderPass.js",
+  "vendor/addons/postprocessing/UnrealBloomPass.js",
+  "vendor/addons/shaders/CopyShader.js",
+  "vendor/addons/shaders/LuminosityHighPassShader.js",
+  "vendor/addons/shaders/OutputShader.js",
+  "vendor/three.module.min.js"
+ ],
+ "minShell": "0.2.0"
+}

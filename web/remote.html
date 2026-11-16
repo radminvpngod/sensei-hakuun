@@ -37,6 +37,11 @@ input[type=range]{width:120px}
 .type{display:flex;gap:6px;width:100%}
 .type input{flex:1;border:0;border-radius:12px;padding:10px 12px;background:#e9e6df;font-size:16px;box-shadow:inset 0 2px 4px rgba(0,0,0,.1);-webkit-user-select:text;user-select:text;touch-action:auto}
 .spacer{flex:1}
+.mic{background:#c8452f;color:#fff}
+.mic.down{background:#7be3a0;color:#123}
+.cal{position:fixed;inset:0;background:rgba(10,12,22,.93);color:#f4ecd8;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:30px;z-index:11}
+.cal.show{display:flex}.cal h2{font-family:"Hiragino Mincho ProN","Yu Mincho",Georgia,serif;font-weight:500;margin:0}.cal p{max-width:320px;line-height:1.5;opacity:.85;margin:0}
+.cal .big{min-width:220px}
 </style></head>
 <body>
 <div class="remote">
@@ -47,15 +52,17 @@ input[type=range]{width:120px}
     <div class="hit" data-k="left" style="left:0;top:44px;width:44px;height:44px"></div><div class="hit" data-k="right" style="left:88px;top:44px;width:44px;height:44px"></div></div>
   <div class="btnA" id="A">A</div>
   <div class="row"><div class="sm" data-k="minus">−</div><div class="sm home" data-k="home">⌂</div><div class="sm" data-k="plus">+</div></div>
-  <div class="row"><div class="pill" id="center">◎ Center</div><div class="pill" id="pause">❚❚ Pointer</div><div class="pill" data-k="sensei">白 Sensei</div></div>
+  <div class="row"><div class="pill" id="center">◎ Re-center</div><div class="pill" id="calib">⌖ Calibrate</div><div class="pill" id="pause">❚❚</div></div>
+  <div class="row"><div class="pill mic" id="mic">🎙 Hold to talk</div><div class="pill" data-k="sensei">白 Sensei</div></div>
   <div class="spacer"></div>
   <div class="type"><input id="txt" placeholder="Type a game or command…" enterkeyhint="go"></div>
   <div class="row"><div class="sm num" data-k="one">1</div><div class="sm num" data-k="two">2</div></div>
-  <div class="opts">speed <input type="range" id="sens" min="4" max="40" value="16"> <label><input type="checkbox" id="inv"> invert</label></div>
+  <div class="opts"><label><input type="radio" name="pm" value="aim" checked> aim</label><label><input type="radio" name="pm" value="air"> air mouse</label> · smooth <input type="range" id="smooth" min="0" max="90" value="55"></div>
 </div>
 <div class="btnB" id="B">B</div>
 <div class="scroll" id="scroll">SCROLL</div>
-<div class="start" id="start"><h1>遙 Sensei Remote</h1><p>Hold your phone flat with the top edge pointing at your screen, like a Wii remote. Turn it left and right, tilt it up and down, and the cursor follows.</p><button class="big" id="go">Start pointer</button><p style="font-size:12px;opacity:.6">1 = play/pause · 2 = back (Esc) · ⌂ = Sensei launcher · − / + = volume · B = right-click</p></div>
+<div class="cal" id="cal"><h2 id="calT">Calibrate</h2><p id="calP"></p><button class="big" id="calGo">Tap when pointing</button><button class="pill" id="calX" style="border:0">Cancel</button></div>
+<div class="start" id="start"><h1>遙 Sensei Remote</h1><p>Hold your phone with the top edge pointing at your main monitor, like a Wii remote. First we calibrate: you point at the center, then a corner. After that the cursor goes where you point.</p><button class="big" id="go">Start pointer</button><p style="font-size:12px;opacity:.6">A = click (hold to drag) · B = right-click · ✚ = arrow keys · 1 = play/pause · 2 = back · ⌂ = launcher · − / + = volume · 🎙 = talk to Sensei</p></div>
 <script>
 const $ = s => document.querySelector(s);
 const key = new URLSearchParams(location.search).get("k") || "";
@@ -65,31 +72,63 @@ function connect(){
   ws = new WebSocket(`wss://${location.host}/?k=${encodeURIComponent(key)}`);
   ws.onopen = () => { open = true; $("#led").classList.add("on"); $("#status").textContent = "connected to your PC"; };
   ws.onclose = () => { open = false; $("#led").classList.remove("on"); $("#status").textContent = "reconnecting…"; setTimeout(connect, 1500); };
-  ws.onmessage = e => { try{ const d = JSON.parse(e.data); if (d.t === "hello" && d.sens) { sens = d.sens; $("#sens").value = sens; } }catch(err){} };
+  ws.onmessage = e => { try{ const d = JSON.parse(e.data); if (d.t === "hello" && d.sens) { sens = d.sens; } }catch(err){} };
 }
 connect();
 const send = d => { if (open) ws.send(JSON.stringify(d)); };
 const buzz = (ms = 12) => { try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
 
-/* ---- motion: an air mouse from the gyroscope ---- */
+/* ---- motion ---- */
+// AIM mode: the phone's real direction (yaw, pitch) compared with where it pointed during calibration.
+//   For the direction of the phone's top edge: yaw = -alpha, pitch = beta (rolling the phone doesn't matter).
+// AIR mode: the gyroscope "air mouse" (relative movement).
+const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
+let cal = null; try { cal = JSON.parse(LS && LS.getItem("senseiCal") || "null"); } catch (e) {}
+let pm = (LS && LS.getItem("senseiPM")) || "aim"; document.querySelectorAll('[name=pm]').forEach(r => { r.checked = r.value === pm; r.onchange = () => { pm = r.value; LS && LS.setItem("senseiPM", pm); }; });
+let smooth = +((LS && LS.getItem("senseiSmooth")) || 55); $("#smooth").value = smooth; $("#smooth").oninput = e => { smooth = +e.target.value; LS && LS.setItem("senseiSmooth", smooth); };
+const wrap = a => ((a + 540) % 360) - 180;
+let yaw = 0, pitch = 0, haveOri = false, sx = 0, sy = 0, lastAim = "", calStep = null, c0 = null;
+function onOri(e){ if (e.alpha == null) return; yaw = -e.alpha; pitch = e.beta; haveOri = true; }
 let ax = 0, ay = 0;
-function onMotion(e){
-  const r = e.rotationRate; if (!r || paused) return;
-  let iv = e.interval || 16; if (iv < 1) iv *= 1000; const dt = Math.min(iv, 50) / 1000;
-  const yaw = Math.abs(r.alpha) > 1.2 ? r.alpha : 0, pitch = Math.abs(r.beta) > 1.2 ? r.beta : 0;
-  ax += -yaw * dt * sens * (inv ? -1 : 1); ay += -pitch * dt * sens * (inv ? -1 : 1);
+function onMotion(e){ if (pm !== "air" || paused) return; const r = e.rotationRate; if (!r) return; let iv = e.interval || 16; if (iv < 1) iv *= 1000; const dt = Math.min(iv, 50) / 1000;
+  const yw = Math.abs(r.alpha) > 1.2 ? r.alpha : 0, pt = Math.abs(r.beta) > 1.2 ? r.beta : 0; ax += -yw * dt * sens; ay += -pt * dt * sens; }
+setInterval(() => {
+  if (paused) return;
+  if (pm === "air") { if (Math.abs(ax) >= .5 || Math.abs(ay) >= .5) { send({ t: "move", dx: +ax.toFixed(1), dy: +ay.toFixed(1) }); ax = ay = 0; } return; }
+  if (!haveOri || !cal || calStep) return;
+  const rx = wrap(yaw - cal.y0) * cal.kx, ry = -(pitch - cal.p0) * cal.ky;   // -1..1 across the main monitor
+  const k = 1 - smooth / 100 * .9, d = Math.hypot(rx - sx, ry - sy), f = Math.min(1, k + d * 2.5);   // steady when still, quick when sweeping
+  sx += (rx - sx) * f; sy += (ry - sy) * f;
+  const x = +Math.max(-1.6, Math.min(1.6, sx)).toFixed(4), y = +Math.max(-1.6, Math.min(1.6, sy)).toFixed(4), out = x + "," + y;
+  if (out !== lastAim) { lastAim = out; send({ t: "aim", x, y }); }
+}, 16);
+async function askMotion(){
+  try {
+    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") { const p = await DeviceOrientationEvent.requestPermission(); if (p !== "granted") $("#status").textContent = "motion permission was denied — buttons still work"; }
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") { try { await DeviceMotionEvent.requestPermission(); } catch (e) {} }
+  } catch (e) {}
+  addEventListener("deviceorientation", onOri); addEventListener("devicemotion", onMotion);
 }
-setInterval(() => { if (Math.abs(ax) >= .5 || Math.abs(ay) >= .5) { send({ t: "move", dx: +ax.toFixed(1), dy: +ay.toFixed(1) }); ax = ay = 0; } }, 16);
-$("#go").addEventListener("click", async () => {
-  try{
-    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
-      const p = await DeviceMotionEvent.requestPermission(); if (p !== "granted") { $("#status").textContent = "motion permission was denied — buttons still work"; }
-    }
-    addEventListener("devicemotion", onMotion);
-    if (!window.isSecureContext) $("#status").textContent = "motion needs the secure link — open the QR link again";
-  }catch(err){ $("#status").textContent = "motion unavailable: " + err.message; }
-  $("#start").style.display = "none"; send({ t: "center" }); buzz(30);
+/* ---- calibration: center, then top-right corner ---- */
+function calOpen(){ calStep = "center"; $("#cal").classList.add("show"); $("#calT").textContent = "1 · Center"; $("#calP").textContent = "Hold the phone the way you'll use it. Point its TOP EDGE at the target in the CENTER of your main monitor, then tap."; send({ t: "calib", step: "center" }); }
+$("#calGo").addEventListener("click", () => {
+  if (!haveOri) { $("#calP").textContent = "I can't feel the phone moving yet. Allow motion access (reload the page if you denied it)."; return; }
+  if (calStep === "center") { c0 = { y: yaw, p: pitch }; calStep = "corner"; $("#calT").textContent = "2 · Corner"; $("#calP").textContent = "Now point at the target in the TOP-RIGHT corner, then tap."; send({ t: "calib", step: "corner" }); buzz(25); }
+  else if (calStep === "corner") { const dy = Math.abs(wrap(yaw - c0.y)), dp = Math.abs(pitch - c0.p);
+    cal = { y0: c0.y, p0: c0.p, kx: 1 / Math.max(4, dy), ky: 1 / Math.max(2.5, dp) }; LS && LS.setItem("senseiCal", JSON.stringify(cal));
+    calStep = null; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); sx = sy = 0; pm = "aim"; document.querySelector('[name=pm][value=aim]').checked = true; LS && LS.setItem("senseiPM", "aim"); buzz([30, 40, 30]); $("#status").textContent = "calibrated · point and press A"; }
 });
+$("#calX").addEventListener("click", () => { calStep = null; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); });
+$("#calib").addEventListener("click", calOpen);
+$("#go").addEventListener("click", async () => { await askMotion(); $("#start").style.display = "none"; buzz(30); if (!cal || pm === "aim") setTimeout(calOpen, 500); });
+/* ---- hold to talk: the phone records, your PC listens ---- */
+{ const mic = $("#mic"); let mr = null, chunks = [];
+  mic.addEventListener("pointerdown", async e => { e.preventDefault(); mic.classList.add("down"); buzz(20);
+    try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks = []; mr = new MediaRecorder(st); mr.ondataavailable = ev => chunks.push(ev.data);
+      mr.onstop = () => { st.getTracks().forEach(t => t.stop()); const b = new Blob(chunks, { type: mr.mimeType || "audio/webm" }); const fr = new FileReader(); fr.onload = () => send({ t: "audio", data: fr.result, mime: b.type }); fr.readAsDataURL(b); };
+      mr.start(); if (!mic.classList.contains("down")) mr.stop(); } catch (err) { $("#status").textContent = "microphone unavailable here"; mic.classList.remove("down"); } });
+  const up = () => { if (!mic.classList.contains("down")) return; mic.classList.remove("down"); try { if (mr && mr.state === "recording") mr.stop(); } catch (e) {} };
+  mic.addEventListener("pointerup", up); mic.addEventListener("pointercancel", up); mic.addEventListener("pointerleave", up); }
 
 /* ---- buttons ---- */
 function hold(el, b){
@@ -98,14 +137,14 @@ function hold(el, b){
   el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
 }
 hold($("#A"), "a"); hold($("#B"), "b");
-document.querySelectorAll("[data-k]").forEach(el => {
-  el.addEventListener("pointerdown", e => { e.preventDefault(); el.classList.add("down"); buzz(); send({ t: "press", b: el.dataset.k }); });
-  const up = () => el.classList.remove("down"); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
+const HOLDABLE = ["up", "down", "left", "right"];
+document.querySelectorAll("[data-k]").forEach(el => { const k = el.dataset.k, hold = HOLDABLE.includes(k);
+  el.addEventListener("pointerdown", e => { e.preventDefault(); el.classList.add("down"); buzz(); send(hold ? { t: "down", b: k } : { t: "press", b: k }); });
+  const up = () => { if (!el.classList.contains("down")) return; el.classList.remove("down"); if (hold) send({ t: "up", b: k }); };
+  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
 });
-$("#center").addEventListener("pointerdown", e => { e.preventDefault(); buzz(); send({ t: "center" }); });
-$("#pause").addEventListener("pointerdown", e => { e.preventDefault(); paused = !paused; buzz(); $("#pause").textContent = paused ? "▶ Pointer" : "❚❚ Pointer"; $("#status").textContent = paused ? "pointer paused" : "pointer on"; });
-$("#sens").addEventListener("input", e => { sens = +e.target.value; send({ t: "sens", v: sens }); });
-$("#inv").addEventListener("change", e => { inv = e.target.checked; });
+$("#center").addEventListener("pointerdown", e => { e.preventDefault(); buzz(); if (pm === "aim" && cal && haveOri) { cal.y0 = yaw; cal.p0 = pitch; sx = sy = 0; LS && LS.setItem("senseiCal", JSON.stringify(cal)); } send({ t: "center" }); });
+$("#pause").addEventListener("pointerdown", e => { e.preventDefault(); paused = !paused; buzz(); $("#pause").textContent = paused ? "▶" : "❚❚"; $("#status").textContent = paused ? "pointer paused" : "pointer on"; });
 { const s = $("#scroll"); let ly = null; s.addEventListener("pointerdown", e => { ly = e.clientY; s.setPointerCapture(e.pointerId); });
   s.addEventListener("pointermove", e => { if (ly === null) return; const d = e.clientY - ly; if (Math.abs(d) > 6) { send({ t: "scroll", dy: -d * 4 }); ly = e.clientY; } });
   s.addEventListener("pointerup", () => ly = null); s.addEventListener("pointercancel", () => ly = null); }

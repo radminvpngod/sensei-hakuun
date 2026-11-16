@@ -25,6 +25,9 @@ const S = window.sensei; const $ = s => document.querySelector(s);
 let catalog = [], sel = 0, shown = [];
 const CMDS = [
   { k: "庭", name: "Open the Garden", sub: "Walk with Sensei in the zen world", run: () => S.send("open", "garden"), words: "garden zen world sensei talk chat" },
+  { k: "話", name: "Talk to Sensei", sub: "Voice command: say what you want", run: () => { close(); S.send("talk"); }, words: "talk speak voice listen ask sensei" },
+  { k: "設", name: "Settings", sub: "Voice, hotkeys, monitors, always on top", run: () => S.send("open", "settings"), words: "settings options preferences hotkeys voice monitor" },
+  { k: "心", name: "Sensei's mind", sub: "Sign in to claude.ai so he can talk", run: () => S.send("open", "mind"), words: "mind brain claude sign in login" },
   { k: "遙", name: "Connect phone remote", sub: "Use your phone as a motion pointer", run: () => S.send("open", "pair"), words: "remote phone wii pair connect controller" },
   { k: "休", name: "Sensei: rest in the corner", run: () => S.invoke("setSetting", "overlay", "rest").then(close), words: "rest corner quiet" },
   { k: "泳", name: "Sensei: swim around", run: () => S.invoke("setSetting", "overlay", "swim").then(close), words: "swim wander show" },

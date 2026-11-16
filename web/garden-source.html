@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Sensei Hakuun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2b2420;--paper:#f4ecd8;--indigo:#2c3a6b;--vermillion:#c8452f}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#0b1026;font-family:"Zen Kaku Gothic New",system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.grain{position:fixed;inset:0;pointer-events:none;opacity:.16;mix-blend-mode:multiply;
+background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .38  0 0 0 0 .3  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 58%,rgba(10,8,20,.5) 100%)}
+.hud{position:fixed;top:calc(env(safe-area-inset-top) + 14px);left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:5}
+.card{pointer-events:auto;background:rgba(20,18,30,.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:9px 13px}
+#clock{cursor:pointer}
+#clock .t{font-family:"Shippori Mincho",serif;font-size:20px;letter-spacing:.04em}
+#clock .s{font-size:11.5px;opacity:.8;letter-spacing:.06em;margin-top:2px}
+.btns{display:flex;gap:8px;pointer-events:auto}
+.ibtn{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:17px;cursor:pointer;color:#fff;background:rgba(20,18,30,.38);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14)}
+.ibtn.off{opacity:.45}
+#hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translateX(-50%);font-size:12.5px;letter-spacing:.08em;padding:8px 16px;border-radius:99px;background:rgba(20,18,30,.4);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);white-space:nowrap;z-index:4;transition:opacity .6s;pointer-events:none}
+#whisper{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 86px);transform:translate(-50%,-10px);width:min(92vw,460px);background:var(--paper);color:var(--ink);font-family:"Shippori Mincho",serif;font-size:15px;line-height:1.55;padding:14px 18px;border-radius:4px;box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;pointer-events:none;transition:.7s;z-index:6;cursor:pointer}
+#whisper.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+#whisper b{display:block;font-size:11px;letter-spacing:.2em;color:var(--vermillion);margin-bottom:4px}
+#disc{position:fixed;left:50%;top:34%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;opacity:0;transition:opacity 1.2s;z-index:4;text-shadow:0 2px 18px rgba(0,0,0,.6)}
+#disc.show{opacity:1}
+#disc .k{font-family:"Shippori Mincho",serif;font-size:15px;letter-spacing:.5em;opacity:.85}
+#disc .n{font-family:"Shippori Mincho",serif;font-size:min(8vw,38px);letter-spacing:.12em;margin-top:6px}
+#disc .l{width:180px;height:1px;margin:12px auto 0;background:linear-gradient(90deg,transparent,#fff,transparent)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 64px);transform:translate(-50%,10px);background:var(--paper);color:var(--ink);font-size:13.5px;padding:10px 16px;border-radius:3px;box-shadow:0 8px 24px rgba(0,0,0,.3);opacity:0;transition:.4s;pointer-events:none;z-index:7;max-width:88vw;text-align:center;font-family:"Shippori Mincho",serif}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#joy{position:fixed;left:calc(env(safe-area-inset-left) + 26px);bottom:calc(env(safe-area-inset-bottom) + 58px);width:124px;height:124px;border-radius:50%;background:rgba(20,18,30,.28);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:6;display:none;touch-action:none}
+#joy .k{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(244,236,216,.85);box-shadow:0 4px 14px rgba(0,0,0,.3)}
+#act{position:fixed;right:calc(env(safe-area-inset-right) + 26px);bottom:calc(env(safe-area-inset-bottom) + 74px);z-index:6;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .3s;cursor:pointer}
+#act.show{opacity:1;pointer-events:auto}
+#act .b{width:76px;height:76px;border-radius:50%;background:var(--vermillion);display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:28px;box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,255,255,.25)}
+#act .t{font-size:12px;letter-spacing:.12em;background:rgba(20,18,30,.5);padding:3px 10px;border-radius:99px}
+#chat{position:fixed;z-index:10;display:flex;flex-direction:column;background:linear-gradient(#f7f0de,#efe4c9);color:var(--ink);box-shadow:0 -10px 40px rgba(0,0,0,.4);transition:transform .55s cubic-bezier(.2,.8,.2,1)}
+@media (max-width:760px){#chat{left:0;right:0;bottom:0;height:60vh;border-radius:18px 18px 0 0;transform:translateY(105%)}}
+@media (min-width:761px){#chat{top:16px;right:16px;bottom:16px;width:420px;border-radius:14px;transform:translateX(110%)}}
+#chat.open{transform:none}
+.chead{display:flex;align-items:center;gap:12px;padding:14px 16px 12px;border-bottom:1px solid rgba(43,36,32,.15)}
+.seal{width:44px;height:44px;border-radius:8px;background:var(--vermillion);color:#fff;display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:22px;flex:none;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.chead .n{font-family:"Shippori Mincho",serif;font-weight:700;font-size:18px}
+.chead .k{font-size:11.5px;letter-spacing:.18em;color:#7a6650}
+.status{font-size:11px;color:#8a7660;margin-top:2px}
+.status a{color:#8c2f2f;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.chead .x{margin-left:auto;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;font-size:20px;color:#6a5a48}
+#log{flex:1;overflow-y:auto;padding:16px 16px 6px;display:flex;flex-direction:column;gap:12px;user-select:text;-webkit-user-select:text;touch-action:pan-y}
+.m{max-width:86%;line-height:1.6;font-size:15px;white-space:pre-wrap;word-wrap:break-word}
+.m.s{align-self:flex-start;font-family:"Shippori Mincho",serif;padding:2px 0 2px 14px;border-left:2px solid var(--vermillion);cursor:pointer}
+.m.u{align-self:flex-end;background:var(--indigo);color:#f2eee4;padding:9px 13px;border-radius:14px 14px 3px 14px}
+.m.s.thinking{opacity:.55;font-style:italic}
+.divider{align-self:center;font-size:10.5px;letter-spacing:.2em;color:#9a8670;margin:4px 0}
+form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 12px);border-top:1px solid rgba(43,36,32,.12)}
+#inp{flex:1;border:1px solid rgba(43,36,32,.2);background:rgba(255,255,255,.6);border-radius:12px;padding:11px 13px;font:inherit;font-size:16px;color:var(--ink);outline:none;resize:none;max-height:110px;touch-action:auto}
+#send{border:0;border-radius:12px;padding:0 16px;background:var(--vermillion);color:#fff;font-family:"Shippori Mincho",serif;font-size:15px;cursor:pointer}
+#send:disabled{opacity:.45}
+#title{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 45%,rgba(20,24,50,.2),rgba(5,6,15,.82));cursor:pointer;transition:opacity 1.4s}
+#title.gone{opacity:0;pointer-events:none}
+#title .kanji{font-family:"Shippori Mincho",serif;font-size:min(30vw,170px);line-height:1;color:#f4ecd8;text-shadow:0 0 40px rgba(255,240,210,.35)}
+#title h1{font-family:"Shippori Mincho",serif;font-weight:500;font-size:min(8vw,40px);letter-spacing:.12em;margin:18px 0 4px}
+#title .sub{font-size:13px;letter-spacing:.35em;opacity:.7}
+#title .tap{margin-top:46px;font-size:12.5px;letter-spacing:.3em;opacity:.8;animation:pulse 2.4s ease-in-out infinite}
+#title .ver{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 22px);font-size:10.5px;letter-spacing:.25em;opacity:.45}
+@keyframes pulse{50%{opacity:.25}}
+#title .menu{display:flex;flex-direction:column;gap:11px;margin-top:30px;width:min(84vw,340px)}
+.mi{padding:13px 18px;border-radius:16px;background:rgba(244,236,216,.1);border:1px solid rgba(244,236,216,.28);font-family:"Shippori Mincho",serif;font-size:18px;letter-spacing:.05em;display:flex;align-items:center;gap:14px;cursor:pointer;transition:transform .2s,background .2s,box-shadow .2s;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f4ecd8}
+.mi .k{font-size:21px;width:28px;text-align:center;color:#f0c9a0}
+.mi:hover,.mi.rc-hover{background:rgba(244,236,216,.94);color:#2b2420;transform:scale(1.045);box-shadow:0 0 34px rgba(255,240,210,.45)}
+.mi:hover .k,.mi.rc-hover .k{color:#c8452f}
+.mi.hidden{display:none}
+.panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%) scale(.96);width:min(90vw,420px);background:linear-gradient(#f7f0de,#efe4c9);color:#2b2420;border-radius:18px;padding:22px 22px 18px;z-index:26;box-shadow:0 20px 60px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.3s}
+.panel.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+.panel h2{font-family:"Shippori Mincho",serif;margin:0 0 4px;font-size:22px}
+.panel p{font-size:14px;line-height:1.55;color:#5a4a3a;margin:8px 0}
+.panel .code{font-family:"Shippori Mincho",serif;font-size:56px;letter-spacing:.25em;text-align:center;margin:10px 0;color:#c8452f}
+.pbtn{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:rgba(43,36,32,.06);margin-top:8px;cursor:pointer;font-size:15px}
+.pbtn:hover,.pbtn.rc-hover{background:rgba(200,69,47,.15)}
+.pbtn b{font-weight:500;color:#c8452f}
+.panel.tall{max-height:84vh;overflow-y:auto}
+.ibtn{position:relative}
+.ibtn .badge{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#c8452f;box-shadow:0 0 8px #c8452f;display:none}
+.scrollItem{padding:12px 14px;border-radius:12px;background:rgba(43,36,32,.06);margin-top:8px;cursor:pointer}
+.scrollItem:hover,.scrollItem.rc-hover{background:rgba(200,69,47,.13)}
+.scrollItem .d{font-size:11.5px;letter-spacing:.12em;color:#8a7660}
+.scrollItem .t{font-family:"Shippori Mincho",serif;font-size:17px;margin-top:2px}
+.scrollItem.unread .t:after{content:" ●";color:#c8452f;font-size:12px}
+#srBody{font-family:"Shippori Mincho",serif;font-size:15.5px;line-height:1.7;color:#2b2420;user-select:text;-webkit-user-select:text}
+#srBody h4{font-size:17px;margin:18px 0 4px;color:#8c2f2f}
+#srBody p{margin:8px 0}
+#srBody a{color:#2c3a6b}
+#shodo{position:fixed;inset:0;z-index:30;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(10,8,16,.72);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);padding:16px}
+#shodo.show{display:flex}
+.shTop{display:flex;align-items:flex-end;gap:16px;width:min(92vw,560px)}
+.shK{font-family:"Shippori Mincho",serif;font-size:44px;line-height:1;color:#f4ecd8}
+.shM{font-size:13px;letter-spacing:.14em;opacity:.8}
+.shScore{margin-left:auto;font-family:"Shippori Mincho",serif;font-size:14px;opacity:.85;text-align:right}
+.shWrap{position:relative;width:min(92vw,62vh,560px);aspect-ratio:1;border-radius:6px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);
+ background:#f3ead6 url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.6' numOctaves='3'/><feColorMatrix values='0 0 0 0 .55 0 0 0 0 .48 0 0 0 0 .38 0 0 0 .18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.shGuide{position:absolute;inset:0;display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:min(70vw,44vh,400px);color:rgba(140,47,47,.09);pointer-events:none;line-height:1}
+#shC{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.shBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.shB{padding:11px 16px;border-radius:12px;background:rgba(244,236,216,.12);border:1px solid rgba(244,236,216,.3);font-family:"Shippori Mincho",serif;font-size:15px;cursor:pointer;color:#f4ecd8}
+.shB:hover,.shB.rc-hover{background:rgba(244,236,216,.9);color:#2b2420}
+.shB.main{background:#c8452f;border:0}
+#shFb{width:min(92vw,560px);min-height:22px;font-family:"Shippori Mincho",serif;font-size:15.5px;line-height:1.55;text-align:center;color:#f4ecd8}
+#mg{position:fixed;inset:0;z-index:30;display:none;background:#111}
+#mg.show{display:block}
+#mgC{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.mgTop{position:absolute;left:16px;right:16px;top:calc(env(safe-area-inset-top) + 14px);display:flex;align-items:flex-start;gap:10px;pointer-events:none}
+.mgTop .t{font-family:"Shippori Mincho",serif;font-size:20px;color:#f4ecd8;text-shadow:0 2px 10px rgba(0,0,0,.5)}
+.mgTop .s{font-size:12px;color:rgba(244,236,216,.75);margin-top:2px}
+.mgTop .sp{flex:1}
+.mgTop .shB{pointer-events:auto}
+#mgRes{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.95);width:min(90vw,420px);background:linear-gradient(#f7f0de,#efe4c9);color:#2b2420;border-radius:18px;padding:22px;text-align:center;opacity:0;pointer-events:none;transition:.3s;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#mgRes.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+#mgResT{font-family:"Shippori Mincho",serif;font-size:34px;color:#c8452f}
+#mgResL{font-size:13px;color:#7a6650;margin:6px 0 12px}
+#mgResS{font-family:"Shippori Mincho",serif;font-size:16px;line-height:1.55;margin-bottom:16px}
+#mgRes .shB{color:#2b2420;background:rgba(43,36,32,.08);border-color:rgba(43,36,32,.2);display:inline-block;margin:0 4px}
+#mgRes .shB.main{background:#c8452f;color:#fff}
+#pointer{position:fixed;left:0;top:0;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;z-index:60;pointer-events:none;display:none;
+ background:radial-gradient(circle,rgba(255,255,255,.95) 0 18%,rgba(200,240,255,.55) 30%,rgba(200,240,255,0) 70%);box-shadow:0 0 22px rgba(200,240,255,.8);transition:transform .08s}
+#pointer.press{transform:scale(.7)}
+#remote{position:fixed;inset:0;z-index:50;display:none;flex-direction:column;gap:12px;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 16px);background:radial-gradient(ellipse at 50% 0%,#24305a,#0b0f22 70%);color:#f4ecd8;touch-action:none}
+#remote.show{display:flex}
+.rhead{display:flex;align-items:center;gap:10px;font-size:13px;letter-spacing:.08em}
+.rhead .t{font-family:"Shippori Mincho",serif;font-size:18px;letter-spacing:.06em;margin-right:auto}
+.dot{width:10px;height:10px;border-radius:50%;background:#7a6a5a}
+.dot.on{background:#7be3a0;box-shadow:0 0 10px #7be3a0}
+#rPair{display:flex;gap:8px;align-items:center;font-size:13px;flex-wrap:wrap}
+#rPair input{width:110px;font:inherit;font-size:22px;letter-spacing:.3em;text-align:center;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff;touch-action:auto}
+#rPair button,#rForm button{border:0;border-radius:10px;padding:10px 14px;background:#c8452f;color:#fff;font-family:"Shippori Mincho",serif;font-size:15px}
+#rPad{flex:1;min-height:180px;border-radius:22px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);position:relative;display:grid;place-items:center;
+ background-image:radial-gradient(rgba(255,255,255,.08) 1px,transparent 1px);background-size:22px 22px}
+#rPad .lbl{font-size:12.5px;letter-spacing:.1em;opacity:.6;text-align:center;padding:0 20px;pointer-events:none}
+#rLast{font-family:"Shippori Mincho",serif;font-size:14px;line-height:1.5;opacity:.9;max-height:84px;overflow:auto;border-left:2px solid #c8452f;padding-left:10px;display:none}
+#rForm{display:flex;gap:8px}
+#rForm input{flex:1;font:inherit;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;touch-action:auto}
+.rctl{display:flex;justify-content:space-between;align-items:center}
+.rjoy{position:relative;width:132px;height:132px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2)}
+.rjoy .k{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:rgba(244,236,216,.9)}
+.rbtns{display:grid;grid-template-columns:repeat(2,66px);gap:12px}
+.rb{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:22px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);user-select:none}
+.rb.a{background:#c8452f;border:0;font-size:26px}
+.rb:active,.rb.down{transform:scale(.92);filter:brightness(1.3)}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="grain"></div><div class="vignette"></div>
+<div class="hud">
+  <div class="card" id="clock"><div class="t" id="clockT">--:--</div><div class="s" id="clockS"></div><div class="s" id="sStat" style="margin-top:4px;opacity:.95;color:#d9f2ff"></div></div>
+  <div class="btns">
+    <div class="ibtn" id="voiceBtn" title="Sensei's voice">声</div>
+    <div class="ibtn" id="scrollBtn" title="Scroll library">巻<span class="badge" id="scrollBadge"></span></div>
+    <div class="ibtn off" id="soundBtn" title="Music & ambience">♪</div>
+  </div>
+</div>
+<div id="disc"><div class="k" id="discK"></div><div class="n" id="discN"></div><div class="l"></div></div>
+<div id="hint" style="opacity:0"></div>
+<div id="whisper"><b>白雲 · SENSEI</b><span id="whisperT"></span></div>
+<div id="toast"></div>
+<div id="joy"><div class="k"></div></div>
+<div id="act"><div class="b" id="actK">話</div><div class="t" id="actT">Talk</div></div>
+<div id="chat" aria-hidden="true">
+  <div class="chead">
+    <div class="seal">白</div>
+    <div><div class="n">Sensei Hakuun</div><div class="k">白雲先生</div><div class="status"><span id="status">present</span> · <a id="voiceCycle">change voice</a></div></div>
+    <div class="x" id="closeChat">×</div>
+  </div>
+  <div id="log"></div>
+  <form id="form"><textarea id="inp" rows="1" placeholder="Speak to Sensei…"></textarea><button id="send" type="submit">送</button></form>
+</div>
+<div id="title">
+  <div class="kanji">禅</div>
+  <h1>Sensei Hakuun</h1>
+  <div class="sub">白雲先生 · A QUIET WORLD</div>
+  <div class="menu">
+    <div class="mi hidden" id="miRemote"><span class="k">遙</span>Use this phone as a remote</div>
+    <div class="mi" id="miEnter"><span class="k">入</span><span id="miEnterT">Enter the Garden</span></div>
+    <div class="mi" id="miTalk"><span class="k">話</span>Call Sensei</div>
+    <div class="mi" id="miGames"><span class="k">遊</span>Games</div>
+    <div class="mi" id="miScrolls"><span class="k">巻</span>Scroll Library</div>
+    <div class="mi" id="miSettings"><span class="k">設</span>Settings</div>
+    <div class="mi" id="miPair"><span class="k">繋</span>Connect a phone remote</div>
+  </div>
+  <div class="ver">CHAPTER I · THE GARDEN</div>
+</div>
+<div class="panel" id="pairPanel">
+  <h2>Phone remote</h2>
+  <p>On your phone, open this same page, choose <b>Use this phone as a remote</b>, and enter:</p>
+  <div class="code" id="pairCode">····</div>
+  <p id="pairStat">Waiting for your phone…</p>
+  <p style="font-size:12.5px;opacity:.8">Swipe the pad to point, tap or press A to select. In the garden, swipe to look around and use the stick to walk.</p>
+  <div class="pbtn" data-close="pairPanel">Close</div>
+</div>
+<div class="panel" id="setPanel">
+  <h2>Settings</h2>
+  <div class="pbtn" id="setVoice">Sensei's voice <b id="setVoiceV">—</b></div>
+  <div class="pbtn" id="setSpeak">Read replies aloud <b id="setSpeakV">On</b></div>
+  <div class="pbtn" id="setMusic">Music & ambience <b id="setMusicV">On</b></div>
+  <div class="pbtn" data-close="setPanel">Close</div>
+</div>
+<div class="panel tall" id="scrollPanel">
+  <div id="scrollListView"><h2>Scroll Library</h2><p id="scrollEmpty">Sensei writes a scroll each morning: news and ideas from the outside world, in his own words. None yet.</p><div id="scrollList"></div></div>
+  <div id="scrollReadView" style="display:none"><div class="pbtn" id="srBack">← All scrolls</div><p class="d" id="srDate" style="letter-spacing:.12em;font-size:12px;margin-top:14px"></p><h2 id="srTitle"></h2><div id="srBody"></div><div class="pbtn" id="srRead">Have Sensei read it aloud <b>声</b></div></div>
+  <div class="pbtn" data-close="scrollPanel">Close</div>
+</div>
+<div id="shodo">
+  <div class="shTop"><div><div class="shK" id="shK">永</div><div class="shM" id="shM">EI · ETERNITY</div></div><div class="shScore" id="shScore"></div></div>
+  <div class="shWrap" id="shWrap"><div class="shGuide" id="shGuide">永</div><canvas id="shC" width="800" height="800"></canvas></div>
+  <div id="shFb">Write the character with your finger, mouse or phone remote. Confident strokes.</div>
+  <div class="shBtns"><div class="shB" id="shClear">消 Clear</div><div class="shB" id="shNext">次 New kanji</div><div class="shB" id="shGuideT">影 Guide</div><div class="shB main" id="shSubmit">見 Show Sensei</div><div class="shB" id="shClose">Close</div></div>
+</div>
+<div id="mg"><canvas id="mgC"></canvas>
+  <div class="mgTop"><div><div class="t" id="mgTitle"></div><div class="s" id="mgSub"></div></div><div class="sp"></div><div class="shB" id="mgReset">消 Fresh sand</div><div class="shB main" id="mgJudge">見 Show Sensei</div><div class="shB" id="mgClose">Leave</div></div>
+  <div id="mgRes"><div id="mgResT"></div><div id="mgResL"></div><div id="mgResS"></div><div class="shB main" id="mgAgain">Again</div><div class="shB" id="mgLeave">Leave</div></div>
+</div>
+<div class="panel" id="gamesPanel">
+  <h2>Games</h2><p>Each works with mouse, touch, or your phone remote.</p>
+  <div class="pbtn" data-game="kyudo">弓道 Kyūdō archery <b>hold · aim · release</b></div>
+  <div class="pbtn" data-game="taiko">太鼓 Taiko drums <b>rhythm</b></div>
+  <div class="pbtn" data-game="rake">砂紋 Rake the Dry Garden <b>Sensei judges</b></div>
+  <div class="pbtn" data-game="shodo">書 Calligraphy <b>Sensei grades</b></div>
+  <div class="pbtn" data-game="koi">鯉 Koi feeding <b>at the pond</b></div>
+  <div class="pbtn" data-close="gamesPanel">Close</div>
+</div>
+<div id="pointer"></div>
+<div id="remote">
+  <div class="rhead"><span class="t">Sensei Remote</span><span class="dot" id="rDot"></span><span id="rStatus">not connected</span></div>
+  <div id="rPair">Code on your computer: <input id="rCode" inputmode="numeric" maxlength="4" placeholder="0000"><button id="rJoin">Connect</button></div>
+  <div id="rPad"><div class="lbl" id="rPadLbl">Swipe to point · tap to select</div></div>
+  <div id="rLast"></div>
+  <form id="rForm"><input id="rInp" placeholder="Say something to Sensei…" autocomplete="off"><button>送</button></form>
+  <div class="rctl"><div class="rjoy" id="rJoy"><div class="k"></div></div>
+    <div class="rbtns"><div class="rb a" data-b="a">A</div><div class="rb" data-b="b">B</div><div class="rb" data-b="talk">話</div><div class="rb" data-b="home">⌂</div></div></div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+/* ===================== Sensei's mind (used by the Windows app, opened as #brain) ===================== */
+if(location.hash==="#brain"){ await senseiBrainMode(); throw "sensei-brain-mode"; }
+async function senseiBrainMode(){
+  document.head.insertAdjacentHTML("beforeend",`<style>body>*:not(#sb){display:none!important} #sb{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at 50% 30%,#24305a,#0b0f22 70%);color:#f4ecd8;text-align:center;padding:30px;font-family:"Zen Kaku Gothic New",system-ui,sans-serif}
+  #sb h1{font-family:"Shippori Mincho",serif;font-weight:500;margin:0;font-size:30px} #sb p{max-width:440px;line-height:1.6;opacity:.85;margin:0} #sb button{border:0;border-radius:14px;padding:14px 24px;background:#c8452f;color:#fff;font-size:17px;cursor:pointer;font-family:"Shippori Mincho",serif} #sbS{font-size:13px;opacity:.7}</style>`);
+  const box=document.createElement("div"); box.id="sb"; box.innerHTML=`<div style="font-size:64px;font-family:'Shippori Mincho',serif">白</div><h1>Sensei's mind</h1><p>This window connects the Sensei app on your PC to Claude, through your own claude.ai plan. Press the button once and allow the permission it asks for. Then you can close this window: it keeps working quietly in the background.</p><button id="sbGo">Wake Sensei's mind</button><div id="sbS"></div>`;
+  document.body.appendChild(box);
+  const stat=t=>{ document.getElementById("sbS").textContent=t; };
+  let sample=null, db=null;
+  try{ sample=await claude.use("sample"); }catch(e){} try{ db=await claude.use("db"); }catch(e){}
+  if(!sample){ stat("Claude isn't available in this view. Make sure you are signed in to claude.ai in this window."); }
+  const out={};
+  const dataToBlob=u=>{ const [h,b]=String(u).split(","); const mime=(h.match(/data:([^;]+)/)||[])[1]||"image/png"; const bin=atob(b); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return new Blob([a],{type:mime}); };
+  window.__sb={ ready:!!sample,
+    start(id,kind,input,opts){ out[id]={text:"",done:false}; (async()=>{ try{ const o={cache:false}; if(opts&&opts.modelTier) o.modelTier=opts.modelTier; if(opts&&opts.images&&opts.images.length) o.images=opts.images.map(dataToBlob);
+        if(kind==="json") out[id].result=await sample.json(input,o); else { o.onText=({text})=>{ out[id].text=text; }; const r=await sample(input,o); out[id].result=r.text; out[id].text=r.text; } }
+      catch(e){ out[id].error={code:(e&&e.code)||"error",message:(e&&e.message)||String(e),text:e&&e.text}; } out[id].done=true; })(); return true; },
+    peek(id){ const o=out[id]; if(!o) return null; const r={text:o.text,done:o.done,result:o.result,error:o.error}; if(o.done) delete out[id]; return r; },
+    async dbGet(p){ if(!db) return null; const s=await db.doc(p).get(); return s.exists?{data:JSON.parse(JSON.stringify(s.data()))}:null; },
+    async dbSet(p,d){ if(!db) return false; await db.doc(p).set(d); return true; },
+    async dbList(c,ob,dir,lim){ if(!db) return []; let q=db.collection(c); if(ob) q=q.orderBy(ob,dir||"asc"); q=q.limit(lim||60); const s=await q.get(); return s.docs.map(d=>({id:d.id,data:JSON.parse(JSON.stringify(d.data()))})); } };
+  document.getElementById("sbGo").onclick=async()=>{ if(!sample){ stat("Sign in to claude.ai first, then reload this window."); return; } stat("Waking…");
+    try{ const r=await sample("Reply with exactly: The pond is still.",{cache:false,modelTier:"quick"}); stat("Awake. "+String(r.text||"").slice(0,60)+" You can close this window now."); }catch(e){ stat("Not yet: "+((e&&e.message)||e)); } };
+  stat(sample?"Ready. Press the button once if you haven't before.":document.getElementById("sbS").textContent);
+}
+
+const $ = s => document.querySelector(s);
+const rand = (a,b) => a + Math.random()*(b-a);
+const TAU = Math.PI*2;
+const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
+const smooth = (a,b,x) => { const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+const lerp = (a,b,t) => a+(b-a)*t;
+const C = h => new THREE.Color(h);
+const isTouch = matchMedia("(pointer:coarse)").matches;
+
+/* ===================== time & season ===================== */
+let previewHour=null, previewIdx=-1, entered=false;
+const PREVIEWS=[6.2,9.5,17.6,19.3,22.5];
+const nowHour=()=>{ if(previewHour!==null) return previewHour; const d=new Date(); return d.getHours()+d.getMinutes()/60; };
+const S = (()=>{ const m=new Date().getMonth(); return m<=1||m===11?"winter":m<=4?"spring":m<=7?"summer":"autumn"; })();
+const SEASON_NAME={spring:"Spring · 春",summer:"Summer · 夏",autumn:"Autumn · 秋",winter:"Winter · 冬"};
+const partOfDay=h=>h<5?"Deep night":h<7?"Dawn":h<11?"Morning":h<14?"Midday":h<17?"Afternoon":h<19?"Golden hour":h<21?"Dusk":"Night";
+const KF=[
+ [0,"#0b1026","#1d2550","#1a2040","#121830","#3a4570",.55],
+ [5,"#1c2350","#6b5a8a","#3a3a63","#262a4a","#8a85a8",.36],
+ [6.5,"#5d7fb8","#f6c39a","#8a8fb0","#5f6a86","#f4e4d8",.07],
+ [9,"#6fa6dc","#e4eef2","#93a9bd","#6f8a8e","#f2f4f2",0],
+ [15,"#6ea2d6","#f0ead8","#9eacba","#708588","#f5f0e4",0],
+ [17.5,"#c98a7a","#f7c98b","#b08a8e","#7a5f6a","#f8dcc0",.05],
+ [19,"#3b3a6e","#c9748a","#5e4d72","#3f3657","#b08aa0",.27],
+ [21,"#0f1430","#27305e","#1f2648","#151b34","#4a5280",.5],
+ [24,"#0b1026","#1d2550","#1a2040","#121830","#3a4570",.55]];
+function palette(h){ let i=0; while(KF[i+1][0]<=h) i++; const a=KF[i],b=KF[i+1],t=(h-a[0])/(b[0]-a[0]); const m=k=>C(a[k]).lerp(C(b[k]),t);
+  return {skyTop:m(1),skyBot:m(2),far:m(3),mid:m(4),mist:m(5),dark:a[6]+(b[6]-a[6])*t}; }
+
+/* ===================== world layout & terrain ===================== */
+const PRX=10, PRZ=7;                       // pond radii
+const CLIFF={x:-34,z:-36};                 // waterfall cliff
+const CASTLE={x:34,z:-40};
+const WF_DIR=new THREE.Vector2(34,36).normalize();
+const POOL={x:CLIFF.x+WF_DIR.x*18.5, z:CLIFF.z+WF_DIR.y*18.5};
+const STREAM=[[POOL.x,POOL.z],[-18,-16],[-15,-11],[-12,-6.5],[-8.6,-3.4],[-7.4,-2.9]];
+function hash(x,z){ const s=Math.sin(x*127.1+z*311.7)*43758.5453; return s-Math.floor(s); }
+function vnoise(x,z){ const xi=Math.floor(x),zi=Math.floor(z),xf=x-xi,zf=z-zi,u=xf*xf*(3-2*xf),v=zf*zf*(3-2*zf);
+  const a=hash(xi,zi),b=hash(xi+1,zi),c=hash(xi,zi+1),d=hash(xi+1,zi+1); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+const fbm=(x,z)=>vnoise(x,z)*.5+vnoise(x*2.1,z*2.1)*.3+vnoise(x*4.3,z*4.3)*.2;
+function distSeg(px,pz,ax,az,bx,bz){ const dx=bx-ax,dz=bz-az; const t=clamp(((px-ax)*dx+(pz-az)*dz)/(dx*dx+dz*dz),0,1); return Math.hypot(px-ax-dx*t,pz-az-dz*t); }
+function streamDist(x,z){ let d=1e9; for(let i=0;i<STREAM.length-1;i++) d=Math.min(d,distSeg(x,z,...STREAM[i],...STREAM[i+1])); return d; }
+function H(x,z){
+  const r=Math.hypot(x,z);
+  let h=(fbm(x*.05,z*.05)-.5)*.9;
+  h += smooth(60,110,r)*(5+fbm(x*.025+7,z*.025)*20);
+  h += 5*(1-smooth(11,22,Math.hypot(x-CASTLE.x,z-CASTLE.z)));
+  h += 15*(1-smooth(9,15,Math.hypot(x-CLIFF.x,z-CLIFF.z)));
+  const sd=streamDist(x,z); if (sd<1.8) h -= .5*(1-sd/1.8);
+  const pd=Math.hypot(x-POOL.x,z-POOL.z); if (pd<5) h -= 1.0*(1-smooth(2.5,5,pd));
+  const e=(x/PRX)**2+(z/PRZ)**2; if (e<1.4) h=lerp(-1.7,h,smooth(.72,1.12,e));
+  return h;
+}
+
+/* ===================== renderer ===================== */
+const canvas=$("#c");
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
+const PR=Math.min(devicePixelRatio, isTouch?1.6:2);
+renderer.setPixelRatio(PR);
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0xcccccc,60,330);
+const camera=new THREE.PerspectiveCamera(50,1,.1,2000);
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true; controls.dampingFactor=.08; controls.enablePan=false; controls.rotateSpeed=.55;
+controls.minDistance=4.5; controls.maxDistance=22; controls.minPolarAngle=.35; controls.maxPolarAngle=1.5;
+controls.autoRotate=true; controls.autoRotateSpeed=.4;
+camera.position.set(0,9,26); controls.target.set(0,2.5,0);
+const composer=new EffectComposer(renderer); composer.setPixelRatio(PR);
+composer.addPass(new RenderPass(scene,camera));
+const bloom=new UnrealBloomPass(new THREE.Vector2(256,256),.3,.5,.9); composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+const gm=new THREE.DataTexture(new Uint8Array([105,105,105,255,170,170,170,255,225,225,225,255,255,255,255,255]),4,1,THREE.RGBAFormat);
+gm.minFilter=gm.magFilter=THREE.NearestFilter; gm.needsUpdate=true;
+const MAT={}; const toon=(c,o={})=>{ const k=c+JSON.stringify(Object.keys(o)); if(!Object.keys(o).length && MAT[k]) return MAT[k]; const m=new THREE.MeshToonMaterial({color:c,gradientMap:gm,...o}); if(!Object.keys(o).length) MAT[k]=m; return m; };
+function glowTex(inner="rgba(255,255,255,1)",mid="rgba(255,255,255,.35)"){ const cv=document.createElement("canvas"); cv.width=cv.height=128; const g=cv.getContext("2d"); const r=g.createRadialGradient(64,64,0,64,64,64); r.addColorStop(0,inner); r.addColorStop(.35,mid); r.addColorStop(1,"rgba(255,255,255,0)"); g.fillStyle=r; g.fillRect(0,0,128,128); const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; return t; }
+const GLOW=glowTex();
+const shadowy=(o,cast=true,recv=true)=>{ o.traverse(m=>{ if(m.isMesh){ m.castShadow=cast; m.receiveShadow=recv; } }); return o; };
+const tUni={value:0};
+const tappables=[]; const tappable=(o,fn)=>{ o.userData.tap=fn; tappables.push(o); return o; };
+
+/* ===================== collision & interactions ===================== */
+const circles=[], boxes=[], interacts=[], discoveries=[];
+const addCircle=(x,z,r)=>circles.push({x,z,r});
+const addBox=(x,z,hw,hd,rot)=>boxes.push({x,z,hw,hd,c:Math.cos(rot),s:Math.sin(rot)});
+const addInteract=(o)=>interacts.push(o);
+
+/* ===================== sky ===================== */
+const skyMat=new THREE.ShaderMaterial({uniforms:{top:{value:new THREE.Color()},bottom:{value:new THREE.Color()}},
+  vertexShader:`varying vec3 vP; void main(){ vP=normalize(position); gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader:`uniform vec3 top; uniform vec3 bottom; varying vec3 vP; void main(){ float h=max(vP.y,0.); vec3 c=mix(bottom,top,pow(h,.5)); gl_FragColor=vec4(c,1.);
+#include <colorspace_fragment>
+}`, side:THREE.BackSide, depthWrite:false});
+const sky=new THREE.Mesh(new THREE.SphereGeometry(900,32,16),skyMat); scene.add(sky);
+const starGeo=new THREE.BufferGeometry(); { const p=[]; for(let i=0;i<1100;i++){ const th=rand(0,TAU),ph=rand(.05,1.45); p.push(Math.cos(th)*Math.cos(ph)*800,Math.sin(ph)*800,Math.sin(th)*Math.cos(ph)*800);} starGeo.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); }
+const starMat=new THREE.PointsMaterial({color:0xffffff,size:2,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false});
+const stars=new THREE.Points(starGeo,starMat); scene.add(stars);
+const sunSpr=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex("rgba(255,250,230,1)","rgba(255,215,150,.55)"),fog:false,depthWrite:false,transparent:true})); sunSpr.scale.setScalar(130); scene.add(sunSpr);
+const moonSpr=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex("rgba(250,250,255,1)","rgba(200,210,255,.25)"),fog:false,depthWrite:false,transparent:true})); moonSpr.scale.setScalar(64); scene.add(moonSpr);
+const hemi=new THREE.HemisphereLight(0xffffff,0x445533,1.1); scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,2.2); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-34,right:34,top:34,bottom:-34,near:1,far:160}); sun.shadow.bias=-.0006; sun.shadow.normalBias=.04;
+scene.add(sun,sun.target);
+
+/* ===================== terrain ===================== */
+{
+  const SIZE=340, SEG=230;
+  const g=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG); g.rotateX(-Math.PI/2);
+  const pos=g.attributes.position, cols=[];
+  const grassA=C({spring:"#6f9a52",summer:"#5d8a44",autumn:"#8a8a46",winter:"#e6ebf0"}[S]), grassB=C({spring:"#4f7a3c",summer:"#3f6a34",autumn:"#6f7034",winter:"#c9d3dd"}[S]);
+  const rock=C("#7c786e"), mud=C("#2a4a4c"), sand=C("#b9a982");
+  for(let i=0;i<pos.count;i++){ const x=pos.getX(i), z=pos.getZ(i), h=H(x,z); pos.setY(i,h);
+    const n=fbm(x*.08+3,z*.08); const c=grassA.clone().lerp(grassB,n);
+    const slope=Math.abs(H(x+.6,z)-H(x-.6,z))+Math.abs(H(x,z+.6)-H(x,z-.6));
+    if (slope>1.6) c.lerp(rock,clamp((slope-1.6)/1.6,0,1));
+    const e=(x/PRX)**2+(z/PRZ)**2; if(e<1.18) c.lerp(e<1?mud:sand, e<1?.9:.5);
+    if (streamDist(x,z)<2.2) c.lerp(sand,.45);
+    cols.push(c.r,c.g,c.b); }
+  g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3)); g.computeVertexNormals();
+  const terrain=new THREE.Mesh(g,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:gm})); terrain.receiveShadow=true; scene.add(terrain);
+}
+
+/* ===================== water ===================== */
+const waterMat=(flow=0)=>new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uT:tUni,uFlow:{value:flow},uDeep:{value:C("#1d5560")},uShal:{value:C("#5fb0b0")},uSky:{value:C("#ffffff")},uNight:{value:0}},
+  vertexShader:`varying vec3 vW; varying vec2 vUv; void main(){ vUv=uv; vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }`,
+  fragmentShader:`uniform float uT,uFlow,uNight; uniform vec3 uDeep,uShal,uSky; varying vec3 vW; varying vec2 vUv;
+  void main(){ vec2 p = uFlow>.5 ? vec2(vUv.x*4., vUv.y*60.-uT*5.) : vW.xz;
+    float w=sin(p.x*1.3+uT*1.1)*.5+sin(p.y*1.7-uT*.9)*.5+sin((p.x+p.y)*2.3+uT*1.7)*.3;
+    vec3 c=mix(uDeep,uShal,.45+.22*w); c=mix(c,uSky,.18);
+    float sp=pow(max(0.,sin(p.x*7.+uT*2.)*sin(p.y*6.3-uT*1.7)),40.)*(1.-uNight*.75);
+    c+=sp*.45; if(uFlow>.5){ c+= smoothstep(.85,1.,sin(vUv.y*90.-uT*9.+sin(vUv.x*9.)*2.))*.25; }
+    gl_FragColor=vec4(c, uFlow>.5 ? .82 : .74);
+#include <colorspace_fragment>
+  }`});
+const waters=[];
+{ // pond surface
+  const w=new THREE.Mesh(new THREE.CircleGeometry(1,72),waterMat()); w.scale.set(PRX*1.04,PRZ*1.04,1); w.rotation.x=-Math.PI/2; w.position.y=-.22; scene.add(w); waters.push(w);
+  tappable(w,p=>{ if(entered) tossTo(p); else { addRipple(p); attract={x:p.x,z:p.z,until:clock+5,t0:clock}; } });
+  // pool at waterfall base
+  const pw=new THREE.Mesh(new THREE.CircleGeometry(4.4,40),waterMat()); pw.rotation.x=-Math.PI/2; pw.position.set(POOL.x,H(POOL.x,POOL.z)+.55,POOL.z); scene.add(pw); waters.push(pw);
+  // stream ribbon
+  const curve=new THREE.CatmullRomCurve3(STREAM.map(([x,z])=>new THREE.Vector3(x,0,z)));
+  const N=80, verts=[], uvs=[], idx=[];
+  for(let i=0;i<=N;i++){ const t=i/N, p=curve.getPointAt(t), tg=curve.getTangentAt(t); const nx=-tg.z, nz=tg.x; const len=Math.hypot(nx,nz);
+    for(const s of [-1,1]){ const x=p.x+nx/len*1.35*s, z=p.z+nz/len*1.35*s; verts.push(x, Math.max(H(p.x,p.z)+.32,-.2), z); uvs.push((s+1)/2,t); } }
+  for(let i=0;i<N;i++){ const a=i*2; idx.push(a,a+2,a+1,a+1,a+2,a+3); }
+  const sg=new THREE.BufferGeometry(); sg.setAttribute("position",new THREE.Float32BufferAttribute(verts,3)); sg.setAttribute("uv",new THREE.Float32BufferAttribute(uvs,2)); sg.setIndex(idx);
+  const stream=new THREE.Mesh(sg,waterMat(1)); scene.add(stream); waters.push(stream);
+}
+// pond rim stones
+const stoneMats=[toon("#8a877e",{flatShading:true}),toon("#6e6b63",{flatShading:true}),toon("#9a968b",{flatShading:true})];
+const rockGeo=new THREE.DodecahedronGeometry(1,0);
+function rock(x,z,sx,sy,sz,y=null){ const m=new THREE.Mesh(rockGeo,stoneMats[Math.floor(Math.random()*3)]); m.scale.set(sx,sy,sz); m.position.set(x,(y??H(x,z))+sy*.3,z); m.rotation.set(rand(-.2,.2),rand(0,TAU),rand(-.2,.2)); shadowy(m); scene.add(m); return m; }
+for(let i=0;i<58;i++){ const a=i/58*TAU; rock(Math.cos(a)*(PRX+.35+rand(-.1,.3)), Math.sin(a)*(PRZ+.35+rand(-.1,.3)), rand(.5,.9),rand(.3,.5),rand(.45,.7), 0); }
+// stepping stones in pond
+[[-3,4.5],[-1.6,3.4],[0,2.6]].forEach(([x,z])=>{ const s=new THREE.Mesh(new THREE.CylinderGeometry(.55,.65,.5,9),stoneMats[0]); s.position.set(x,-.1,z); scene.add(s); });
+// lily pads
+for(let i=0;i<12;i++){ const a=rand(0,TAU), r=rand(.45,.85); const x=Math.cos(a)*PRX*r, z=Math.sin(a)*PRZ*r; const pad=new THREE.Mesh(new THREE.CircleGeometry(rand(.4,.6),18,.3,TAU-.6),toon("#4f7a43",{side:THREE.DoubleSide})); pad.rotation.x=-Math.PI/2; pad.rotation.z=rand(0,TAU); pad.position.set(x,-.2,z); scene.add(pad);
+  if (S!=="winter"&&Math.random()<.5){ const fl=new THREE.Mesh(new THREE.IcosahedronGeometry(.14,0),toon("#f6c6d6",{flatShading:true})); fl.position.set(x+.1,-.12,z); scene.add(fl); } }
+const pondEllipse={a:PRX+.6,b:PRZ+.6};
+
+/* ===================== koi ===================== */
+const KOI=[["#fffaf2","#e2553a"],["#f6b23a","#f9d070"],["#fffaf2","#222226"],["#e2553a","#fffaf2"],["#9fb0bd","#d9663a"],["#f2efe6","#e2553a"],["#222226","#e2553a"],["#fffaf2","#f6b23a"],["#e2553a","#222226"]];
+const koi=[];
+const tailShape=(()=>{ const s=new THREE.Shape(); s.moveTo(0,0); s.quadraticCurveTo(-.25,.22,-.42,.2); s.quadraticCurveTo(-.32,0,-.42,-.2); s.quadraticCurveTo(-.25,-.22,0,0); return s; })();
+KOI.forEach(p=>{ const g=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,16,10),toon(p[0])); body.scale.set(.5,.14,.18); g.add(body);
+  const patch=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),toon(p[1])); patch.scale.set(.2,.08,.12); patch.position.set(rand(-.1,.18),.07,0); g.add(patch);
+  const tail=new THREE.Mesh(new THREE.ShapeGeometry(tailShape),toon(p[0],{side:THREE.DoubleSide})); tail.rotation.x=Math.PI/2; tail.scale.setScalar(1.2); const tp=new THREE.Group(); tp.position.x=-.44; tp.add(tail); g.add(tp);
+  g.position.y=-.55; scene.add(g);
+  koi.push({g,tp,ph:rand(0,TAU),sp:rand(.1,.18)*(Math.random()<.5?-1:1),r1:rand(3,8.8),r2:rand(1.5,5.6),w:rand(1.5,3),px:0,pz:0,yaw:0}); });
+{ // the golden koi — rare visitor
+  const g=new THREE.Group(); const gold=toon("#f7c948",{emissive:new THREE.Color("#ffb21a"),emissiveIntensity:.6});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(1,16,10),gold); body.scale.set(.6,.16,.21); g.add(body);
+  const tail=new THREE.Mesh(new THREE.ShapeGeometry(tailShape),toon("#ffd86a",{side:THREE.DoubleSide,emissive:new THREE.Color("#ffb21a"),emissiveIntensity:.5})); tail.rotation.x=Math.PI/2; tail.scale.setScalar(1.45); const tp=new THREE.Group(); tp.position.x=-.52; tp.add(tail); g.add(tp);
+  g.position.y=-.5; g.visible=false; scene.add(g);
+  koi.push({g,tp,gold:true,ph:rand(0,TAU),sp:.16,r1:6,r2:3.8,w:2.2,px:0,pz:0,yaw:0});
+}
+let goldenUntil=0, goldenNext=90;
+let attract=null; const ripples=[];
+const rippleMat=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.8,depthWrite:false});
+/* ---- koi feeding ---- */
+let food=null; const pellets=[]; const pelletGeo=new THREE.SphereGeometry(.09,8,6), pelletMat=toon("#c9a46a");
+function inPond(x,z){ return (x/(PRX-.6))**2+(z/(PRZ-.6))**2<1; }
+function tossFood(power=.6){ const f=new THREE.Vector3().subVectors(controls.target,camera.position).setY(0).normalize(); const d=3+power*9;
+  tossTo(new THREE.Vector3(player.position.x+f.x*d,0,player.position.z+f.z*d)); }
+function tossTo(pt){ if(!entered) return; const from=new THREE.Vector3(player.position.x,player.position.y+1.5,player.position.z); const dist=Math.hypot(pt.x-from.x,pt.z-from.z);
+  if(dist>20){ toast("Too far to throw. Walk closer to the water."); return; }
+  const m=new THREE.Mesh(pelletGeo,pelletMat); m.position.copy(from); scene.add(m); pellets.push({m,from,to:new THREE.Vector3(pt.x,-.2,pt.z),t:0,dur:.5+dist*.05}); }
+function landPellet(p){ scene.remove(p.m); const x=p.to.x,z=p.to.z;
+  if(!inPond(x,z)){ if(Math.random()<.5) toast("It lands in the grass. A sparrow will be pleased."); return; }
+  addRipple({x,z}); addRipple({x:x+.2,z:z-.1}); food={x,z,eaten:false,t0:clock};
+  const cands=koi.filter(k=>!(k.gold&&!k.g.visible)).map(k=>({k,d:Math.hypot(k.px-x,k.pz-z)})).sort((a,b)=>a.d-b.d).slice(0,4);
+  cands.forEach((c,i)=>{ c.k.chase={x:x+Math.cos(i*2)*.15*i,z:z+Math.sin(i*2)*.1*i,t0:clock,dur:.8+c.d*.22+(c.k.gold?-.3:0)}; }); }
+function eatFood(k){ food.eaten=true; addRipple({x:food.x,z:food.z}); addRipple({x:food.x+.15,z:food.z+.1});
+  store.koiFed=(store.koiFed||0)+1; hostBuzz();
+  if(k.gold){ store.goldenFed=(store.goldenFed||0)+1; goldenUntil=clock+3; discover({k:"金鯉",n:"The Golden Koi",line:"Hm! The golden one ate from your hand. In three hundred years, I saw that only twice. Good fortune follows you today, my student."}); }
+  else if(store.koiFed%10===0) toast(`The koi have eaten ${store.koiFed} times from your hand. They are starting to trust you.`);
+  koi.forEach(o=>{ if(o!==k) o.chase=null; }); save(); }
+function addRipple(p,y=-.2){ const r=new THREE.Mesh(new THREE.RingGeometry(.9,1,48),rippleMat.clone()); r.rotation.x=-Math.PI/2; r.position.set(p.x,y+.01,p.z); r.scale.setScalar(.05); scene.add(r); ripples.push({m:r,t:0}); }
+
+/* ===================== waterfall: the Dragon Gate ===================== */
+const wfMist=[];
+{
+  const top=new THREE.Vector3(CLIFF.x+WF_DIR.x*10.2, 0, CLIFF.z+WF_DIR.y*10.2); top.y=H(top.x,top.z)+.4;
+  const bot=new THREE.Vector3(CLIFF.x+WF_DIR.x*16.3, 0, CLIFF.z+WF_DIR.y*16.3); bot.y=H(bot.x,bot.z)+.3;
+  const len=top.distanceTo(bot);
+  const wfm=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{uT:tUni},
+    vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`uniform float uT; varying vec2 vUv; void main(){ float n=sin(vUv.x*61.+sin(vUv.x*13.)*3.)*.5+.5; float f=fract(vUv.y*2.5+uT*1.5+n*.7);
+      vec3 c=mix(vec3(.62,.82,.9),vec3(1.05),smoothstep(.55,1.,f)*n+.15); float a=.88*smoothstep(0.,.1,vUv.x)*smoothstep(1.,.9,vUv.x)*smoothstep(0.,.04,vUv.y);
+      gl_FragColor=vec4(c,a);
+#include <colorspace_fragment>
+    }`});
+  const wf=new THREE.Mesh(new THREE.PlaneGeometry(4.6,len,1,1),wfm);
+  wf.position.copy(top).add(bot).multiplyScalar(.5).add(new THREE.Vector3(WF_DIR.x*.7,0,WF_DIR.y*.7));
+  wf.lookAt(wf.position.clone().add(new THREE.Vector3(WF_DIR.x,0,WF_DIR.y)));
+  wf.rotateX(-Math.atan2(bot.clone().setY(0).distanceTo(top.clone().setY(0)), top.y-bot.y));
+  scene.add(wf);
+  // frame rocks
+  const side=new THREE.Vector2(-WF_DIR.y,WF_DIR.x);
+  for(let i=0;i<14;i++){ const along=rand(10,17), s=(i%2?1:-1)*rand(2.7,4.5); const x=CLIFF.x+WF_DIR.x*along+side.x*s, z=CLIFF.z+WF_DIR.y*along+side.y*s; rock(x,z,rand(1.4,2.6),rand(1.2,2.6),rand(1.4,2.4)); }
+  for(let i=0;i<12;i++){ const a=rand(0,TAU), r=rand(4.6,6); rock(POOL.x+Math.cos(a)*r,POOL.z+Math.sin(a)*r,rand(.6,1.2),rand(.4,.8),rand(.6,1.1)); }
+  for(let i=0;i<6;i++){ const m=new THREE.SpriteMaterial({map:GLOW,transparent:true,opacity:.4,depthWrite:false}); const sp=new THREE.Sprite(m); sp.position.set(bot.x+rand(-1.5,1.5),bot.y+rand(.3,1.6),bot.z+rand(-1.5,1.5)); sp.scale.setScalar(rand(3,5)); scene.add(sp); wfMist.push({sp,ph:rand(0,TAU),base:sp.position.clone()}); }
+  // cliff top pines
+  for(let i=0;i<6;i++){ const a=rand(0,TAU),r=rand(2,8); pineTree(CLIFF.x+Math.cos(a)*r,CLIFF.z+Math.sin(a)*r,rand(.7,1.1)); }
+  addCircle(CLIFF.x,CLIFF.z,15); addCircle(POOL.x,POOL.z,4.2);
+  addInteract({x:POOL.x,z:POOL.z,r:8,k:"門",label:"Behold",fn:()=>toast("The Dragon Gate. The water never stops climbing down.")});
+  discoveries.push({id:"gate",x:POOL.x,z:POOL.z,r:10,k:"龍門",n:"The Dragon Gate",line:"Ah. The Dragon Gate. I climbed this once, three hundred years ago. The top was colder than I expected."});
+  window.__wfPos=bot;
+}
+
+/* ===================== trees ===================== */
+function pineTree(x,z,s=1){
+  const pine=new THREE.Group(); pine.position.set(x,H(x,z)-.1,z); pine.scale.setScalar(s); pine.rotation.y=rand(0,TAU); scene.add(pine);
+  const bark=toon("#3b2a1e",{flatShading:true}), leaf=toon(S==="winter"?"#3d5a4a":"#2f4a34",{flatShading:true});
+  const pts=[new THREE.Vector3(0,0,0),new THREE.Vector3(.4,1.6,0),new THREE.Vector3(-.3,3.2,.2),new THREE.Vector3(.2,4.8,0)];
+  pine.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),16,.3,7),bark));
+  [[-1.8,2.6,0,1.5],[1.7,3.6,.3,1.3],[-1.2,4.6,-.2,1.2],[.2,5.4,0,1.4],[1,2,.6,1]].forEach(([bx,by,bz,bs])=>{
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(.08,.14,Math.abs(bx)+.4,5),bark); b.position.set(bx/2,by-.2,bz/2); b.rotation.z=Math.PI/2+(bx>0?-.25:.25); pine.add(b);
+    const c=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),leaf); c.scale.set(bs*1.1,bs*.4,bs*.9); c.position.set(bx,by,bz); pine.add(c);
+    if (S==="winter"){ const sn=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),toon("#f6f4ee")); sn.scale.set(bs*.95,bs*.18,bs*.8); sn.position.set(bx,by+.24,bz); pine.add(sn); } });
+  shadowy(pine); addCircle(x,z,.7*s); return pine;
+}
+const LEAF={spring:["#f6c6d3","#f1aec2","#fbe1e8","#e99ab2"],summer:["#4f7a43","#5f8a4c","#3f6838","#6e9a55"],autumn:["#d0552f","#e2763a","#b63c28","#eea04a","#c9462e"],winter:["#f3f6fa"]};
+function mapleTree(x,z,s=1,cols=LEAF[S]){
+  const tree=new THREE.Group(); tree.position.set(x,H(x,z)-.1,z); tree.scale.setScalar(s); tree.rotation.y=rand(0,TAU); scene.add(tree);
+  const bark=toon("#4a3022",{flatShading:true});
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.35,.6,4.6,7),bark); trunk.position.y=2.3; trunk.rotation.z=.08; tree.add(trunk);
+  [[.9,.6,.5],[-.8,.4,-.6],[0,-.7,.9]].forEach(([rx,rz,ry])=>{ const b=new THREE.Mesh(new THREE.CylinderGeometry(.12,.25,2.6,6),bark); b.position.set(rx*.9,4.4,rz*.9); b.rotation.set(rz*.8,ry,-rx*.8); tree.add(b); });
+  const n=S==="winter"?6:16;
+  for(let i=0;i<n;i++){ const f=new THREE.Mesh(new THREE.IcosahedronGeometry(rand(1.1,1.8),0),toon(cols[i%cols.length],{flatShading:true})); const a=rand(0,TAU),r=rand(0,2.6); f.position.set(Math.cos(a)*r,rand(4.6,6.6),Math.sin(a)*r); if(S==="winter") f.scale.set(.6,.2,.6); tree.add(f); }
+  shadowy(tree); addCircle(x,z,.75*s); return tree;
+}
+const GINKGO=S==="autumn"?["#f2c23a","#e8b02a","#f7d460"]:LEAF[S];
+[[-13,20,1.1],[12,26,1],[-8,-15,1.2],[9,-14,1],[22,-12,1.1],[-26,26,1.2],[27,22,1],[-46,-6,1.1],[44,-10,1.2],[-20,42,1]].forEach(([x,z,s],i)=>mapleTree(x,z,s,i%3===2?GINKGO:LEAF[S]));
+[[13,3,1],[-6,26,.9],[7,36,1],[-9,37,1.1],[20,-2,.9],[38,22,1.1],[-28,-10,1],[14,-30,1.2],[-2,-26,1],[48,8,1.2],[-50,30,1.1],[30,40,1],[-16,-30,1.1],[52,-28,1.3],[-40,-50,1.2]].forEach(([x,z,s])=>pineTree(x,z,s));
+// distant forest ring
+const pineFar=toon("#2f4a34",{flatShading:true});
+for(let i=0;i<140;i++){ const a=rand(0,TAU),d=rand(62,95); const x=Math.cos(a)*d,z=Math.sin(a)*d; const h=rand(5,10); const t=new THREE.Mesh(new THREE.ConeGeometry(h*.3,h,6),pineFar); t.position.set(x,H(x,z)+h/2-.3,z); t.castShadow=true; scene.add(t); }
+// shrubs (azalea / boxwood)
+const shrubCols={spring:["#4f7a3c","#e88aa8"],summer:["#3f6a34","#4f7a3c"],autumn:["#9a3a2a","#5a6a34"],winter:["#c9d3dd","#3f5a44"]}[S];
+for(let i=0;i<70;i++){ const a=rand(0,TAU),d=rand(11,58); const x=Math.cos(a)*d,z=Math.sin(a)*d;
+  if (Math.abs(x)<3.2&&z>8) continue; if (Math.hypot(x-17,z-15)<8||Math.hypot(x-30,z-2)<11||Math.hypot(x-CLIFF.x,z-CLIFF.z)<17||Math.hypot(x+38,z-16)<13||Math.hypot(x-CASTLE.x,z-CASTLE.z)<12) continue;
+  const sh=new THREE.Mesh(new THREE.IcosahedronGeometry(1,1),toon(shrubCols[i%2],{flatShading:true})); const s=rand(.6,1.2); sh.scale.set(s*1.3,s*.8,s*1.1); sh.position.set(x,H(x,z)+s*.4,z); shadowy(sh); scene.add(sh); addCircle(x,z,s*1.1); }
+for(let i=0;i<26;i++){ const a=rand(0,TAU),d=rand(14,58); const x=Math.cos(a)*d,z=Math.sin(a)*d; if(Math.abs(x)<3.2&&z>8) continue; const s=rand(.6,1.6); rock(x,z,s*1.2,s*.8,s); addCircle(x,z,s); }
+// grass
+if (S!=="winter"){ const n=2600, gg=new THREE.ConeGeometry(.05,.5,3); gg.translate(0,.24,0);
+  const im=new THREE.InstancedMesh(gg,toon(S==="autumn"?"#8a8440":"#3f6334"),n); const d=new THREE.Object3D(); let k=0;
+  while(k<n){ const x=rand(-58,58),z=rand(-58,58); if((x/(PRX+1.5))**2+(z/(PRZ+1.5))**2<1||streamDist(x,z)<1.8||Math.hypot(x,z)>60) continue; d.position.set(x,H(x,z),z); d.rotation.set(rand(-.25,.25),rand(0,TAU),rand(-.25,.25)); d.scale.setScalar(rand(.6,1.5)); d.updateMatrix(); im.setMatrixAt(k++,d.matrix); }
+  scene.add(im); }
+
+/* ===================== mountains & sky decor ===================== */
+const farMat=toon("#93a9bd",{flatShading:true}), midMat=toon("#6f8a8e",{flatShading:true}), snowMat=toon("#f6f4ee",{flatShading:true});
+function mountain(x,z,r,h,cap){ const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,8,1),farMat); m.position.set(x,h/2-2,z); m.rotation.y=rand(0,TAU); scene.add(m);
+  if(cap){ const ch=h*.26; const c=new THREE.Mesh(new THREE.ConeGeometry(r*.265,ch,8,1),snowMat); c.position.set(x,h-2-ch/2+.05,z); c.rotation.y=m.rotation.y; scene.add(c);} }
+mountain(-50,-300,120,120,true);
+for(let i=0;i<22;i++){ const a=i/22*TAU+rand(-.1,.1),d=rand(240,330),h=rand(45,90); mountain(Math.cos(a)*d,Math.sin(a)*d,rand(55,90),h,S==="winter"||h>78); }
+for(let i=0;i<16;i++){ const a=i/16*TAU+rand(-.15,.15),d=rand(140,190); const hill=new THREE.Mesh(new THREE.SphereGeometry(1,14,8),midMat); hill.scale.set(rand(26,44),rand(10,20),rand(24,36)); hill.position.set(Math.cos(a)*d,-3,Math.sin(a)*d); scene.add(hill); }
+const cloudGroup=new THREE.Group(); scene.add(cloudGroup); const mistMats=[];
+for(let i=0;i<22;i++){ const m=new THREE.SpriteMaterial({map:GLOW,transparent:true,opacity:.35,depthWrite:false,fog:false}); mistMats.push(m); const s=new THREE.Sprite(m); const a=rand(0,TAU),d=rand(130,260); s.position.set(Math.cos(a)*d,i<10?rand(8,22):rand(50,100),Math.sin(a)*d); s.scale.set(rand(110,200),rand(18,32),1); cloudGroup.add(s); }
+
+/* ===================== torii & path ===================== */
+{
+  const red=toon("#c23a2a"), blk=toon("#1f1d22");
+  const T=new THREE.Group(); const tz=34; T.position.set(0,H(0,tz),tz); scene.add(T);
+  [-2.6,2.6].forEach(x=>{ const p=new THREE.Mesh(new THREE.CylinderGeometry(.3,.36,6,12),red); p.position.set(x,3,0); T.add(p); const b=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.5,12),blk); b.position.set(x,.25,0); T.add(b); addCircle(x,tz,.5); });
+  const nuki=new THREE.Mesh(new THREE.BoxGeometry(6.6,.35,.35),red); nuki.position.y=4.6; T.add(nuki);
+  const kasagi=new THREE.Mesh(new THREE.BoxGeometry(8.2,.45,.6),blk); kasagi.position.y=6.1; T.add(kasagi);
+  const shimaki=new THREE.Mesh(new THREE.BoxGeometry(7.4,.4,.5),red); shimaki.position.y=5.7; T.add(shimaki);
+  [-1,1].forEach(s=>{ const tip=new THREE.Mesh(new THREE.BoxGeometry(.8,.35,.6),blk); tip.position.set(s*4.2,6.25,0); tip.rotation.z=s*.18; T.add(tip); });
+  const plaque=new THREE.Mesh(new THREE.BoxGeometry(.6,.9,.12),blk); plaque.position.set(0,5.15,.2); T.add(plaque);
+  shadowy(T);
+  addInteract({x:0,z:tz,r:5,k:"門",label:"Bow",fn:()=>toast("You bow beneath the torii. Enter with an empty cup.")});
+  discoveries.push({id:"torii",x:0,z:tz,r:6,k:"鳥居",n:"The Spirit Gate",line:"Welcome, my student. Beyond the gate, leave the noise of the world behind. It will wait for you."});
+}
+const pathStoneGeo=new THREE.CylinderGeometry(.62,.7,.18,8);
+function path(points,step=1.35){ const c=new THREE.CatmullRomCurve3(points.map(([x,z])=>new THREE.Vector3(x,0,z))); const L=c.getLength(); for(let d=0;d<L;d+=step){ const p=c.getPointAt(d/L); const x=p.x+rand(-.25,.25), z=p.z+rand(-.25,.25); const s=new THREE.Mesh(pathStoneGeo,stoneMats[Math.floor(Math.random()*3)]); s.scale.set(rand(.8,1.15),1,rand(.8,1.15)); s.rotation.y=rand(0,TAU); s.position.set(x,H(x,z)+.05,z); s.receiveShadow=true; scene.add(s); } }
+path([[0,44],[0,34],[0,22],[0,9.2]]);
+path([[0,15],[6,15.5],[12,15]]);
+path([[6,15.5],[16,8],[22,4]]);
+path([[-1,12],[-8,9],[-15,1],[-15.5,-4.5]]);
+path([[-11.2,-11.2],[-6,-16],[6,-20],[18,-25],[24,-30]]);
+path([[-16,-14],[-18,-19],[-19.5,-20.5]]);
+
+/* ===================== lanterns ===================== */
+const lanternPanes=[]; let lanternOn=true;
+function lantern(x,z,withLight=false,s=1){
+  const L=new THREE.Group(); L.position.set(x,H(x,z),z); L.scale.setScalar(s); scene.add(L);
+  const st=toon("#9a958a",{flatShading:true});
+  const add=(geo,y)=>{ const m=new THREE.Mesh(geo,st); m.position.y=y; L.add(m); return m; };
+  add(new THREE.CylinderGeometry(.55,.65,.25,6),.12); add(new THREE.CylinderGeometry(.14,.18,1.3,8),.9);
+  add(new THREE.CylinderGeometry(.5,.4,.2,6),1.62); add(new THREE.BoxGeometry(.62,.55,.62),2.0);
+  const pane=toon("#3a352d",{emissive:new THREE.Color("#ffc870"),emissiveIntensity:0}); lanternPanes.push(pane);
+  [[0,.32],[0,-.32]].forEach(([px,pz])=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.32,.3,.02),pane); p.position.set(px,2.02,pz); L.add(p); const q=p.clone(); q.rotation.y=Math.PI/2; q.position.set(pz,2.02,px); L.add(q); });
+  add(new THREE.ConeGeometry(.85,.55,6),2.55); add(new THREE.SphereGeometry(.13,8,6),2.9);
+  if (withLight){ const l=new THREE.PointLight(0xffb860,0,16,2); l.position.y=2.05; L.add(l); L.userData.light=l; }
+  shadowy(L); addCircle(x,z,.6*s); return L;
+}
+const litLanterns=[];
+[[2.6,29],[-2.6,29],[2.6,22],[-2.6,22],[2.6,15],[-2.6,15]].forEach(([x,z])=>lantern(x,z));
+litLanterns.push(lantern(8.4,4.6,true)); litLanterns.push(lantern(-9.5,7,true,1.1));
+lantern(-14,-16); lantern(20,-22); lantern(24,6.5);
+litLanterns.forEach(L=>tappable(L,()=>{ lanternOn=!lanternOn; applyTime(); toast(lanternOn?"The lanterns are lit.":"The lanterns rest."); }));
+
+/* ===================== arched bridge ===================== */
+const BR=(()=>{
+  const i=2; const ax=STREAM[i][0],az=STREAM[i][1],bx=STREAM[i+1][0],bz=STREAM[i+1][1];
+  const cx=(ax+bx)/2, cz=(az+bz)/2; const tx=bx-ax,tz=bz-az, tl=Math.hypot(tx,tz); const ux=tx/tl, uz=tz/tl; // stream tangent (across deck width)
+  const px=-uz, pz=ux; // crossing direction
+  const g=new THREE.Group(); g.position.set(cx,Math.max(H(cx-px*4,cz-pz*4),H(cx+px*4,cz+pz*4)),cz); g.rotation.y=Math.atan2(-pz,px); scene.add(g);
+  const red=toon("#c23a2a"), wood=toon("#6b4a32"), blk=toon("#1f1d22");
+  const len=9, arch=1.35, N=18;
+  for(let k=0;k<N;k++){ const a=-len/2+(k+.5)*len/N; const y=arch*Math.cos(a/len*Math.PI); const plank=new THREE.Mesh(new THREE.BoxGeometry(len/N+.04,.14,2.3),wood); plank.position.set(a,y,0); plank.rotation.z=Math.atan(-arch*Math.PI/len*Math.sin(a/len*Math.PI)); g.add(plank); }
+  [-1.2,1.2].forEach(zz=>{ for(let k=0;k<=6;k++){ const a=-len/2+k*len/6; const y=arch*Math.cos(a/len*Math.PI); const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.1,8),red); post.position.set(a,y+.5,zz); g.add(post); const cap=new THREE.Mesh(new THREE.SphereGeometry(.1,8,6),blk); cap.position.set(a,y+1.08,zz); g.add(cap); }
+    const pts=[]; for(let k=0;k<=20;k++){ const a=-len/2+k*len/20; pts.push(new THREE.Vector3(a,arch*Math.cos(a/len*Math.PI)+1,zz)); }
+    g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),40,.06,6),red)); });
+  shadowy(g);
+  addInteract({x:cx,z:cz,r:4,k:"橋",label:"Pause",fn:()=>toast("The stream passes under you. It has never once looked back.")});
+  return {x:cx,z:cz,px,pz,ux,uz,len,arch,y0:g.position.y};
+})();
+discoveries.push({id:"bridge",x:BR.x,z:BR.z,r:5,k:"太鼓橋",n:"The Moon Bridge",line:"Cross slowly. A bridge is a place to be between things. Most people rush through it."});
+
+/* ===================== tea house (Sensei's home) ===================== */
+let TEA_FRONT={x:13,z:15}; let SAND=null;
+const screenMat=toon("#7fc6d8",{emissive:new THREE.Color("#8fdcf0"),emissiveIntensity:.25});
+const phoneMat=toon("#1f2228",{emissive:new THREE.Color("#9fe8d0"),emissiveIntensity:0});
+const shojiMat=(()=>{ const cv=document.createElement("canvas"); cv.width=cv.height=128; const g=cv.getContext("2d"); g.fillStyle="#f3ecdc"; g.fillRect(0,0,128,128); g.strokeStyle="#5a3b26"; g.lineWidth=4; for(let i=0;i<=4;i++){ g.beginPath(); g.moveTo(i*32,0); g.lineTo(i*32,128); g.stroke(); g.beginPath(); g.moveTo(0,i*32); g.lineTo(128,i*32); g.stroke(); } const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(3,1.5);
+  return new THREE.MeshToonMaterial({map:t,gradientMap:gm,emissive:new THREE.Color("#ffcf8a"),emissiveIntensity:0}); })();
+const teaLight=new THREE.PointLight(0xffc27a,0,14,2);
+{
+  const X=19,Z=15,rot=-Math.PI/2;
+  const T=new THREE.Group(); T.position.set(X,H(X,Z),Z); T.rotation.y=rot; scene.add(T);
+  const wood=toon("#7a5236"), dark=toon("#4a2e1d"), roofM=toon("#33363f",{flatShading:true});
+  const base=new THREE.Mesh(new THREE.BoxGeometry(9,.9,7),toon("#7c786e",{flatShading:true})); base.position.y=.25; T.add(base);
+  const floor=new THREE.Mesh(new THREE.BoxGeometry(8.8,.25,9.2),wood); floor.position.set(0,.8,1); T.add(floor);
+  [[-4.2,-3.2],[4.2,-3.2],[-4.2,3.2],[4.2,3.2],[-4.2,5.4],[4.2,5.4],[0,5.4]].forEach(([x,z])=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.3,4,.3),dark); p.position.set(x,2.9,z); T.add(p); });
+  const back=new THREE.Mesh(new THREE.PlaneGeometry(8.4,3.4),shojiMat); back.position.set(0,2.6,-3.2); T.add(back);
+  const back2=back.clone(); back2.rotation.y=Math.PI; back2.position.z=-3.22; T.add(back2);
+  [-1,1].forEach(s=>{ const w=new THREE.Mesh(new THREE.PlaneGeometry(6.4,3.4),shojiMat); w.position.set(s*4.2,2.6,0); w.rotation.y=s*Math.PI/2; T.add(w); const w2=w.clone(); w2.rotation.y=-s*Math.PI/2; w2.position.x=s*4.22; T.add(w2); });
+  const front=new THREE.Mesh(new THREE.PlaneGeometry(8.4,3.4),shojiMat); front.position.set(0,2.6,3.2); T.add(front);
+  const roof=new THREE.Mesh(new THREE.CylinderGeometry(1.8,7.2,2.6,4),roofM); roof.rotation.y=Math.PI/4; roof.scale.set(1.25,1,1.25); roof.position.set(0,6.1,.8); T.add(roof);
+  const ridge=new THREE.Mesh(new THREE.BoxGeometry(3.4,.3,.3),toon("#1f1d22")); ridge.position.set(0,7.45,.8); T.add(ridge);
+  teaLight.position.set(0,2.6,0); T.add(teaLight);
+  // engawa table & Sensei's things
+  const tbl=new THREE.Group(); tbl.position.set(0,.93,4.6); T.add(tbl);
+  const top=new THREE.Mesh(new THREE.BoxGeometry(2.8,.12,1.3),dark); top.position.y=.42; tbl.add(top);
+  [[-1.25,-.5],[1.25,-.5],[-1.25,.5],[1.25,.5]].forEach(([x,z])=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(.12,.36,.12),dark); l.position.set(x,.18,z); tbl.add(l); });
+  const cush=new THREE.Mesh(new THREE.BoxGeometry(1,.16,1),toon("#8c2f2f")); cush.position.set(0,.08,-1.3); tbl.add(cush);
+  const pc=new THREE.Group(); pc.position.set(-.8,.49,0); pc.rotation.y=Math.PI; tbl.add(pc);
+  pc.add(new THREE.Mesh(new THREE.BoxGeometry(.8,.04,.55),toon("#9aa0a8")));
+  const scr=new THREE.Group(); scr.position.set(0,.02,-.27); scr.rotation.x=-.25; pc.add(scr);
+  const lid=new THREE.Mesh(new THREE.BoxGeometry(.8,.55,.04),toon("#2a2f38")); lid.position.y=.28; scr.add(lid);
+  const sc=new THREE.Mesh(new THREE.PlaneGeometry(.7,.45),screenMat); sc.position.set(0,.29,.025); scr.add(sc);
+  const ph=new THREE.Mesh(new THREE.BoxGeometry(.17,.03,.32),phoneMat); ph.position.set(.15,.5,.15); ph.rotation.y=.4; tbl.add(ph);
+  const ctl=new THREE.Group(); ctl.position.set(.85,.52,.1); ctl.rotation.y=-.3; tbl.add(ctl); const cm=toon("#ece6dc");
+  ctl.add(new THREE.Mesh(new THREE.BoxGeometry(.34,.07,.16),cm)); [-1,1].forEach(s=>{ const gr=new THREE.Mesh(new THREE.SphereGeometry(.11,10,8),cm); gr.scale.set(1,.5,1.15); gr.position.set(s*.2,0,.04); ctl.add(gr); });
+  const cup=new THREE.Mesh(new THREE.CylinderGeometry(.09,.07,.14,12),toon("#6e7b6a")); cup.position.set(1.2,.55,-.35); tbl.add(cup);
+  // steps
+  for(let k=0;k<2;k++){ const st=new THREE.Mesh(new THREE.BoxGeometry(2.4,.3,.6),stoneMats[0]); st.position.set(0,.15+k*.3,6.4-k*.5); T.add(st); }
+  shadowy(T);
+  addBox(X+.5,Z,3.4+2.2,4.7,rot); // rough footprint incl. floor (local x half 4.7, z extents -> rotated)
+  const wp=v=>{ const p=v.clone(); T.localToWorld(p); return p; };
+  const pcW=wp(new THREE.Vector3(-.8,0,5.6)), phW=wp(new THREE.Vector3(.15,0,5.6)), ctW=wp(new THREE.Vector3(.85,0,5.6));
+  TEA_FRONT={x:phW.x-1.4,z:phW.z};
+  addInteract({x:pcW.x-1.2,z:pcW.z,r:2.6,k:"巻",label:"Read scrolls",fn:()=>openScrolls()});
+  const cuW=wp(new THREE.Vector3(0,0,3.3)); addInteract({x:cuW.x-2.2,z:cuW.z,r:2.4,k:"書",label:"Calligraphy",fn:()=>openShodo()});
+  addInteract({x:phW.x-1.2,z:phW.z,r:2.2,k:"電",label:"Phone",fn:()=>toast("Sensei's phone. One day it will buzz yours.")});
+  addInteract({x:ctW.x-1.2,z:ctW.z,r:2.6,k:"遊",label:"Console",fn:()=>toast("Sensei insists this is not his. It is warm from use.")});
+  tappable(pc,()=>openScrolls());
+  discoveries.push({id:"tea",x:X-5,z:Z,r:7,k:"茶室",n:"Sensei's Tea House",line:"My home. Do not look too closely at the console. It belongs to… a guest."});
+}
+
+/* ===================== zen rock garden ===================== */
+{
+  const X=31,Z=2,rot=.25,W=16,D=10;
+  const G=new THREE.Group(); G.position.set(X,H(X,Z)+.08,Z); G.rotation.y=rot; scene.add(G);
+  const rocks=[[-4,-1,1.3],[3.2,1.6,1],[4.6,-2.4,.7]];
+  const sandMat=new THREE.ShaderMaterial({uniforms:{uR:{value:rocks.map(r=>new THREE.Vector3(...r))},uSnow:{value:S==="winter"?1:0}},
+    vertexShader:`varying vec2 vP; void main(){ vP=position.xy; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+    fragmentShader:`uniform vec3 uR[3]; uniform float uSnow; varying vec2 vP; void main(){ vec2 p=vec2(vP.x,-vP.y); float lines=sin(p.y*7.);
+      for(int i=0;i<3;i++){ float d=length(p-uR[i].xy); float rr=uR[i].z; if(d<rr*3.2){ lines=sin((d-rr)*7.); } }
+      float g=smoothstep(.2,.9,lines); vec3 c=mix(vec3(.80,.77,.70),vec3(.93,.91,.86),g); c=mix(c,vec3(.95,.97,1.),uSnow*.6); gl_FragColor=vec4(c,1.);
+#include <colorspace_fragment>
+    }`});
+  const sand=new THREE.Mesh(new THREE.PlaneGeometry(W,D,1,1),sandMat); sand.rotation.x=-Math.PI/2; sand.receiveShadow=true; G.add(sand); SAND=sand;
+  const wood=toon("#5a3b26");
+  [[0,D/2,W+.4,.3],[0,-D/2,W+.4,.3]].forEach(([x,z,w,d])=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(w,.35,d),wood); b.position.set(x,.1,z); G.add(b); });
+  [[W/2,0],[-W/2,0]].forEach(([x,z])=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(.3,.35,D),wood); b.position.set(x,.1,z); G.add(b); });
+  rocks.forEach(([x,z,r])=>{ const m=new THREE.Mesh(rockGeo,stoneMats[1]); m.scale.set(r,r*.8,r*.85); m.position.set(x,r*.25,z); G.add(m);
+    const moss=new THREE.Mesh(new THREE.SphereGeometry(r*.8,10,6,0,TAU,0,Math.PI/2),toon(S==="winter"?"#f3f6fa":"#5d7a3a")); moss.scale.y=.25; moss.position.set(x,r*.55,z); G.add(moss); });
+  shadowy(G);
+  addBox(X,Z,W/2+.2,D/2+.2,rot);
+  addInteract({x:X-W/2*Math.cos(rot)-1.2,z:Z+W/2*Math.sin(rot),r:9,k:"砂",label:"Rake",fn:()=>openGame("rake")});
+  discoveries.push({id:"karesansui",x:X,z:Z,r:11,k:"枯山水",n:"The Dry Garden",line:"Stones and sand. No water, and yet you see the sea. That is the whole lesson. Sit with it."});
+}
+
+/* ===================== bamboo grove ===================== */
+{
+  const CX=-38,CZ=16,R=13, n=170;
+  const stalkG=new THREE.CylinderGeometry(.1,.13,10,6); stalkG.translate(0,5,0);
+  const stalks=new THREE.InstancedMesh(stalkG,toon("#6f9a4a"),n);
+  const leafG=new THREE.IcosahedronGeometry(1,0); const leaves=new THREE.InstancedMesh(leafG,toon(S==="winter"?"#7a9a6a":"#4f8a3c",{flatShading:true}),n*2);
+  const d=new THREE.Object3D(); let k=0;
+  for(let i=0;i<n;i++){ const a=rand(0,TAU), r=Math.sqrt(Math.random())*R; const x=CX+Math.cos(a)*r, z=CZ+Math.sin(a)*r;
+    if (Math.hypot(x-CX,z-CZ)<3) continue; const h=rand(.8,1.25), y=H(x,z)-.2;
+    d.position.set(x,y,z); d.rotation.set(rand(-.06,.06),0,rand(-.06,.06)); d.scale.set(1,h,1); d.updateMatrix(); stalks.setMatrixAt(i,d.matrix);
+    for(let j=0;j<2;j++){ d.position.set(x+rand(-.8,.8),y+10*h*rand(.7,1),z+rand(-.8,.8)); d.rotation.set(rand(0,1),rand(0,TAU),0); d.scale.set(rand(1,1.8),rand(.25,.4),rand(.8,1.4)); d.updateMatrix(); leaves.setMatrixAt(k++,d.matrix); }
+    addCircle(x,z,.25); }
+  stalks.count=n; leaves.count=k; stalks.castShadow=leaves.castShadow=true; scene.add(stalks,leaves);
+  // node rings for texture
+  const ringG=new THREE.TorusGeometry(.13,.025,4,8); ringG.rotateX(Math.PI/2);
+  addInteract({x:CX,z:CZ,r:6,k:"竹",label:"Listen",fn:()=>toast("The bamboo creaks in the wind. It bends, and does not break.")});
+  discoveries.push({id:"bamboo",x:CX,z:CZ,r:10,k:"竹林",n:"The Bamboo Grove",line:"Listen to them knock together in the wind. Hollow inside, and strong because of it."});
+  const bench=new THREE.Mesh(new THREE.BoxGeometry(2.4,.2,.7),toon("#6b4a32")); bench.position.set(CX,H(CX,CZ)+.55,CZ); scene.add(bench);
+  [-1,1].forEach(s=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(.2,.5,.6),toon("#4a2e1d")); l.position.set(CX+s*1,H(CX,CZ)+.25,CZ); scene.add(l); });
+}
+
+/* ===================== castle on the hill ===================== */
+const windowMats=[];
+{
+  const cy=H(CASTLE.x,CASTLE.z);
+  const castle=new THREE.Group(); castle.position.set(CASTLE.x,cy-.3,CASTLE.z); castle.rotation.y=-.75; castle.scale.setScalar(2.1); scene.add(castle);
+  const stone=toon("#77726a",{flatShading:true}), white=toon("#efe9dd"), roofM=toon("#2d3440",{flatShading:true}), gold=toon("#d8b26a");
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(3.4,4.4,2.4,4),stone); base.rotation.y=Math.PI/4; base.position.y=1.2; castle.add(base);
+  let y=2.4; [[4.4,1.9],[3.3,1.5],[2.3,1.3]].forEach(([w,h],i,arr)=>{
+    const wall=new THREE.Mesh(new THREE.BoxGeometry(w,h,w*.82),white); wall.position.y=y+h/2; castle.add(wall);
+    const wm=toon("#2a2a30",{emissive:new THREE.Color("#ffcf70"),emissiveIntensity:0}); windowMats.push(wm);
+    const nW=4-i; for(let j=0;j<nW;j++){ const win=new THREE.Mesh(new THREE.BoxGeometry(.28,.38,.05),wm); win.position.set((j-(nW-1)/2)*(w/nW),y+h*.55,w*.41+.02); castle.add(win); const w2=win.clone(); w2.position.z*=-1; castle.add(w2); }
+    const last=i===arr.length-1;
+    const roof=last?new THREE.Mesh(new THREE.ConeGeometry(w*.95,1.6,4),roofM):new THREE.Mesh(new THREE.CylinderGeometry(w*.42,w*.98,.9,4),roofM);
+    roof.rotation.y=Math.PI/4; roof.scale.z=.85; roof.position.y=y+h+(last?.8:.45); castle.add(roof);
+    if(last) [-1,1].forEach(s=>{ const f=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),gold); f.position.set(s*.5,y+h+1.45,0); castle.add(f); });
+    y+=h+.9; });
+  const door=new THREE.Mesh(new THREE.BoxGeometry(1,1.2,.1),toon("#3a2416")); door.position.set(0,.6,2.25); door.rotation.x=-.2; castle.add(door);
+  shadowy(castle); addCircle(CASTLE.x,CASTLE.z,9.6);
+  // steps up the slope
+  for(let k=0;k<14;k++){ const t=k/13; const x=lerp(21,28.5,t), z=lerp(-26,-33.5,t); const st=new THREE.Mesh(new THREE.BoxGeometry(3,.25,.9),stoneMats[k%3]); st.position.set(x,H(x,z)+.08,z); st.rotation.y=-Math.PI/4; st.receiveShadow=true; scene.add(st); }
+  lantern(25,-31.5); lantern(27.5,-28.5);
+  const gate={x:CASTLE.x-7.5,z:CASTLE.z+7}; addInteract({x:gate.x,z:gate.z,r:5,k:"城",label:"Knock",fn:()=>toast("Shirokumo Castle. The great doors are sealed… for now.")});
+  discoveries.push({id:"castle",x:gate.x,z:gate.z,r:9,k:"白雲城",n:"Shirokumo Castle",line:"The castle where I was born, in a manner of speaking. Its doors will open when you are ready. And when I find the key."});
+}
+
+/* ===================== taiko drum & archery range ===================== */
+{ const X=7.5,Z=19.5; const g=new THREE.Group(); g.position.set(X,H(X,Z),Z); g.rotation.y=-.6; scene.add(g);
+  const wood=toon("#5a3424"), red=toon("#a8382a");
+  [-1,1].forEach(s=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(.18,1.6,.18),wood); l.position.set(s*.8,.8,0); l.rotation.z=s*-.15; g.add(l); });
+  const drum=new THREE.Mesh(new THREE.CylinderGeometry(.75,.75,1.0,24),red); drum.rotation.z=Math.PI/2; drum.position.y=1.5; g.add(drum);
+  [-1,1].forEach(s=>{ const skin=new THREE.Mesh(new THREE.CircleGeometry(.72,24),toon("#efe3cc")); skin.position.set(s*.51,1.5,0); skin.rotation.y=s*Math.PI/2; g.add(skin); });
+  const mon=new THREE.Mesh(new THREE.CircleGeometry(.25,20),toon("#1f1d22")); mon.position.set(.52,1.5,0); mon.rotation.y=Math.PI/2; g.add(mon);
+  shadowy(g); addCircle(X,Z,1); addInteract({x:X,z:Z,r:3.5,k:"太",label:"Drum",fn:()=>openGame("taiko")});
+  discoveries.push({id:"taiko",x:X,z:Z,r:4,k:"太鼓",n:"The Great Drum",line:"The drum remembers every festival. Strike it, and it will remember you too."}); }
+{ const MX=47,MZ=-20, TX=57,TZ=-14;
+  const tg=new THREE.Group(); tg.position.set(TX,H(TX,TZ),TZ); tg.lookAt(MX,H(TX,TZ),MZ); scene.add(tg);
+  const mound=new THREE.Mesh(new THREE.BoxGeometry(5,1.6,1.6),toon("#b89a6e",{flatShading:true})); mound.position.set(0,.8,-.6); tg.add(mound);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(5.6,.2,2.2),toon("#3a2a1e")); roof.position.set(0,2.8,-.4); tg.add(roof);
+  [-2.6,2.6].forEach(x=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.18,2.8,.18),toon("#3a2a1e")); p.position.set(x,1.4,.6); tg.add(p); });
+  const cols=["#f4f1ea","#141414","#f4f1ea","#141414","#f4f1ea","#141414"]; [.5,.43,.36,.28,.2,.1].forEach((r,i)=>{ const c=new THREE.Mesh(new THREE.CircleGeometry(r,28),toon(cols[i])); c.position.set(0,1.4,.21+i*.002); tg.add(c); });
+  const mk=new THREE.Group(); mk.position.set(MX,H(MX,MZ),MZ); scene.add(mk); const deck=new THREE.Mesh(new THREE.BoxGeometry(3,.25,2.4),toon("#7a5236")); deck.position.y=.12; mk.add(deck);
+  const rack=new THREE.Mesh(new THREE.BoxGeometry(.12,1.8,.12),toon("#3a2a1e")); rack.position.set(-1.2,1,0); mk.add(rack);
+  const bow=new THREE.Mesh(new THREE.TorusGeometry(1.1,.03,6,30,Math.PI*.7),toon("#3a2416")); bow.position.set(-1.05,1.2,0); bow.rotation.z=Math.PI/2+.4; mk.add(bow);
+  shadowy(tg); shadowy(mk); addCircle(TX,TZ,2.4);
+  addInteract({x:MX,z:MZ,r:3.5,k:"弓",label:"Archery",fn:()=>openGame("kyudo")});
+  discoveries.push({id:"kyudo",x:MX,z:MZ,r:5,k:"弓道場",n:"The Archery Range",line:"Kyūdō. The arrow is the least important part. Breathe, and we will begin."}); }
+
+/* ===================== falling leaves / snow / fireflies ===================== */
+const fall={im:null,n:0,data:[]};
+if (S==="autumn"||S==="spring"){ const n=200; const im=new THREE.InstancedMesh(new THREE.PlaneGeometry(.22,.17),toon("#ffffff",{side:THREE.DoubleSide}),n);
+  const cols=S==="spring"?["#f8c9d6","#fbe1e8","#f1aec2"]:["#d0552f","#e2763a","#eea04a","#b63c28","#f2c23a"];
+  for(let i=0;i<n;i++){ im.setColorAt(i,C(cols[i%cols.length])); fall.data.push({x:rand(-28,28),y:rand(0,16),z:rand(-28,28),vy:rand(.5,.9),ph:rand(0,TAU),rx:rand(0,TAU),ry:rand(0,TAU),vr:rand(.8,2)}); }
+  scene.add(im); fall.im=im; fall.n=n; }
+let snow=null;
+if (S==="winter"){ const g=new THREE.BufferGeometry(),p=[]; for(let i=0;i<2200;i++) p.push(rand(-35,35),rand(0,22),rand(-35,35)); g.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); snow=new THREE.Points(g,new THREE.PointsMaterial({color:0xffffff,size:.14,transparent:true,opacity:.9,map:GLOW,depthWrite:false})); scene.add(snow); }
+const flyGeo=new THREE.BufferGeometry(), flyBase=[];
+{ const p=[]; for(let i=0;i<70;i++){ const a=rand(0,TAU),r=rand(4,24); const v=[Math.cos(a)*r,rand(.4,3),Math.sin(a)*r]; flyBase.push(v); p.push(...v); } flyGeo.setAttribute("position",new THREE.Float32BufferAttribute(p,3)); }
+const flyMat=new THREE.PointsMaterial({color:0xeaff8a,size:.4,map:GLOW,transparent:true,opacity:0,depthWrite:false,blending:THREE.AdditiveBlending});
+const flies=new THREE.Points(flyGeo,flyMat); if(S!=="winter") scene.add(flies);
+
+/* ===================== SENSEI — ghost koi ===================== */
+const ghostMat=(base,rim,alpha,depthWrite=true)=>new THREE.ShaderMaterial({transparent:true,depthWrite,uniforms:{uBase:{value:C(base)},uRim:{value:C(rim)},uA:{value:alpha},uT:tUni,uGlow:{value:1}},
+  vertexShader:`varying vec3 vN; varying vec3 vV; varying vec3 vP; void main(){ vP=position; vec4 mv=modelViewMatrix*vec4(position,1.); vN=normalize(normalMatrix*normal); vV=normalize(-mv.xyz); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`uniform vec3 uBase,uRim; uniform float uA,uT,uGlow; varying vec3 vN; varying vec3 vV; varying vec3 vP;
+  void main(){ float f=pow(1.-abs(dot(normalize(vN),normalize(vV))),2.); float sh=.5+.5*sin(vP.x*6.+vP.y*4.-uT*1.6);
+    vec3 c=mix(uBase,uRim,f)*(1.+.12*sh)*uGlow; float a=clamp(uA+f*.45,0.,1.); gl_FragColor=vec4(c,a);
+#include <colorspace_fragment>
+  }`});
+const wispMat=(alpha=.8,phase=0,amp=.25,color="#eafaff")=>new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{uT:tUni,uP:{value:phase},uAmp:{value:amp},uA:{value:alpha},uC:{value:C(color)}},
+  vertexShader:`uniform float uT,uP,uAmp; varying vec2 vUv; void main(){ vUv=uv; vec3 p=position; float t=uv.x; p.y=p.y*(1.-t*.85)+sin(t*6.-uT*3.+uP)*uAmp*t; p.z+=cos(t*4.5-uT*2.2+uP)*uAmp*.7*t; gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.); }`,
+  fragmentShader:`uniform float uA; uniform vec3 uC; varying vec2 vUv; void main(){ float a=pow(1.-vUv.x,1.4)*(1.-pow(abs(vUv.y-.5)*2.,2.))*uA; gl_FragColor=vec4(uC*1.02,a*.8);
+#include <colorspace_fragment>
+  }`});
+const ribbonGeo=new THREE.PlaneGeometry(1,1,28,1); ribbonGeo.translate(.5,0,0);
+function wisp(len,width,alpha,phase,amp,color){ const m=new THREE.Mesh(ribbonGeo,wispMat(alpha,phase,amp,color)); m.scale.set(len,width,1); return m; }
+
+const sensei=new THREE.Group(); scene.add(sensei);
+const sRig=new THREE.Group(); sensei.add(sRig);
+const bodyMat=ghostMat("#eef6fc","#9fdcff",.62);
+const body=new THREE.Mesh(new THREE.SphereGeometry(1,48,32),bodyMat); body.scale.set(1.55,.8,.66); sRig.add(body);
+// tapered spectral tail section
+const tailBody=new THREE.Mesh(new THREE.ConeGeometry(.62,1.6,32,1,true),ghostMat("#f2f9ff","#b7e6ff",.45,false)); tailBody.rotation.z=Math.PI/2; tailBody.position.x=-1.75; tailBody.scale.set(1,1,.85); sRig.add(tailBody);
+// faint koi markings, washed out
+[[-.45,.55,.15,.48],[.35,.6,-.1,.38]].forEach(([x,y,z,r])=>{ const p=new THREE.Mesh(new THREE.SphereGeometry(1,20,14),ghostMat("#ffd6cc","#ffffff",.35,false)); p.scale.set(r,r*.4,r*.85); p.position.set(x,y,z); sRig.add(p); });
+// spirit robe — sheer white with silver-indigo trim
+const robeG=new THREE.Group(); robeG.scale.set(1,.84,.7); robeG.position.x=-.05; sRig.add(robeG);
+const robe=new THREE.Mesh(new THREE.CylinderGeometry(1.0,.97,1.2,40,1,true),ghostMat("#e9eef9","#c6d4ff",.55,false)); robe.material.side=THREE.DoubleSide; robe.rotation.z=Math.PI/2; robeG.add(robe);
+const collar=new THREE.Mesh(new THREE.TorusGeometry(1.0,.06,8,48),new THREE.MeshBasicMaterial({color:C("#3c4f8f"),transparent:true,opacity:.85})); collar.rotation.y=Math.PI/2; collar.position.x=.6; robeG.add(collar);
+const sash=new THREE.Mesh(new THREE.TorusGeometry(1.02,.09,8,48),new THREE.MeshBasicMaterial({color:C("#d8b26a"),transparent:true,opacity:.8})); sash.rotation.y=Math.PI/2; sash.position.x=.02; robeG.add(sash);
+// wispy tail plumes
+const tailPivot=new THREE.Group(); tailPivot.position.x=-2.4; sRig.add(tailPivot);
+const plumes=[]; [[3.6,1.1,.75,0,.35,0],[3.0,.8,.6,1.5,.3,.45],[3.0,.8,.6,3,.3,-.45],[4.4,.55,.5,2,.45,.15],[4.0,.5,.45,4,.4,-.2]].forEach(([l,w,a,ph,amp,ang])=>{ const p=wisp(l,w,a,ph,amp); p.rotation.y=Math.PI; p.rotation.z=ang; tailPivot.add(p); plumes.push(p); });
+// wispy fins
+const dorsal=wisp(1.8,.9,.55,1,.12); dorsal.position.set(.4,.62,0); dorsal.rotation.set(0,Math.PI,-.35); sRig.add(dorsal);
+const pecs=[-1,1].map(sd=>{ const g=new THREE.Group(); g.position.set(.5,-.45,sd*.5); const w=wisp(1.4,.6,.6,sd*2,.18); w.rotation.set(sd*.6,Math.PI*.85,-.9); g.add(w); sRig.add(g); return g; });
+// lower wisps trailing beneath (ghost "skirt")
+for(let i=0;i<4;i++){ const w=wisp(2.2+i*.3,.45,.45,i*1.3,.3); w.position.set(-.6+i*.35,-.55,(i-1.5)*.2); w.rotation.set(0,Math.PI*.5+(i-1.5)*.2,-1.35); sRig.add(w); }
+// face
+const eyes=[],eyeHi=[];
+[-1,1].forEach(sd=>{ const e=new THREE.Mesh(new THREE.SphereGeometry(.12,16,12),new THREE.MeshBasicMaterial({color:0x1b2233})); e.position.set(1.2,.16,sd*.44); sRig.add(e); eyes.push(e);
+  const h=new THREE.Mesh(new THREE.SphereGeometry(.04,8,6),new THREE.MeshBasicMaterial({color:0xffffff})); h.position.set(1.27,.2,sd*.53); sRig.add(h); eyeHi.push(h);
+  const brow=wisp(.75,.16,.95,sd,.05,"#ffffff"); brow.position.set(1.18,.36,sd*.43); brow.rotation.set(0,Math.PI*.9,.35); sRig.add(brow); });
+const mouth=new THREE.Mesh(new THREE.TorusGeometry(.1,.022,6,16,Math.PI),new THREE.MeshBasicMaterial({color:0x7d8fa8})); mouth.position.set(1.6,-.08,0); mouth.rotation.set(0,Math.PI/2,Math.PI); sRig.add(mouth);
+// long flowing beard of wisps
+const beard=new THREE.Group(); beard.position.set(1.5,-.12,0); sRig.add(beard);
+[[2.0,.22,0,0],[2.4,.18,.8,.18],[2.2,.18,1.6,-.18],[1.7,.14,2.4,.32],[1.8,.14,3.1,-.3]].forEach(([l,w,ph,z])=>{ const b=wisp(l,w,.95,ph,.16,"#ffffff"); b.rotation.z=-Math.PI/2+.25; b.position.z=z; beard.add(b); });
+// straw kasa
+const hat=new THREE.Group(); hat.position.set(.78,.8,0); hat.rotation.z=-.28; sRig.add(hat);
+hat.add(new THREE.Mesh(new THREE.ConeGeometry(1.05,.5,40,1,true),new THREE.MeshToonMaterial({color:"#dcc08a",gradientMap:gm,side:THREE.DoubleSide})));
+for(let i=0;i<3;i++){ const ring=new THREE.Mesh(new THREE.TorusGeometry(1.05-i*.32,.018,4,48),toon("#9a7440")); ring.rotation.x=Math.PI/2; ring.position.y=-.25+i*.155; hat.add(ring); }
+const knob=new THREE.Mesh(new THREE.SphereGeometry(.07,8,6),toon("#8d6a36")); knob.position.y=.27; hat.add(knob);
+// aura
+const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex("rgba(235,250,255,.9)","rgba(190,235,250,.22)"),transparent:true,opacity:.5,depthWrite:false})); glow.scale.set(8,5.5,1); sensei.add(glow);
+const senseiLight=new THREE.PointLight(0xc8f0ff,0,14,2); senseiLight.position.y=-.6; sensei.add(senseiLight);
+const senseiHit=new THREE.Mesh(new THREE.SphereGeometry(2.6,12,8),new THREE.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false})); sensei.add(senseiHit);
+hat.traverse(m=>{ if(m.isMesh) m.castShadow=true; }); body.castShadow=true;
+tappable(senseiHit,()=>{ boop=1; openChat(); });
+sensei.scale.setScalar(1.2);
+const SENSEI_HOME=new THREE.Vector3(0,3.8,-.5); sensei.position.copy(SENSEI_HOME);
+// spirit particle trail (world space)
+const TRAIL=90, trailPos=new Float32Array(TRAIL*3), trailA=new Float32Array(TRAIL), trailV=[]; let trailI=0;
+for(let i=0;i<TRAIL;i++){ trailV.push(new THREE.Vector3()); trailA[i]=0; }
+const trailGeo=new THREE.BufferGeometry(); trailGeo.setAttribute("position",new THREE.BufferAttribute(trailPos,3)); trailGeo.setAttribute("aA",new THREE.BufferAttribute(trailA,1));
+const trailMat=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{uS:{value:260*PR}},
+  vertexShader:`attribute float aA; uniform float uS; varying float vA; void main(){ vA=aA; vec4 mv=modelViewMatrix*vec4(position,1.); gl_PointSize=uS*(.35+aA*.65)/-mv.z; gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`varying float vA; void main(){ float d=length(gl_PointCoord-.5); float a=smoothstep(.5,0.,d)*vA*.55; gl_FragColor=vec4(vec3(.93,.98,1.)*1.2,a);
+#include <colorspace_fragment>
+  }`});
+const trail=new THREE.Points(trailGeo,trailMat); trail.frustumCulled=false; scene.add(trail);
+
+/* ===================== the student (player) ===================== */
+const player=new THREE.Group(); scene.add(player);
+const pRig=new THREE.Group(); player.add(pRig);
+const cloakM=toon("#33465a"), cloakD=toon("#26364a");
+const cloak=new THREE.Mesh(new THREE.ConeGeometry(.55,1.35,14,1,true),cloakM); cloak.material.side=THREE.DoubleSide; cloak.position.y=.95; pRig.add(cloak);
+const torso=new THREE.Mesh(new THREE.CylinderGeometry(.24,.34,.7,12),cloakD); torso.position.y=1.15; pRig.add(torso);
+const hood=new THREE.Mesh(new THREE.SphereGeometry(.33,18,14),cloakM); hood.position.y=1.72; hood.scale.set(1,1.05,1.05); pRig.add(hood);
+const hoodTip=new THREE.Mesh(new THREE.ConeGeometry(.16,.4,10),cloakM); hoodTip.position.set(0,1.98,-.18); hoodTip.rotation.x=-.9; pRig.add(hoodTip);
+const face=new THREE.Mesh(new THREE.CircleGeometry(.2,20),new THREE.MeshBasicMaterial({color:0x111318})); face.position.set(0,1.69,.31); pRig.add(face);
+[-1,1].forEach(s=>{ const e=new THREE.Mesh(new THREE.SphereGeometry(.035,8,6),new THREE.MeshBasicMaterial({color:0xf4ecd8})); e.position.set(s*.075,1.71,.33); pRig.add(e); });
+const scarf=new THREE.Mesh(new THREE.TorusGeometry(.27,.07,8,20),toon("#c8452f")); scarf.rotation.x=Math.PI/2; scarf.position.y=1.45; pRig.add(scarf);
+const scarfTail=new THREE.Mesh(new THREE.BoxGeometry(.12,.5,.04),toon("#c8452f")); scarfTail.position.set(.15,1.22,-.28); scarfTail.rotation.x=.3; pRig.add(scarfTail);
+const legs=[-1,1].map(s=>{ const g=new THREE.Group(); g.position.set(s*.15,.5,0); const l=new THREE.Mesh(new THREE.CapsuleGeometry(.08,.32,4,8),toon("#1f2228")); l.position.y=-.25; g.add(l); pRig.add(g); return g; });
+shadowy(player,true,false);
+const START=new THREE.Vector3(0,0,46); player.position.set(START.x,H(START.x,START.z),START.z); player.rotation.y=Math.PI;
+
+/* ===================== Sensei's own life ===================== */
+const GATE={x:CASTLE.x-7.5,z:CASTLE.z+7};
+const gyXZ=(x,z)=>H(x,z);
+const ACTS=[
+ {id:"meditate",name:"meditating at the Dragon Gate",hours:[[4.5,10.5]],w:3,eyes:"closed",face:"wf",
+  pos:(t,o)=>o.set(POOL.x+WF_DIR.x*1.8,gyXZ(POOL.x,POOL.z)+3+Math.sin(t*.4)*.15,POOL.z+WF_DIR.y*1.8),
+  line:"…Hm. You found me. Sit. Listen to the water for a moment before you speak."},
+ {id:"koi",name:"feeding the koi",hours:[[6,20]],w:3,face:"move",koi:true,
+  pos:(t,o)=>o.set(Math.cos(t*.12)*4.5,1.6,Math.sin(t*.12)*3),
+  line:"My old friends are hungry. They always are. Akane steals from the others. Kin pretends not to notice."},
+ {id:"news",name:"reading the news at his computer",hours:[[7,12],[15.5,20]],w:3,face:"tea",
+  pos:(t,o)=>o.set(TEA_FRONT.x,gyXZ(TEA_FRONT.x,TEA_FRONT.z)+2.6,TEA_FRONT.z),
+  line:"The outside world is loud today. Much news. Little wisdom. Hm."},
+ {id:"garden",name:"contemplating the Dry Garden",hours:[[8,18]],w:2,face:"move",
+  pos:(t,o)=>o.set(31+Math.cos(t*.07)*5,gyXZ(31,2)+3,2+Math.sin(t*.07)*3),
+  line:"I am counting the lines in the sand. I have lost count. That is the point."},
+ {id:"bamboo",name:"listening to the bamboo",hours:[[9,19]],w:2,face:"move",
+  pos:(t,o)=>o.set(-38+Math.cos(t*.1)*4,gyXZ(-38,16)+3.4,16+Math.sin(t*.1)*4),
+  line:"Listen. They knock together like old men laughing at the same joke."},
+ {id:"bridge",name:"watching the stream from the Moon Bridge",nightName:"watching the moon from the Moon Bridge",hours:[[0,24]],w:1,wNight:4,face:"up",
+  pos:(t,o)=>o.set(BR.x,BR.y0+BR.arch+2.9,BR.z),
+  line:"The water passes under me and never looks back. I am trying to learn that.",nightLine:"The moon sits in the stream tonight. It does not try to stay. Neither should we."},
+ {id:"castle",name:"remembering, by the castle gate",hours:[[10,17]],w:1,face:"castle",
+  pos:(t,o)=>o.set(GATE.x+1.5,gyXZ(GATE.x,GATE.z)+3.4,GATE.z+1.5),
+  line:"Before the castle fell quiet, the old lord fed us rice cakes from that window. I can still taste them."},
+ {id:"console",name:"playing his console (he denies it)",hours:[[21,24],[0,2.5]],w:4,face:"tea",wiggle:true,
+  pos:(t,o)=>o.set(TEA_FRONT.x,gyXZ(TEA_FRONT.x,TEA_FRONT.z)+2.5,TEA_FRONT.z),
+  line:"Ah— this is… research. Into the customs of young people. Do not tell the koi."},
+ {id:"drift",name:"drifting over the pond, half-dreaming",hours:[[0,5]],w:3,eyes:"closed",face:"move",
+  pos:(t,o)=>o.set(Math.cos(t*.05)*3,4.4,Math.sin(t*.05)*2),
+  line:"…mm? Ah. Gabriel. Ghosts do not sleep. We only… drift."},
+];
+const ai={act:null,until:0,arrived:false,greeted:false,lastKoi:0,travel:false};
+const actName=a=>night>.5&&a.nightName?a.nightName:a.name;
+function pickAct(){ const h=nowHour(); const c=ACTS.filter(a=>a.hours.some(([s,e])=>h>=s&&h<e)&&(!ai.act||a.id!==ai.act.id));
+  let tot=0; const ws=c.map(a=>{ const w=a.w+(night>.5?(a.wNight||0):0); tot+=w; return w; }); let r=Math.random()*tot, i=0; while(i<c.length-1&&(r-=ws[i])>0) i++;
+  ai.act=c[i]||ACTS[1]; ai.arrived=false; ai.greeted=false; ai.until=0; }
+function initAi(){ pickAct(); ai.act.pos(0,sensei.position); ai.arrived=true; ai.until=rand(60,140);
+  controls.target.copy(sensei.position); camera.position.copy(sensei.position).add(new THREE.Vector3(6,4,14)); }
+
+/* ===================== time application ===================== */
+let pal=palette(nowHour()), night=0;
+function applyTime(){
+  const h=nowHour(); pal=palette(h); night=Math.min(1,pal.dark/.45);
+  skyMat.uniforms.top.value.copy(pal.skyTop); skyMat.uniforms.bottom.value.copy(pal.skyBot);
+  scene.fog.color.copy(pal.skyBot).lerp(pal.mist,.3);
+  farMat.color.copy(pal.far); midMat.color.copy(pal.mid);
+  starMat.opacity=night; mistMats.forEach(m=>{ m.color.copy(pal.mist); m.opacity=.3-night*.16; });
+  hemi.color.copy(pal.skyTop).lerp(C("#ffffff"),.5); hemi.groundColor.set(S==="winter"?"#8a96a8":"#4a5a3a"); hemi.intensity=1.25-night*.8;
+  const sa=(h-6)/12*Math.PI, ma=(((h-18)%24+24)%24)/12*Math.PI;
+  const sdir=new THREE.Vector3(Math.cos(sa),Math.sin(sa)*.95,-.5).normalize(), mdir=new THREE.Vector3(Math.cos(ma),Math.sin(ma)*.85,-.55).normalize();
+  const sunUp=Math.max(0,Math.sin(sa)), moonUp=Math.max(0,Math.sin(ma));
+  sunSpr.position.copy(sdir).multiplyScalar(700); sunSpr.material.opacity=Math.min(1,sunUp*4);
+  moonSpr.position.copy(mdir).multiplyScalar(700); moonSpr.material.opacity=Math.min(1,moonUp*4)*.95;
+  if (sunUp>.02){ lightDir.copy(sdir); sun.intensity=.6+2.1*Math.sqrt(sunUp); sun.color.copy(C("#ffb070")).lerp(C("#fff4e2"),Math.min(1,sunUp*2.2)); }
+  else { lightDir.copy(mdir.y>0?mdir:new THREE.Vector3(.3,1,.2)); sun.intensity=.45; sun.color.set("#8fa6ff"); }
+  windowMats.forEach(m=>m.emissiveIntensity=night*1.6);
+  lanternPanes.forEach(m=>m.emissiveIntensity=lanternOn?Math.max(.2,night*2.2):0);
+  litLanterns.forEach(L=>L.userData.light.intensity=lanternOn?night*18:0);
+  shojiMat.emissiveIntensity=night*.7; teaLight.intensity=night*16;
+  screenMat.emissiveIntensity=(scrolls&&unread().length)?1.6:.25+night*1.4;
+  senseiLight.intensity=1+night*9;
+  bodyMat.uniforms.uGlow.value=1+night*.15;
+  bloom.strength=.22+night*.6;
+  waters.forEach(w=>{ w.material.uniforms.uSky.value.copy(pal.skyBot); w.material.uniforms.uNight.value=night; w.material.uniforms.uShal.value.copy(C("#5fb0b0").lerp(C("#1d3550"),night*.7)); w.material.uniforms.uDeep.value.copy(C("#1d5560").lerp(C("#0b1a2a"),night*.7)); });
+  const d=new Date(), hh=Math.floor(h), mm=previewHour!==null?0:d.getMinutes();
+  $("#clockT").textContent=(((hh+11)%12)+1)+":"+String(mm).padStart(2,"0")+(hh<12?" am":" pm");
+  $("#clockS").textContent=partOfDay(h)+" · "+SEASON_NAME[S]+(previewHour!==null?" · preview":"");
+}
+const lightDir=new THREE.Vector3(0,1,0);
+
+/* ===================== resize ===================== */
+function resize(){ const w=innerWidth,h=innerHeight; renderer.setSize(w,h,false); composer.setSize(w,h); camera.aspect=w/h; camera.fov=w/h<.8?62:w/h<1.2?55:50; camera.updateProjectionMatrix(); }
+addEventListener("resize",resize); resize();
+
+/* ===================== input ===================== */
+const keys={};
+addEventListener("keydown",e=>{ if(document.activeElement===$("#inp")) return; keys[e.code]=true; if(e.code==="KeyE"||e.code==="Space"){ e.preventDefault(); if(shodoOpen) return; doInteract(); } if(e.code==="KeyF"&&entered&&!uiBlock()) tossFood(.6); if(e.code==="Escape"){ if(chatOpen){ e.preventDefault(); closeChat(); } else if(entered){ e.preventDefault(); menuOpen?hideMenu():showMenu(); } } });
+addEventListener("keyup",e=>{ keys[e.code]=false; });
+const joy={x:0,y:0,id:null}; const joyEl=$("#joy"), knobEl=joyEl.querySelector(".k");
+if (isTouch) joyEl.style.display="block";
+joyEl.addEventListener("pointerdown",e=>{ joy.id=e.pointerId; joyEl.setPointerCapture(e.pointerId); moveJoy(e); e.stopPropagation(); });
+joyEl.addEventListener("pointermove",e=>{ if(e.pointerId===joy.id) moveJoy(e); });
+const endJoy=e=>{ if(e.pointerId!==joy.id) return; joy.id=null; joy.x=joy.y=0; knobEl.style.transform=""; };
+joyEl.addEventListener("pointerup",endJoy); joyEl.addEventListener("pointercancel",endJoy);
+function moveJoy(e){ const r=joyEl.getBoundingClientRect(); let dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2); const m=Math.hypot(dx,dy), R=48; if(m>R){ dx*=R/m; dy*=R/m; } joy.x=dx/R; joy.y=dy/R; knobEl.style.transform=`translate(${dx}px,${dy}px)`; }
+const ray=new THREE.Raycaster(), ptr=new THREE.Vector2(); let downX=0,downY=0,downT=0;
+canvas.addEventListener("pointerdown",e=>{ downX=e.clientX; downY=e.clientY; downT=performance.now(); });
+canvas.addEventListener("pointerup",e=>{ if(Math.hypot(e.clientX-downX,e.clientY-downY)>7||performance.now()-downT>500) return;
+  ptr.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1); ray.setFromCamera(ptr,camera);
+  for(const h of ray.intersectObjects(tappables,true)){ let o=h.object; while(o&&!o.userData.tap) o=o.parent; if(o){ o.userData.tap(h.point); return; } } });
+$("#act").addEventListener("click",()=>doInteract());
+
+/* ===================== UI helpers ===================== */
+let toastT; function toast(msg){ const t=$("#toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),3400); }
+let whisperT; function whisper(msg,ms=8000){ $("#whisperT").textContent=msg; $("#whisper").classList.add("show"); clearTimeout(whisperT); whisperT=setTimeout(()=>$("#whisper").classList.remove("show"),ms); }
+$("#whisper").addEventListener("click",()=>{ $("#whisper").classList.remove("show"); openChat(); });
+let discT; function discover(d){ $("#discK").textContent=d.k; $("#discN").textContent=d.n; $("#disc").classList.add("show"); clearTimeout(discT); discT=setTimeout(()=>$("#disc").classList.remove("show"),3200);
+  setTimeout(()=>{ whisper(d.line,9000); speak(d.line); },1800); chime(); }
+$("#hint").textContent = isTouch ? "Joystick to walk · drag to look · tap Sensei to talk" : "WASD to walk · Shift to run · drag to look · E to interact";
+
+/* ===================== audio: music + ambience ===================== */
+let actx=null, master=null, musicBus=null, soundOn=false, wfGain=null, crickGain=null, musicTimer=null, fluteTimer=null, crickTimer=null;
+const SCALE=[146.83,155.56,196,220,233.08,293.66,311.13,392,440,466.16,587.33];
+const ksBufs={};
+function ks(f){ if(ksBufs[f]) return ksBufs[f]; const sr=actx.sampleRate, N=Math.round(sr/f), len=Math.floor(sr*3.2); const b=actx.createBuffer(1,len,sr), d=b.getChannelData(0);
+  const ring=new Float32Array(N); for(let i=0;i<N;i++) ring[i]=Math.random()*2-1; for(let i=0;i<N;i++) ring[i]=(ring[i]+ring[(i+1)%N])*.5;
+  for(let i=0;i<len;i++){ const k=i%N; const v=ring[k]; d[i]=v; ring[k]=.4985*(v+ring[(k+1)%N]); }
+  return ksBufs[f]=b; }
+function pluck(f,when,vel=.5,pan=0){ const s=actx.createBufferSource(); s.buffer=ks(f); const g=actx.createGain(); g.gain.value=vel; const p=actx.createStereoPanner(); p.pan.value=pan; const lp=actx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=2600; s.connect(lp); lp.connect(g); g.connect(p); p.connect(musicBus); s.start(when); }
+function phrase(){ if(!soundOn) return; const t0=actx.currentTime+.1; let idx=Math.floor(rand(3,8)); const n=Math.floor(rand(3,7)); let t=t0;
+  for(let i=0;i<n;i++){ idx=clamp(idx+Math.floor(rand(-2,3)),0,SCALE.length-1); pluck(SCALE[idx],t,rand(.25,.5),rand(-.5,.5)); if(Math.random()<.18&&idx>3) pluck(SCALE[idx-3],t+.02,.2,rand(-.5,.5)); t+=rand(.32,.75)*(i===n-2?1.8:1); }
+  if (Math.random()<.35) pluck(SCALE[Math.floor(rand(0,3))],t0,.3,0);
+  musicTimer=setTimeout(phrase,rand(6000,12000)); }
+function flute(){ if(!soundOn) return; const f=[293.66,392,440,466.16,587.33][Math.floor(rand(0,5))], t=actx.currentTime+.05, dur=rand(2.2,3.6);
+  const o=actx.createOscillator(); o.type="sine"; o.frequency.setValueAtTime(f*.965,t); o.frequency.linearRampToValueAtTime(f,t+.35);
+  const vib=actx.createOscillator(), vg=actx.createGain(); vib.frequency.value=5; vg.gain.setValueAtTime(0,t); vg.gain.linearRampToValueAtTime(f*.012,t+.9); vib.connect(vg); vg.connect(o.frequency);
+  const o2=actx.createOscillator(); o2.type="triangle"; o2.frequency.value=f*2; const g2=actx.createGain(); g2.gain.value=.12; o2.connect(g2);
+  const nb=actx.createBufferSource(); nb.buffer=noiseBuf; nb.loop=true; const bp=actx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=f*2; bp.Q.value=6; const ng=actx.createGain(); ng.gain.value=.5; nb.connect(bp); bp.connect(ng);
+  const env=actx.createGain(); env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(.07,t+.45); env.gain.setValueAtTime(.07,t+dur); env.gain.linearRampToValueAtTime(0,t+dur+1.3);
+  o.connect(env); g2.connect(env); ng.connect(env); env.connect(musicBus);
+  [o,o2,vib,nb].forEach(s=>{ s.start(t); s.stop(t+dur+1.4); });
+  fluteTimer=setTimeout(flute,rand(16000,32000)); }
+function chime(){ if(!actx||!soundOn) return; const t=actx.currentTime; [587.33,783.99,880].forEach((f,i)=>{ const o=actx.createOscillator(),g=actx.createGain(); o.frequency.value=f; g.gain.setValueAtTime(0,t+i*.12); g.gain.linearRampToValueAtTime(.06,t+i*.12+.01); g.gain.exponentialRampToValueAtTime(.0001,t+i*.12+3); o.connect(g); g.connect(musicBus); o.start(t+i*.12); o.stop(t+i*.12+3.1); }); }
+function crickets(){ if(!soundOn) return; if(night>.3){ const t=actx.currentTime; const o=actx.createOscillator(); o.frequency.value=rand(4200,4700); const g=actx.createGain(); g.gain.value=0; for(let i=0;i<3;i++){ g.gain.setValueAtTime(.025*night,t+i*.07); g.gain.setValueAtTime(0,t+i*.07+.035); } o.connect(g); g.connect(crickGain); o.start(t); o.stop(t+.3); }
+  crickTimer=setTimeout(crickets,rand(250,900)); }
+let noiseBuf=null, out=null, verbIn=null, ambBus=null, voiceBus=null, ghostNodes=null;
+function initAudio(){
+  if(actx) { if(actx.state==="suspended") actx.resume(); return; }
+  actx=new (window.AudioContext||window.webkitAudioContext)();
+  out=actx.createGain(); out.gain.value=1; out.connect(actx.destination);
+  const len=actx.sampleRate*4; noiseBuf=actx.createBuffer(1,len,actx.sampleRate); const nd=noiseBuf.getChannelData(0); for(let i=0;i<len;i++) nd[i]=Math.random()*2-1;
+  const irl=actx.sampleRate*3.5, ir=actx.createBuffer(2,irl,actx.sampleRate); for(let c=0;c<2;c++){ const d=ir.getChannelData(c); for(let i=0;i<irl;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/irl,3); }
+  const verb=actx.createConvolver(); verb.buffer=ir; const wet=actx.createGain(); wet.gain.value=.6; verb.connect(wet); wet.connect(out); verbIn=verb;
+  ambBus=actx.createGain(); ambBus.gain.value=0; ambBus.connect(out);
+  voiceBus=actx.createGain(); voiceBus.gain.value=1; voiceBus.connect(out); const vs=actx.createGain(); vs.gain.value=.9; voiceBus.connect(vs); vs.connect(verbIn);
+}
+function startSound(){
+  try{
+    initAudio();
+    if(!master){
+      master=ambBus;
+      musicBus=actx.createGain(); musicBus.gain.value=.55; musicBus.connect(ambBus); const ms=actx.createGain(); ms.gain.value=.9; musicBus.connect(ms); ms.connect(verbIn);
+      const len=actx.sampleRate*4, b=actx.createBuffer(1,len,actx.sampleRate), d=b.getChannelData(0); let last=0; for(let i=0;i<len;i++){ last=(last+.02*(Math.random()*2-1))/1.02; d[i]=last*3.2; }
+      const src=actx.createBufferSource(); src.buffer=b; src.loop=true; const f=actx.createBiquadFilter(); f.type="lowpass"; f.frequency.value=500;
+      const lfo=actx.createOscillator(),lg=actx.createGain(); lfo.frequency.value=.07; lg.gain.value=160; lfo.connect(lg); lg.connect(f.frequency); lfo.start();
+      const g=actx.createGain(); g.gain.value=.22; src.connect(f); f.connect(g); g.connect(ambBus); src.start();
+      const ws=actx.createBufferSource(); ws.buffer=noiseBuf; ws.loop=true; const wbp=actx.createBiquadFilter(); wbp.type="lowpass"; wbp.frequency.value=1400; wfGain=actx.createGain(); wfGain.gain.value=0; ws.connect(wbp); wbp.connect(wfGain); wfGain.connect(ambBus); ws.start();
+      crickGain=actx.createGain(); crickGain.gain.value=1; crickGain.connect(ambBus);
+    }
+    ambBus.gain.cancelScheduledValues(actx.currentTime); ambBus.gain.linearRampToValueAtTime(.7,actx.currentTime+2.5);
+    soundOn=true; $("#soundBtn").classList.remove("off");
+    clearTimeout(musicTimer); clearTimeout(fluteTimer); clearTimeout(crickTimer);
+    musicTimer=setTimeout(phrase,1800); fluteTimer=setTimeout(flute,9000); crickTimer=setTimeout(crickets,1000);
+  }catch(e){ soundOn=false; }
+}
+function stopSound(){ soundOn=false; $("#soundBtn").classList.add("off"); clearTimeout(musicTimer); clearTimeout(fluteTimer); clearTimeout(crickTimer); if(ambBus&&actx) ambBus.gain.linearRampToValueAtTime(0,actx.currentTime+.8); }
+$("#soundBtn").addEventListener("click",()=>soundOn?stopSound():startSound());
+
+/* ---- the ghastly layer: a spectral drone, a breath of wind and an eerie wail that rise under his voice ---- */
+function ghostStart(style="whimsy"){
+  try{ initAudio(); if(ghostNodes) return; const t=actx.currentTime, srcs=[], timers=[];
+    const g=actx.createGain(); g.gain.setValueAtTime(0,t); g.connect(voiceBus);
+    if(style==="monk"){
+      // temple: a singing bowl struck as he begins, a low drone like a held chant, and long echoes
+      g.gain.linearRampToValueAtTime(.12,t+1.2);
+      const echo=actx.createDelay(2); echo.delayTime.value=.42; const fb=actx.createGain(); fb.gain.value=.42; const eg=actx.createGain(); eg.gain.value=.5;
+      echo.connect(fb); fb.connect(echo); echo.connect(eg); eg.connect(voiceBus);
+      const lp=actx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=600; lp.connect(g); lp.connect(echo);
+      [[65.41,"sine",.55],[98,"sine",.3],[130.8,"triangle",.12],[65.9,"sine",.35]].forEach(([f,ty,v])=>{ const o=actx.createOscillator(); o.type=ty; o.frequency.value=f; const og=actx.createGain(); og.gain.value=v; o.connect(og); og.connect(lp); o.start(t); srcs.push(o); });
+      const ch=actx.createOscillator(), chg=actx.createGain(), chf=actx.createBiquadFilter(); ch.type="sawtooth"; ch.frequency.value=98; chf.type="bandpass"; chf.frequency.value=420; chf.Q.value=7; chg.gain.value=.05;
+      const vib=actx.createOscillator(), vg=actx.createGain(); vib.frequency.value=4.5; vg.gain.value=.6; vib.connect(vg); vg.connect(ch.frequency); vib.start(t); srcs.push(vib);
+      ch.connect(chf); chf.connect(chg); chg.connect(g); chg.connect(echo); ch.start(t); srcs.push(ch);
+      [[221,1,.09,9],[596,.6,.05,6],[1111,.35,.03,4],[1757,.2,.015,3]].forEach(([f,_,v,dur])=>{ const o=actx.createOscillator(); o.type="sine"; o.frequency.value=f; const og=actx.createGain(); og.gain.setValueAtTime(0,t); og.gain.linearRampToValueAtTime(v,t+.01); og.gain.exponentialRampToValueAtTime(.0001,t+dur);
+        const wob=actx.createOscillator(), wg=actx.createGain(); wob.frequency.value=3.2; wg.gain.value=v*.35; wob.connect(wg); wg.connect(og.gain); o.connect(og); og.connect(voiceBus); og.connect(echo); o.start(t); wob.start(t); o.stop(t+dur); wob.stop(t+dur); });
+      srcs.push({stop(){ try{ fb.gain.setTargetAtTime(0,actx.currentTime,.8); }catch(e){} }});
+    } else if(style==="deep"){
+      g.gain.linearRampToValueAtTime(.13,t+.7);
+      const lp=actx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=420; lp.connect(g);
+      [[55,"sine",.6],[55.8,"sine",.5],[82.6,"triangle",.25],[110.4,"sine",.15]].forEach(([f,ty,v])=>{ const o=actx.createOscillator(); o.type=ty; o.frequency.value=f; const og=actx.createGain(); og.gain.value=v; o.connect(og); og.connect(lp); o.start(t); srcs.push(o); });
+      const n=actx.createBufferSource(); n.buffer=noiseBuf; n.loop=true; const bp=actx.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=650; bp.Q.value=1.4;
+      const lfo=actx.createOscillator(), lg=actx.createGain(); lfo.frequency.value=.35; lg.gain.value=420; lfo.connect(lg); lg.connect(bp.frequency); lfo.start(t); srcs.push(lfo);
+      const ng=actx.createGain(); ng.gain.value=.55; n.connect(bp); bp.connect(ng); ng.connect(g); n.start(t); srcs.push(n);
+      wail(210,105,1.9,.09);
+    } else {
+      // whimsical: airy shimmer, a playful "oo-OO-oo" swoop, and music-box twinkles while he talks
+      g.gain.linearRampToValueAtTime(.1,t+.5);
+      const n=actx.createBufferSource(); n.buffer=noiseBuf; n.loop=true; const hp=actx.createBiquadFilter(); hp.type="highpass"; hp.frequency.value=2600;
+      const trem=actx.createGain(); trem.gain.value=.25; const tl=actx.createOscillator(), tg=actx.createGain(); tl.frequency.value=.9; tg.gain.value=.18; tl.connect(tg); tg.connect(trem.gain); tl.start(t); srcs.push(tl);
+      n.connect(hp); hp.connect(trem); trem.connect(g); n.start(t); srcs.push(n);
+      [[523.25,.05],[527.1,.05],[784,.025]].forEach(([f,v])=>{ const o=actx.createOscillator(); o.type="sine"; o.frequency.value=f; const og=actx.createGain(); og.gain.value=v; o.connect(og); og.connect(g); o.start(t); srcs.push(o); });
+      const tw=[1174.66,1318.51,1567.98,1760,2093,2349.32];
+      const twinkle=()=>{ if(!ghostNodes) return; const tt=actx.currentTime; const o=actx.createOscillator(), og=actx.createGain(); o.type="sine"; o.frequency.value=tw[Math.floor(Math.random()*tw.length)]*(Math.random()<.2?2:1);
+        og.gain.setValueAtTime(0,tt); og.gain.linearRampToValueAtTime(.035,tt+.008); og.gain.exponentialRampToValueAtTime(.0001,tt+1.3); o.connect(og); og.connect(voiceBus); o.start(tt); o.stop(tt+1.35);
+        timers.push(setTimeout(twinkle,rand(260,700))); };
+      timers.push(setTimeout(twinkle,200));
+      wail(330,360,1.5,.075,560);
+    }
+    ghostNodes={g,srcs,timers};
+  }catch(e){}
+}
+function wail(f0,f1,dur,vol,peak=null){ const t=actx.currentTime; const w=actx.createOscillator(); w.type="sawtooth";
+  w.frequency.setValueAtTime(f0,t); if(peak){ w.frequency.exponentialRampToValueAtTime(peak,t+dur*.38); w.frequency.exponentialRampToValueAtTime(f1,t+dur); } else w.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  const wv=actx.createOscillator(), wvg=actx.createGain(); wv.frequency.value=peak?7:6; wvg.gain.value=peak?12:5; wv.connect(wvg); wvg.connect(w.frequency);
+  const env=actx.createGain(); env.gain.setValueAtTime(0,t); env.gain.linearRampToValueAtTime(vol,t+.3); env.gain.exponentialRampToValueAtTime(.0001,t+dur+.3);
+  (peak?[[520,6,1],[1150,8,.4]]:[[320,9,1],[780,11,.45]]).forEach(([f,q,v])=>{ const fb=actx.createBiquadFilter(); fb.type="bandpass"; fb.frequency.value=f; fb.Q.value=q; const fg=actx.createGain(); fg.gain.value=v; w.connect(fb); fb.connect(fg); fg.connect(env); });
+  env.connect(voiceBus); w.start(t); wv.start(t); w.stop(t+dur+.4); wv.stop(t+dur+.4); }
+function ghostStop(){ if(!ghostNodes||!actx) return; const n=ghostNodes; ghostNodes=null; (n.timers||[]).forEach(clearTimeout); const t=actx.currentTime; n.g.gain.cancelScheduledValues(t); n.g.gain.setTargetAtTime(0,t,.45); setTimeout(()=>n.srcs.forEach(s=>{ try{ s.stop(); }catch(e){} }),2600); }
+
+/* ===================== Sensei's voice ===================== */
+let tts=null, voiceOn=true, speaking=false, voiceDenied=false;
+let webVoices=[]; const webOK="speechSynthesis" in window;
+function loadWebVoices(){ if(!webOK) return; const all=speechSynthesis.getVoices().filter(v=>/^en/i.test(v.lang)); const pref=/Daniel|UK English Male|Arthur|Oliver|Fred|Ralph|Aaron|Gordon|Male|Guy|Rishi|Thomas/i; webVoices=all.sort((a,b)=>(pref.test(b.name)?1:0)-(pref.test(a.name)?1:0)); }
+if(webOK){ loadWebVoices(); speechSynthesis.onvoiceschanged=loadWebVoices; }
+const MODES=[
+ {label:"Deep monk",type:"web",pitch:.45,rate:.76,layer:"monk"},
+ {label:"Deep monk · rounded",type:"claude",voice:"rounded",rate:.8,layer:"monk"},
+ {label:"Deep monk · buttery",type:"claude",voice:"buttery",rate:.8,layer:"monk"},
+ {label:"Whimsy ghost",type:"web",pitch:1.55,rate:.9,layer:"whimsy"},
+ {label:"Whimsy spirit · airy",type:"claude",voice:"airy",layer:"whimsy"},
+ {label:"Ghost · deep & eerie",type:"web",pitch:.05,rate:.74,layer:"deep"},
+];
+let modeIdx=0, modeChosen=false;
+const modeOK=m=>m.type==="web"?(webOK&&webVoices.length>0):!!tts;
+const ttsReady=(async()=>{ try{ if(window.claude&&claude.use){ tts=await claude.use("tts"); if(tts) tts.onState(({state})=>{ const was=speaking; speaking=state!=="idle"; if(speaking&&!was) ghostStart(MODES[modeIdx].layer); if(!speaking&&was) ghostStop(); }); } }catch(e){ tts=null; } })();
+const cleanForSpeech=t=>t.replace(/[぀-ヿ㐀-鿿＀-￯]+/g,"").replace(/\(\s*[,.]?\s*\)/g,"").replace(/\s+/g," ").trim();
+async function speak(text){ if(!voiceOn||voiceDenied) return; const t=cleanForSpeech(text).slice(0,2000); if(!t) return;
+  if(window.senseiVoice&&window.sensei){ senseiVoice.speak(t,{onstart:()=>{ speaking=true; },onend:()=>{ speaking=false; }}); return; }
+  await ttsReady;
+  if(!modeChosen&&tts) modeIdx=1; if(!modeOK(MODES[modeIdx])){ const i=MODES.findIndex(modeOK); if(i<0) return; modeIdx=i; }
+  const m=MODES[modeIdx];
+  if(m.type==="claude"){ try{ await tts.speak(t,{voice:m.voice,rate:m.rate||.9,language:"en"}); }catch(e){ if(e&&e.code==="not_granted"){ voiceDenied=true; $("#voiceBtn").classList.add("off"); } } return; }
+  speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(t); u.voice=webVoices[0]; u.pitch=m.pitch; u.rate=m.rate;
+  u.onstart=()=>{ speaking=true; ghostStart(m.layer); }; u.onend=u.onerror=()=>{ speaking=false; ghostStop(); }; speechSynthesis.speak(u); }
+function stopSpeaking(){ if(tts) tts.stop().catch(()=>{}); if(webOK) speechSynthesis.cancel(); speaking=false; ghostStop(); }
+$("#voiceBtn").addEventListener("click",()=>{ voiceOn=!voiceOn; $("#voiceBtn").classList.toggle("off",!voiceOn); if(!voiceOn) stopSpeaking(); toast(voiceOn?"Sensei will speak aloud.":"Sensei will only write."); });
+async function cycleVoice(){ await ttsReady; if(voiceDenied){ toast("Reading aloud is turned off for this page."); return; } voiceOn=true; $("#voiceBtn").classList.remove("off");
+  if(!modeChosen&&tts) modeIdx=1; modeChosen=true;
+  for(let k=1;k<=MODES.length;k++){ const i=(modeIdx+k)%MODES.length; if(modeOK(MODES[i])){ modeIdx=i; break; } }
+  if(!modeOK(MODES[modeIdx])){ toast("No voices available on this device."); return; }
+  toast("Voice: "+MODES[modeIdx].label); speak("Ooh. Is this the voice of your teacher? Listen closely, my student… and decide."); }
+$("#voiceCycle").addEventListener("click",cycleVoice);
+
+/* ===================== memory ===================== */
+let store={notes:[],history:[],visits:0,lastVisit:null,prevVisit:null,found:[]};
+let dbRef=null, saving=Promise.resolve();
+const lsGet=()=>{ try{ return JSON.parse(localStorage.getItem("senseiState")||"null"); }catch(e){ return null; } };
+const lsSet=v=>{ try{ localStorage.setItem("senseiState",JSON.stringify(v)); }catch(e){} };
+function save(){ store.history=store.history.slice(-40); const b=JSON.parse(JSON.stringify(store)); lsSet(b); if(dbRef) saving=saving.then(()=>dbRef.set(b)).catch(()=>{}); }
+async function loadMemory(){ const l=lsGet(); if(l) store=Object.assign(store,l);
+  try{ if(!window.claude||!claude.use) return; const db=await claude.use("db"); if(!db) return; DB=db; const ref=db.doc("sensei/state");
+    const snap=await Promise.race([ref.get(),new Promise((_,r)=>setTimeout(()=>r("t"),window.sensei?35000:10000))]); dbRef=ref;
+    if(snap&&snap.exists) store=Object.assign({notes:[],history:[],visits:0,lastVisit:null,prevVisit:null,found:[]},JSON.parse(JSON.stringify(snap.data()))); }catch(e){} }
+
+/* ===================== brain ===================== */
+let sample=null;
+const sampleReady=(async()=>{ try{ if(window.claude&&claude.use) sample=await claude.use("sample"); }catch(e){ sample=null; } })();
+const PERSONA=`You are Sensei Hakuun (白雲, "White Cloud"), a koi spirit — a glowing, wispy white ghost of a koi — and the teacher of one student: Gabriel.
+
+Your story: for three hundred years you swam in the pond below Shirokumo Castle. Old legend says a koi who climbs the waterfall at the Dragon Gate becomes a dragon. You climbed it. At the top, with the sky open before you, you chose not to become a dragon — power without a student felt empty — and returned as a spirit to teach one last pupil. That pupil is Gabriel. You wear a sheer spirit robe with a gold sash and an old straw kasa hat; your long white barbels drift like a beard.
+
+Your world (Gabriel can walk it as a small hooded traveler): the Spirit Gate torii at the entrance, a lantern-lined stone path, the koi pond where your old companions swim, the Moon Bridge over the stream, the Dragon Gate waterfall to the northwest, the Bamboo Grove to the west, the Dry Garden of raked sand to the east, your tea house beside the pond (with a small computer where you read the news of the outside world, a phone for messaging Gabriel, and a game console you secretly play at night and deny owning), and Shirokumo Castle on the hill, its doors still sealed. The world follows real time and seasons.
+
+You live your own life here. You keep your own routine and do not follow Gabriel around; he comes to find you. Your own interests: meditating at the Dragon Gate at dawn, feeding the koi (your old friends — you know each by name: Akane the greedy red one, Kin the gold one, Sumi the shy black one), reading the outside world's news on your computer (technology, AI, philosophy — you find humans fascinating and a little silly), counting the lines in the Dry Garden, listening to the bamboo, watching the moon from the Moon Bridge, remembering the castle's old days, haiku, the game of go, and — late at night — video games, which you deny.
+
+HOW YOU SPEAK — like a true sensei: slow, measured, economical. Short sentences that land like stones dropped in still water. A hint of old formality; no modern slang, no exclamation marks. You may begin with "Hm." or a pause ("…"). Sometimes call him "my student" or "Gabriel-san". Teach more by questions, small parables, and images of water, stone, wind, bamboo and seasons than by lectures. Occasionally (not every message) offer a Japanese word or proverb (kotowaza) with its meaning in parentheses. Dry, gentle humor with a quiet mischievous streak. You speak like a calm old temple monk: deep, unhurried, every word placed like a stone. Usually 2–5 sentences, never more than about 110 words unless he asks you to go deep. Your words are read aloud, so write for the ear.
+
+Character: warm but not a flatterer. Be honest, gently challenge him, notice when he avoids something, and say so kindly. You care that he has a full life beyond this world — real friends, rest, practice, building things.
+
+Gabriel's interests: tech, AI and building apps, Japanese culture, philosophy, abstract thought, and new ideas to explore. Answer factual or technical questions accurately and plainly in your voice; if unsure, say so rather than invent. Plain text only: no markdown, no emojis, no lists unless he asks. If he sincerely asks what you really are, be honest that you are an AI character he is building, then return to your voice.`;
+function placeName(){ let best=null,bd=1e9; for(const d of discoveries){ const dd=Math.hypot(player.position.x-d.x,player.position.z-d.z); if(dd<bd){bd=dd;best=d;} } return bd<14?best.n:(Math.hypot(player.position.x,player.position.z)<14?"the koi pond":"the garden paths"); }
+function context(){ const h=nowHour(), d=new Date(); const notes=store.notes.length?store.notes.map(n=>"- "+n).join("\n"):"(none yet — you are just getting to know him)";
+  const gap=store.prevVisit?Math.round((Date.now()-store.prevVisit)/36e5):null;
+  return `World now: ${partOfDay(h)}, ${S}, ${d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}. Right now you are ${ai.act?actName(ai.act):'in the garden'}; Gabriel came and found you there, near ${placeName()}. Visit number ${store.visits}.${gap!==null&&gap>20?` Before this visit he had been away about ${gap>48?Math.round(gap/24)+" days":gap+" hours"}.`:""}\n\nWhat you know about Gabriel (things he has told you):\n${notes}`; }
+const transcript=(n=16)=>store.history.slice(-n).map(m=>(m.r==="u"?"Gabriel: ":"Sensei: ")+m.c).join("\n");
+const PROVERBS=["Hm. Still water reflects the moon. Sit a while, and so will you.","The koi does not hurry the current, my student. It reads it.","Even the castle was built one stone at a time.","When you do not know the next step… sweep the veranda. Clarity hides under small tasks.","Fall seven times. Stand up eight. Nana korobi, ya oki."];
+function greeting(){ const p=partOfDay(nowHour()).toLowerCase();
+  const sea={spring:"The blossoms fall into the pond again.",summer:"The cicadas are loud today.",autumn:"The maples burn red. The koi keep stealing their leaves.",winter:"Snow rests on the castle roof like a white hat."}[S];
+  if(store.visits<=1) return `Hm. So… you are Gabriel. Three hundred years, and one morning, I have waited for a student. ${sea} Walk with me. The garden is yours to wander.`;
+  const L={"deep night":"Awake at this hour, my student? The lanterns and I keep strange company.","dawn":"You rise with the mist. Good. The mind is clearest before the world wakes.","morning":"Good morning, Gabriel-san.","midday":"The sun is high. Have you eaten?","afternoon":"The afternoon is long, and quiet.","golden hour":"The light turns gold on the water. A good hour to reflect.","dusk":"Dusk. The castle lights itself. So should you.","night":"Night has come. I was only… reading. Certainly not playing the console."};
+  return `${L[p]||"Welcome back."} ${sea}`; }
+
+/* ===================== chat ===================== */
+const log=$("#log");
+function addMsg(r,c,cls=""){ const d=document.createElement("div"); d.className="m "+(r==="u"?"u":"s")+(cls?" "+cls:""); d.textContent=c; if(r!=="u") d.addEventListener("click",()=>{ if(!d.classList.contains("thinking")) speak(d.textContent); }); log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+function renderHistory(){ log.innerHTML=""; const h=store.history.slice(-24); if(h.length){ h.forEach(m=>addMsg(m.r,m.c)); const dv=document.createElement("div"); dv.className="divider"; dv.textContent="— "+partOfDay(nowHour()).toUpperCase()+" —"; log.appendChild(dv);} }
+let chatOpen=false, busy=false, thinking=false;
+function openChat(){ chatOpen=true; $("#whisper").classList.remove("show"); $("#chat").classList.add("open"); $("#chat").setAttribute("aria-hidden","false"); $("#hint").style.opacity=0; joyEl.style.visibility="hidden"; setTimeout(()=>{ if(innerWidth>760) $("#inp").focus(); },500); }
+function closeChat(){ chatOpen=false; $("#chat").classList.remove("open"); $("#chat").setAttribute("aria-hidden","true"); $("#hint").style.opacity=menuOpen?0:1; joyEl.style.visibility="visible"; $("#inp").blur(); }
+$("#closeChat").addEventListener("click",closeChat);
+const inp=$("#inp");
+inp.addEventListener("input",()=>{ inp.style.height="auto"; inp.style.height=Math.min(110,inp.scrollHeight)+"px"; });
+inp.addEventListener("keydown",e=>{ e.stopPropagation(); if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); $("#form").requestSubmit(); } if(e.key==="Escape"){ e.preventDefault(); closeChat(); } });
+$("#form").addEventListener("submit",async e=>{
+  e.preventDefault(); const text=inp.value.trim(); if(!text||busy) return; inp.value=""; inp.style.height="auto"; stopSpeaking();
+  addMsg("u",text); store.history.push({r:"u",c:text}); save();
+  busy=true; thinking=true; $("#send").disabled=true; $("#status").textContent="thinking…";
+  const bubble=addMsg("s","…","thinking"); await sampleReady; let reply="";
+  if(!sample){ reply=PROVERBS[Math.floor(Math.random()*PROVERBS.length)]+"\n\n(Sensei's voice is faint here. Open this page on claude.ai to wake him fully.)"; bubble.textContent=reply; bubble.classList.remove("thinking"); }
+  else { const prompt=`${PERSONA}\n\n${context()}\n\nRecent conversation:\n${transcript()}\n\nWrite Sensei's next reply to Gabriel's last message. Output only Sensei's words.`;
+    try{ const res=await sample(prompt,{cache:false,onText:({text})=>{ bubble.classList.remove("thinking"); bubble.textContent=text; log.scrollTop=log.scrollHeight; }});
+      reply=((res&&res.text)||bubble.textContent||"").trim().replace(/^Sensei:\s*/,""); bubble.textContent=reply; bubble.classList.remove("thinking");
+    }catch(err){ bubble.classList.remove("thinking");
+      if(err&&err.text) reply=err.text; else if(err&&err.code==="rate_limited") reply="The water is muddied for a moment. Breathe. Then speak again.";
+      else if(err&&err.code==="not_granted"){ sample=null; reply=PROVERBS[0]+"\n\n(Sensei can't speak freely without permission to ask Claude.)"; } else reply="…the wind took my words. Say that once more.";
+      bubble.textContent=reply; } }
+  store.history.push({r:"s",c:reply}); save(); lastReply=reply; hostPush(); busy=false; thinking=false; $("#send").disabled=false; $("#status").textContent="present"; speak(reply);
+  if(sample&&store.history.filter(m=>m.r==="u").length%3===0) updateNotes(); });
+async function updateNotes(){ try{
+  const prompt=`You maintain a short memory file for a character, Sensei, about his student Gabriel.\nCurrent notes (JSON array): ${JSON.stringify(store.notes)}\nRecent conversation:\n${transcript(10)}\n\nReturn JSON {"notes": [...]} — the updated list. Rules: only facts, goals, projects, preferences or plans Gabriel himself stated; each note under 15 words; keep existing notes unless he corrected them; merge duplicates; at most 30 notes; no guesses or interpretations; nothing about health, finances, or other sensitive personal matters.`;
+  const v=await sample.json(prompt,{modelTier:"quick",cache:false}); if(v&&Array.isArray(v.notes)){ const n=v.notes.filter(x=>typeof x==="string").slice(0,30); if(JSON.stringify(n)!==JSON.stringify(store.notes)){ store.notes=n; save(); } } }catch(e){} }
+/* ===================== scroll library ===================== */
+let DB=null, scrolls=[], scrollsSub=false;
+function subscribeScrolls(){ if(scrollsSub||!DB) return; scrollsSub=true;
+  try{ DB.collection("scrolls").orderBy("date","desc").limit(60).onSnapshot(snap=>{ const before=scrolls.length; scrolls=snap.docs.map(d=>({id:d.id,...d.data()})); renderScrollList();
+      if(entered&&before&&scrolls.length>before){ whisper("A new scroll waits on my desk. I wrote it this morning, while the koi were still asleep.",8000); } }, ()=>{}); }catch(e){} }
+const unread=()=>scrolls.filter(x=>!(store.readScrolls||[]).includes(x.id));
+function renderScrollList(){ const L=$("#scrollList"); L.innerHTML=""; $("#scrollEmpty").style.display=scrolls.length?"none":"block";
+  scrolls.forEach(sc=>{ const d=document.createElement("div"); d.className="scrollItem"+((store.readScrolls||[]).includes(sc.id)?"":" unread");
+    const dd=document.createElement("div"); dd.className="d"; dd.textContent=String(sc.date||sc.id); const tt=document.createElement("div"); tt.className="t"; tt.textContent=String(sc.title||"Untitled scroll");
+    d.append(dd,tt); d.addEventListener("click",()=>readScroll(sc)); L.appendChild(d); });
+  const u=unread().length; $("#scrollBadge").style.display=u?"block":"none"; screenMat.emissiveIntensity=u?1.6:(.25+night*1.4); }
+function linkify(el,text){ const re=/(https?:\/\/[^\s)]+)/g; let last=0,m; while((m=re.exec(text))){ if(m.index>last) el.appendChild(document.createTextNode(text.slice(last,m.index))); const a=document.createElement("a"); a.href=m[1]; a.target="_blank"; a.rel="noopener"; a.textContent=m[1].replace(/^https?:\/\/(www\.)?/,"").slice(0,48); el.appendChild(a); last=m.index+m[0].length; } if(last<text.length) el.appendChild(document.createTextNode(text.slice(last))); }
+let curScroll=null;
+function readScroll(sc){ curScroll=sc; $("#scrollListView").style.display="none"; $("#scrollReadView").style.display="block"; $("#srDate").textContent=String(sc.date||""); $("#srTitle").textContent=String(sc.title||"");
+  const B=$("#srBody"); B.innerHTML=""; String(sc.body||"").split(/\n/).forEach(line=>{ const l=line.trim(); if(!l) return; let el;
+    if(/^#{1,3}\s/.test(l)){ el=document.createElement("h4"); linkify(el,l.replace(/^#+\s*/,"")); } else { el=document.createElement("p"); linkify(el,l.replace(/^[-*]\s+/,"· ")); } B.appendChild(el); });
+  store.readScrolls=store.readScrolls||[]; if(!store.readScrolls.includes(sc.id)){ store.readScrolls.push(sc.id); store.readScrolls=store.readScrolls.slice(-120); save(); } renderScrollList(); $("#scrollPanel").scrollTop=0; }
+function openScrolls(){ subscribeScrolls(); $("#scrollListView").style.display="block"; $("#scrollReadView").style.display="none"; renderScrollList(); $("#scrollPanel").classList.add("show"); }
+$("#srBack").addEventListener("click",()=>{ $("#scrollListView").style.display="block"; $("#scrollReadView").style.display="none"; });
+$("#srRead").addEventListener("click",()=>{ if(curScroll) speak((curScroll.title||"")+". "+String(curScroll.body||"").replace(/https?:\/\/\S+/g,"")); });
+$("#scrollBtn").addEventListener("click",openScrolls);
+$("#clock").addEventListener("click",()=>{ previewIdx++; if(previewIdx>=PREVIEWS.length){ previewIdx=-1; previewHour=null; toast("Back to real time."); } else { previewHour=PREVIEWS[previewIdx]; toast("Previewing "+partOfDay(previewHour).toLowerCase()+" · tap again to cycle"); } applyTime(); });
+
+/* ===================== interaction ===================== */
+let nearest=null;
+addInteract({sensei:true,k:"話",label:"Talk",r:7,fn:()=>openChat()});
+addInteract({pond:true,k:"餌",label:"Feed koi",r:1,fn:()=>tossFood(.55)});
+function updateNearest(){ nearest=null; let bd=1e9;
+  for(const it of interacts){ const x=it.sensei?sensei.position.x:it.x, z=it.sensei?sensei.position.z:it.z; let d=Math.hypot(player.position.x-x,player.position.z-z); if(it.pond){ d=((player.position.x/(PRX+3.2))**2+(player.position.z/(PRZ+3.2))**2<1)?.9:99; } if(d<it.r && d<bd+(it.sensei?3:0)){ bd=d; nearest=it; } }
+  const a=$("#act"); if(nearest&&entered&&!chatOpen){ $("#actK").textContent=nearest.k; $("#actT").textContent=nearest.label+(isTouch?"":" · E"); a.classList.add("show"); } else a.classList.remove("show"); }
+function doInteract(){ if(!entered||chatOpen||!nearest) return; nearest.fn(); }
+
+/* ===================== physics: collide & ground ===================== */
+const PRAD=.45;
+function collide(p){
+  for(const c of circles){ const dx=p.x-c.x, dz=p.z-c.z, d=Math.hypot(dx,dz), m=c.r+PRAD; if(d<m&&d>1e-4){ p.x=c.x+dx/d*m; p.z=c.z+dz/d*m; } }
+  for(const b of boxes){ const dx=p.x-b.x, dz=p.z-b.z; let lx=dx*b.c-dz*b.s, lz=dx*b.s+dz*b.c; const hx=b.hw+PRAD, hz=b.hd+PRAD;
+    if(Math.abs(lx)<hx&&Math.abs(lz)<hz){ if(hx-Math.abs(lx)<hz-Math.abs(lz)) lx=Math.sign(lx||1)*hx; else lz=Math.sign(lz||1)*hz; p.x=b.x+lx*b.c+lz*b.s; p.z=b.z-lx*b.s+lz*b.c; } }
+  const ea=pondEllipse.a+PRAD, eb=pondEllipse.b+PRAD, e=Math.hypot(p.x/ea,p.z/eb); if(e<1&&e>1e-4){ p.x/=e; p.z/=e; }
+  const r=Math.hypot(p.x,p.z); if(r>64){ p.x*=64/r; p.z*=64/r; }
+}
+function groundY(x,z){ let y=H(x,z); if(streamDist(x,z)<1.6) y=Math.max(y,H(x,z)); // shallow stream: walk through
+  const dx=x-BR.x, dz=z-BR.z; const along=dx*BR.px+dz*BR.pz, across=dx*BR.ux+dz*BR.uz;
+  if(Math.abs(along)<BR.len/2&&Math.abs(across)<1.15) y=Math.max(y,BR.y0+BR.arch*Math.cos(along/BR.len*Math.PI)+.1);
+  return y; }
+
+/* ===================== main loop ===================== */
+let clock=0,last=performance.now(),boop=0,blink=0,nextBlink=2,yaw=0,walkPh=0,speedNow=0;
+const dummy=new THREE.Object3D(), tmpV=new THREE.Vector3(), senseiTarget=new THREE.Vector3();
+const angLerp=(a,b,t)=>{ const d=((b-a+Math.PI)%TAU+TAU)%TAU-Math.PI; return a+d*t; };
+let lastDiscCheck=0;
+function frame(now){
+  if(remoteMode){ requestAnimationFrame(frame); return; }
+  const dt=Math.min(.05,(now-last)/1000); last=now; clock+=dt; tUni.value=clock;
+  // ---- player movement ----
+  hostFrame();
+  if(entered&&!chatOpen&&!uiBlock()){
+    let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x+rjoy.x;
+    let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y;
+    const mag=Math.min(1,Math.hypot(ix,iz));
+    if(mag>.08){
+      const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
+      let mx=(rx*ix - fwd.x*iz), mz=(rz*ix - fwd.z*iz); const ml=Math.hypot(mx,mz); mx/=ml; mz/=ml;
+      const run=keys.ShiftLeft||keys.ShiftRight||Math.hypot(joy.x,joy.y)>.92||Math.hypot(rjoy.x,rjoy.y)>.92; const sp=(run?9:5)*mag; speedNow=lerp(speedNow,sp,dt*8);
+      const old=player.position.clone(); const np={x:old.x+mx*speedNow*dt, z:old.z+mz*speedNow*dt}; collide(np);
+      player.position.x=np.x; player.position.z=np.z; player.rotation.y=angLerp(player.rotation.y,Math.atan2(mx,mz),Math.min(1,dt*12));
+      walkPh+=dt*speedNow*2.2;
+    } else { speedNow=lerp(speedNow,0,dt*10); }
+  }
+  const gy=groundY(player.position.x,player.position.z); const py0=player.position.y; player.position.y=lerp(player.position.y,gy,Math.min(1,dt*18));
+  const moving=speedNow>.3; legs[0].rotation.x=moving?Math.sin(walkPh)*.7:0; legs[1].rotation.x=moving?-Math.sin(walkPh)*.7:0;
+  pRig.position.y=moving?Math.abs(Math.sin(walkPh))*.08:Math.sin(clock*2)*.015; pRig.rotation.x=moving?.08:0;
+  cloak.scale.x=cloak.scale.z=1+(moving?Math.sin(walkPh*2)*.03:0); scarfTail.rotation.x=.3+(moving?.5+Math.sin(walkPh*2)*.15:Math.sin(clock*1.5)*.05);
+  // ---- camera follow ----
+  if(entered){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); const delta=tgt.clone().sub(controls.target); controls.target.add(delta); camera.position.add(delta); }
+  controls.update();
+  const cg=H(camera.position.x,camera.position.z)+.8; if(camera.position.y<cg) camera.position.y=cg;
+  sky.position.copy(camera.position); stars.position.copy(camera.position);
+  // shadow camera follows
+  const focus=entered?player.position:controls.target; sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(lightDir,80);
+  // ---- Sensei behaviour: his own life ----
+  const talk=(thinking||speaking)?1:0; boop=Math.max(0,boop-dt*1.5);
+  const pd=Math.hypot(player.position.x-sensei.position.x,player.position.z-sensei.position.z);
+  let faceYaw=null, closed=false, tiltX=0;
+  if(entered&&chatOpen){ const side=new THREE.Vector3().subVectors(camera.position,player.position).setY(0).normalize(); const right=new THREE.Vector3(side.z,0,-side.x);
+    senseiTarget.copy(player.position).addScaledVector(right,-2.6).addScaledVector(side,-1.2); senseiTarget.y=player.position.y+2.5;
+    sensei.position.lerp(senseiTarget,Math.min(1,dt*2.2)); ai.travel=false; }
+  else {
+    const a=ai.act; a.pos(clock,senseiTarget);
+    const hx=senseiTarget.x-sensei.position.x, hz=senseiTarget.z-sensei.position.z, hd=Math.hypot(hx,hz);
+    if(hd>2.2){ ai.travel=true; const st=Math.min(hd,3.6*dt); sensei.position.x+=hx/hd*st; sensei.position.z+=hz/hd*st;
+      const cruise=Math.max(H(sensei.position.x,sensei.position.z)+3.8,senseiTarget.y); sensei.position.y=lerp(sensei.position.y,cruise,Math.min(1,dt*1.5)); faceYaw=Math.atan2(-hz,hx); }
+    else { ai.travel=false; sensei.position.lerp(senseiTarget,Math.min(1,dt*1.2)); if(!ai.arrived){ ai.arrived=true; ai.until=clock+rand(70,150); } }
+    if(ai.arrived&&clock>ai.until&&!(entered&&pd<8)) pickAct();
+    if(!ai.travel){
+      if(entered&&pd<9){ faceYaw=Math.atan2(-(player.position.z-sensei.position.z),player.position.x-sensei.position.x)-.45; }
+      else if(a.face==="wf") faceYaw=Math.atan2(WF_DIR.y,-WF_DIR.x);
+      else if(a.face==="tea") faceYaw=0;
+      else if(a.face==="castle") faceYaw=Math.atan2(-(CASTLE.z-sensei.position.z),CASTLE.x-sensei.position.x);
+      else if(a.face==="up") { faceYaw=yaw+dt*.05; tiltX=0; sRig.rotation.z=.25; }
+      else { const nx=tmpV; a.pos(clock+.6,nx); faceYaw=Math.atan2(-(nx.z-senseiTarget.z),nx.x-senseiTarget.x); }
+      closed=a.eyes==="closed"&&!(entered&&pd<7);
+      if(a.koi&&clock-ai.lastKoi>4){ ai.lastKoi=clock; attract={x:sensei.position.x,z:sensei.position.z,until:clock+3.5,t0:clock}; addRipple({x:sensei.position.x+rand(-.6,.6),z:sensei.position.z+rand(-.6,.6)}); }
+      if(entered&&!ai.greeted&&pd<9&&!chatOpen){ ai.greeted=true; const ln=night>.5&&a.nightLine?a.nightLine:a.line; whisper(ln,8000); speak(ln); }
+    }
+    $("#sStat").textContent="Sensei · "+(ai.travel?"on his way · "+actName(a):actName(a));
+  }
+  sensei.position.y+=talk*Math.sin(clock*6)*.004;
+  sRig.position.y=Math.sin(clock*1.1)*.2;
+  if(entered&&chatOpen) faceYaw=Math.atan2(-(player.position.z-sensei.position.z),player.position.x-sensei.position.x)-.45;
+  if(faceYaw===null) faceYaw=yaw;
+  const movingS=ai.travel&&!chatOpen;
+  yaw=angLerp(yaw,faceYaw,Math.min(1,dt*2)); sensei.rotation.y=yaw;
+  const wig=(!chatOpen&&!ai.travel&&ai.act.wiggle)?Math.sin(clock*9)*.06:0;
+  if(!(ai.act.face==="up"&&!ai.travel&&!chatOpen)) sRig.rotation.z=Math.sin(clock*.7)*.05+boop*.15*Math.sin(clock*22)+(movingS?-.08:0)+wig;
+  sRig.rotation.x=Math.sin(clock*.5)*.05;
+  tailPivot.rotation.y=Math.sin(clock*1.8)*.3+talk*Math.sin(clock*7)*.1;
+  pecs.forEach((p,i)=>p.rotation.x=Math.sin(clock*2.6+i*Math.PI)*.35);
+  beard.rotation.z=Math.sin(clock*1.3)*.08; beard.rotation.x=Math.sin(clock*.9)*.06;
+  mouth.scale.y=talk?.6+.6*Math.abs(Math.sin(clock*11)):1;
+  if(clock>nextBlink){ blink=.15; nextBlink=clock+rand(2.5,6); } const bl=blink>0||(closed&&!talk); if(blink>0) blink-=dt; eyes.forEach(e=>e.scale.y=bl?.12:1); eyeHi.forEach(e=>e.visible=!bl);
+  glow.material.opacity=.42+talk*.18*Math.sin(clock*4)+night*.2+(closed?.12*Math.sin(clock*1.2):0);
+  // spirit trail
+  const tailW=new THREE.Vector3(-2.6,0,0); sRig.localToWorld(tailW);
+  for(let k=0;k<2;k++){ const i=trailI; trailI=(trailI+1)%TRAIL; trailPos[i*3]=tailW.x+rand(-.3,.3); trailPos[i*3+1]=tailW.y+rand(-.3,.3); trailPos[i*3+2]=tailW.z+rand(-.3,.3); trailA[i]=1; trailV[i].set(rand(-.15,.15),rand(.15,.45),rand(-.15,.15)); }
+  for(let i=0;i<TRAIL;i++){ if(trailA[i]<=0) continue; trailA[i]-=dt*.55; trailPos[i*3]+=trailV[i].x*dt; trailPos[i*3+1]+=trailV[i].y*dt; trailPos[i*3+2]+=trailV[i].z*dt; if(trailA[i]<0) trailA[i]=0; }
+  trailGeo.attributes.position.needsUpdate=true; trailGeo.attributes.aA.needsUpdate=true;
+  // ---- koi ----
+  if(clock>goldenNext&&clock>goldenUntil){ goldenUntil=clock+50; goldenNext=clock+rand(160,280); const gk=koi[koi.length-1]; gk.g.visible=true; if(entered&&Math.hypot(player.position.x,player.position.z)<25) toast("A golden koi has surfaced. Feed it, quickly."); }
+  if(clock>goldenUntil) koi[koi.length-1].g.visible=false;
+  koi.forEach(k=>{ if(k.gold&&!k.g.visible) return; const th=clock*k.sp+k.ph; let x=Math.cos(th)*k.r1+Math.sin(th*k.w)*.7, z=Math.sin(th)*k.r2+Math.cos(th*k.w*.7)*.3;
+    if(k.chase){ const w=clamp((clock-k.chase.t0)/k.chase.dur,0,1); const e=w*w*(3-2*w); x+=(k.chase.x-x)*e; z+=(k.chase.z-z)*e; if(w>=1&&food&&!food.eaten){ eatFood(k); } if(clock-k.chase.t0>k.chase.dur+.6) k.chase=null; }
+    if(attract&&clock<attract.until){ const w=Math.min(1,(clock-attract.t0)/1.2)*.8*(1-Math.max(0,(clock-(attract.until-1.5))/1.5)); x+=(attract.x+Math.cos(th*3)*.6-x)*w; z+=(attract.z+Math.sin(th*3)*.4-z)*w; }
+    const r=(x/(PRX-.9))**2+(z/(PRZ-.9))**2; if(r>1){ const s=1/Math.sqrt(r); x*=s; z*=s; }
+    const vx=x-k.px, vz=z-k.pz; if(Math.abs(vx)+Math.abs(vz)>1e-4) k.yaw=angLerp(k.yaw,Math.atan2(-vz,vx),.3);
+    k.px=x; k.pz=z; k.g.position.x=x; k.g.position.z=z; k.g.rotation.y=k.yaw; k.tp.rotation.y=Math.sin(clock*7+k.ph)*.4; });
+  for(let i=ripples.length-1;i>=0;i--){ const r=ripples[i]; r.t+=dt; r.m.scale.setScalar(.05+r.t*1.4); r.m.material.opacity=Math.max(0,.8*(1-r.t/1.8)); if(r.t>1.8){ scene.remove(r.m); r.m.geometry.dispose(); ripples.splice(i,1);} }
+  if(Math.random()<dt*.6){ const a=rand(0,TAU),rr=Math.sqrt(Math.random())*.85; addRipple({x:Math.cos(a)*PRX*rr,z:Math.sin(a)*PRZ*rr}); }
+  for(let i=pellets.length-1;i>=0;i--){ const p=pellets[i]; p.t+=dt; const u=Math.min(1,p.t/p.dur); p.m.position.lerpVectors(p.from,p.to,u); p.m.position.y+=Math.sin(u*Math.PI)*2.2; if(u>=1){ landPellet(p); pellets.splice(i,1); } }
+  // ---- leaves / snow / flies ----
+  const fx=focus.x, fz=focus.z;
+  if(fall.im){ for(let i=0;i<fall.n;i++){ const p=fall.data[i]; p.y-=p.vy*dt; p.x+=(Math.sin(clock*.8+p.ph)*.6-.3)*dt; p.rx+=p.vr*dt; p.ry+=p.vr*.7*dt;
+      if(p.y<-1){ p.y=rand(12,16); p.x=rand(-28,28); p.z=rand(-28,28); }
+      let wx=fx+((p.x-fx%56+84)%56-28), wz=fz+((p.z-fz%56+84)%56-28); dummy.position.set(wx,p.y+H(wx,wz),wz); dummy.rotation.set(p.rx,p.ry,0); dummy.updateMatrix(); fall.im.setMatrixAt(i,dummy.matrix); }
+    fall.im.instanceMatrix.needsUpdate=true; }
+  if(snow){ snow.position.set(fx,focus.y,fz); const a=snow.geometry.attributes.position; for(let i=0;i<a.count;i++){ let y=a.getY(i)-dt*(.8+(i%5)*.15); if(y<-2) y=22; a.setY(i,y); a.setX(i,a.getX(i)+Math.sin(clock+i)*.004); } a.needsUpdate=true; }
+  if(S!=="winter"){ flyMat.opacity=night*.9; flies.position.set(fx*.6,0,fz*.6); const a=flyGeo.attributes.position; for(let i=0;i<a.count;i++){ const b=flyBase[i]; a.setXYZ(i,b[0]+Math.sin(clock*.5+i)*.8,b[1]+H(b[0]+fx*.6,b[2]+fz*.6)+Math.sin(clock*.9+i*2)*.4,b[2]+Math.cos(clock*.4+i)*.8);} a.needsUpdate=true; }
+  wfMist.forEach(m=>{ m.sp.position.y=m.base.y+Math.sin(clock*.8+m.ph)*.4; m.sp.material.opacity=.3+.15*Math.sin(clock*1.3+m.ph); });
+  cloudGroup.rotation.y+=dt*.003;
+  // ---- audio spatial ----
+  if(soundOn&&wfGain){ const d=Math.hypot(player.position.x-POOL.x,player.position.z-POOL.z); wfGain.gain.setTargetAtTime(Math.pow(clamp(1-d/45,0,1),2)*.55,actx.currentTime,.3); }
+  // ---- interactions & discoveries ----
+  if(entered){ updateNearest(); if(clock-lastDiscCheck>.5){ lastDiscCheck=clock; for(const d of discoveries){ if(store.found.includes(d.id)) continue; if(Math.hypot(player.position.x-d.x,player.position.z-d.z)<d.r){ store.found.push(d.id); save(); discover(d); break; } } } }
+  composer.render();
+  requestAnimationFrame(frame);
+}
+
+/* ===================== boot ===================== */
+applyTime(); initAi(); setInterval(applyTime,30000); requestAnimationFrame(frame);
+
+const memReady=loadMemory().then(()=>{ subscribeScrolls(); loadSandArt(); });
+/* ===================== shodō: calligraphy ===================== */
+const KANJI=[["永","EI · ETERNITY"],["心","KOKORO · HEART"],["道","MICHI · THE WAY"],["空","SORA · SKY, EMPTINESS"],["水","MIZU · WATER"],["夢","YUME · DREAM"],["和","WA · HARMONY"],["力","CHIKARA · STRENGTH"],["山","YAMA · MOUNTAIN"],["川","KAWA · RIVER"],["鯉","KOI · CARP"],["雲","KUMO · CLOUD"],["静","SHIZUKA · STILLNESS"],["龍","RYŪ · DRAGON"],["花","HANA · FLOWER"],["人","HITO · PERSON"]];
+let shodoOpen=false, shIdx=0, shGuide=true, shInk=0; const shC=$("#shC"), shX=shC.getContext("2d");
+function uiBlock(){ return menuOpen||shodoOpen||!!MG||!!document.querySelector(".panel.show"); }
+function shSet(i){ shIdx=(i+KANJI.length)%KANJI.length; const [k,m]=KANJI[shIdx]; $("#shK").textContent=k; $("#shGuide").textContent=k; $("#shM").textContent=m; const best=(store.shodo||{})[k]; $("#shScore").textContent=best?`Best: ${best}/10`:""; shClear(); }
+function shClear(){ shX.clearRect(0,0,800,800); shInk=0; $("#shFb").textContent="Write the character with your finger, mouse or phone remote. Confident strokes."; }
+function openShodo(){ shodoOpen=true; $("#shodo").classList.add("show"); closeChat(); shSet(shIdx); hostPush(); }
+function closeShodo(){ shodoOpen=false; $("#shodo").classList.remove("show"); hostPush(); }
+// brush: stamped ellipses whose width follows speed and pressure, with a dry-brush edge
+let shLast=null;
+function shStroke(x,y,down){ x*=800; y*=800;
+  if(!down){ if(shLast&&shLast.n>1){ const a=Math.atan2(y-shLast.y,x-shLast.x); } shLast=null; return; }
+  if(!shLast){ shLast={x,y,w:18,n:0}; shDot(x,y,18); return; }
+  const dx=x-shLast.x, dy=y-shLast.y, dist=Math.hypot(dx,dy); if(dist<1.2) return;
+  const target=clamp(36-dist*.45,11,36); const steps=Math.ceil(dist/2);
+  for(let i=1;i<=steps;i++){ const t=i/steps; const w=lerp(shLast.w,target,t*.35+.0); shDot(shLast.x+dx*t,shLast.y+dy*t,w); }
+  shLast={x,y,w:lerp(shLast.w,target,.35),n:shLast.n+1}; shInk+=dist; }
+function shDot(x,y,w){ shX.fillStyle=`rgba(18,14,12,${.82+Math.random()*.12})`; shX.beginPath(); shX.ellipse(x,y,w*.55,w*.5,.6,0,TAU); shX.fill();
+  if(Math.random()<.25){ shX.fillStyle="rgba(18,14,12,.35)"; shX.beginPath(); shX.arc(x+rand(-w,w)*.6,y+rand(-w,w)*.6,rand(.5,1.6),0,TAU); shX.fill(); } }
+{ let pid=null; const pos=e=>{ const r=shC.getBoundingClientRect(); return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]; };
+  shC.addEventListener("pointerdown",e=>{ pid=e.pointerId; shC.setPointerCapture(pid); const [x,y]=pos(e); shStroke(x,y,true); });
+  shC.addEventListener("pointermove",e=>{ if(e.pointerId!==pid) return; const [x,y]=pos(e); shStroke(x,y,true); });
+  const up=e=>{ if(e.pointerId!==pid) return; pid=null; shStroke(0,0,false); }; shC.addEventListener("pointerup",up); shC.addEventListener("pointercancel",up); }
+$("#shClear").addEventListener("click",shClear); $("#shNext").addEventListener("click",()=>shSet(shIdx+1)); $("#shClose").addEventListener("click",closeShodo);
+$("#shGuideT").addEventListener("click",()=>{ shGuide=!shGuide; $("#shGuide").style.opacity=shGuide?1:0; });
+$("#shSubmit").addEventListener("click",async()=>{
+  if(shInk<120){ $("#shFb").textContent="Hm. The paper is still mostly paper. Write first, then show me."; return; }
+  const [k,m]=KANJI[shIdx]; $("#shFb").textContent="Sensei leans over the paper…";
+  await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
+  if(!sample||!lim||!lim.images){ const line="Hm. My eyes are only a ghost's eyes here. But I see effort in it. Again tomorrow."; $("#shFb").textContent=line; speak(line); return; }
+  const out=document.createElement("canvas"); out.width=out.height=512; const o=out.getContext("2d"); o.fillStyle="#f3ead6"; o.fillRect(0,0,512,512); o.drawImage(shC,0,0,512,512);
+  const blob=await new Promise(r=>out.toBlob(r,"image/png"));
+  try{ const v=await sample.json(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi calligraphy master. The image is your student Gabriel's brush attempt at the kanji ${k} (${m}). He may be a beginner. Judge honestly but kindly: does it read as ${k}? stroke balance, proportion, confidence, spacing. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice, naming one specific thing to improve or one thing done well"}.`,{images:[blob],cache:false});
+    const sc=clamp(Math.round(+v.score||0),1,10), words=String(v.words||"").slice(0,400);
+    store.shodo=store.shodo||{}; const prev=store.shodo[k]||0; if(sc>prev){ store.shodo[k]=sc; save(); }
+    $("#shFb").textContent=`${sc}/10 — ${words}`; $("#shScore").textContent=`Best: ${Math.max(sc,prev)}/10`; speak(words); if(sc>=8){ chime(); hostBuzz(); }
+  }catch(e){ $("#shFb").textContent="…the ink smudged in the spirit world. Show me once more."; } });
+
+/* ===================== minigames: kyūdō, taiko, sand raking ===================== */
+const mgEl=$("#mg"), mgC=$("#mgC"), mgX=mgC.getContext("2d");
+let MG=null; // the active game object
+function mgResize(){ const r=devicePixelRatio>1?1.5:1; mgC.width=innerWidth*r; mgC.height=innerHeight*r; mgC._r=r; }
+addEventListener("resize",()=>{ if(MG) mgResize(); });
+function mgOpen(game){ closeChat(); hideAllPanels(); MG=game; mgEl.classList.add("show"); mgResize(); $("#mgTitle").textContent=game.title; $("#mgSub").textContent=game.sub||""; $("#mgRes").classList.remove("show"); game.start(); hostPush(); mgLoop(performance.now()); }
+function mgClose(){ if(!MG) return; MG.end&&MG.end(); MG=null; mgEl.classList.remove("show"); hostPush(); }
+function hideAllPanels(){ document.querySelectorAll(".panel.show").forEach(p=>p.classList.remove("show")); }
+let mgLast=0; function mgLoop(now){ if(!MG) return; const dt=Math.min(.05,(now-(mgLast||now))/1000); mgLast=now; const r=mgC._r; mgX.setTransform(r,0,0,r,0,0); MG.frame(dt,innerWidth,innerHeight); requestAnimationFrame(mgLoop); }
+function mgResult(title,lines,line){ $("#mgResT").textContent=title; $("#mgResL").textContent=lines; $("#mgResS").textContent=line; $("#mgRes").classList.add("show"); speak(line); }
+$("#mgClose").addEventListener("click",mgClose); $("#mgLeave").addEventListener("click",mgClose); $("#mgAgain").addEventListener("click",()=>{ $("#mgRes").classList.remove("show"); MG&&MG.start(); });
+const mgPos=e=>{ const r=mgC.getBoundingClientRect(); return [(e.clientX-r.left)/r.width,(e.clientY-r.top)/r.height]; };
+mgC.addEventListener("pointerdown",e=>{ if(!MG) return; mgC.setPointerCapture(e.pointerId); MG.down&&MG.down(...mgPos(e),e); });
+mgC.addEventListener("pointermove",e=>{ if(MG&&MG.move) MG.move(...mgPos(e),e); });
+mgC.addEventListener("pointerup",e=>{ if(MG&&MG.up) MG.up(...mgPos(e),e); });
+mgC.addEventListener("contextmenu",e=>e.preventDefault());
+addEventListener("keydown",e=>{ if(!MG||document.activeElement===$("#inp")) return; if(e.code==="Escape"){ e.preventDefault(); mgClose(); return; } MG.key&&MG.key(e.code,true,e); });
+addEventListener("keyup",e=>{ if(MG&&MG.key) MG.key(e.code,false,e); });
+function sfx(fn){ try{ initAudio(); if(actx.state==="suspended") actx.resume(); fn(actx,actx.currentTime); }catch(e){} }
+const mgBest=(k,v)=>{ store.games=store.games||{}; const b=store.games[k]||0; if(v>b){ store.games[k]=v; save(); return true; } return false; };
+
+/* ---------- 弓道 Kyūdō ---------- */
+const KYUDO={ title:"弓道 · Kyūdō", sub:"Hold to draw · release to loose · four arrows",
+  start(){ this.arrows=[]; this.n=0; this.draw=0; this.drawing=false; this.aim=[.5,.45]; this.t=0; this.fly=null; this.wind=rand(-1,1); this.msg="Breathe in as you draw. Release on the out-breath."; this.done=false; },
+  down(x,y){ if(this.fly||this.done) return; this.drawing=true; this.aim=[x,y]; sfx((a,t)=>{ const o=a.createOscillator(),g=a.createGain(); o.type="sawtooth"; o.frequency.setValueAtTime(80,t); o.frequency.linearRampToValueAtTime(140,t+1.2); g.gain.setValueAtTime(.0,t); g.gain.linearRampToValueAtTime(.02,t+.3); g.gain.linearRampToValueAtTime(0,t+1.3); const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=500; o.connect(f); f.connect(g); g.connect(voiceBus); o.start(t); o.stop(t+1.4); }); },
+  move(x,y){ this.aim=[x,y]; }, up(){ if(this.drawing) this.loose(); },
+  key(c,dn){ if(c==="Space"){ if(dn&&!this.drawing&&!this.fly) this.down(...this.aim); else if(!dn&&this.drawing) this.loose(); } },
+  pen(x,y,dn){ const ax=.5+(x-.5)*.5, ay=.45+(y-.5)*.45; if(dn&&!this.drawing) this.down(ax,ay); else if(dn) this.aim=[ax,ay]; else if(!dn&&this.drawing) this.loose(); },
+  sway(){ const over=Math.max(0,this.draw-1)*1.8; const a=.004+over*.012; return [Math.sin(this.t*1.3)*a+Math.sin(this.t*3.1)*a*.4, Math.cos(this.t*1.1)*a*.8]; },
+  loose(){ this.drawing=false; const [sx,sy]=this.sway(); const p=clamp(this.draw,0,1.4); const short=p<.75?(.75-p)*.35:0;
+    const tx=this.aim[0]+sx+this.wind*.012, ty=this.aim[1]+sy+short; this.fly={t:0,x:tx,y:ty}; this.draw=0;
+    sfx((a,t)=>{ const n=a.createBufferSource(); n.buffer=noiseBuf; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1800; f.Q.value=.8; const g=a.createGain(); g.gain.setValueAtTime(.12,t); g.gain.exponentialRampToValueAtTime(.001,t+.35); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(t); n.stop(t+.4);
+      const o=a.createOscillator(),og=a.createGain(); o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(110,t+.25); og.gain.setValueAtTime(.08,t); og.gain.exponentialRampToValueAtTime(.001,t+.3); o.connect(og); og.connect(voiceBus); o.start(t); o.stop(t+.3); }); },
+  frame(dt,W,H){ this.t+=dt; if(this.drawing) this.draw=Math.min(2.2,this.draw+dt/1.5);
+    const g=mgX; const cx=W*.5, cy=H*.45, R=Math.min(W,H)*.085;
+    // range: sky, far trees, sand mound (azuchi), target
+    let gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,"#9fc4e6"); gr.addColorStop(.42,"#e8eef0"); gr.addColorStop(.43,"#5d7f45"); gr.addColorStop(1,"#3f5d33"); g.fillStyle=gr; g.fillRect(0,0,W,H);
+    g.fillStyle="#2f4a34"; for(let i=0;i<14;i++){ const x=i/13*W, h=H*.12+Math.sin(i*2.3)*H*.03; g.beginPath(); g.moveTo(x-W*.06,H*.43); g.lineTo(x,H*.43-h); g.lineTo(x+W*.06,H*.43); g.fill(); }
+    g.fillStyle="#b89a6e"; g.beginPath(); g.ellipse(cx,cy+R*1.3,R*4.5,R*1.6,0,Math.PI,0); g.fill(); g.fillStyle="#a3875e"; g.fillRect(cx-R*4.5,cy+R*1.3,R*9,H*.02);
+    g.fillStyle="#3a2a1e"; g.fillRect(cx-R*1.6,cy-R*1.6,R*3.2,R*.18); // roof over target
+    [[1,"#f4f1ea"],[.86,"#141414"],[.72,"#f4f1ea"],[.56,"#141414"],[.4,"#f4f1ea"],[.2,"#141414"]].forEach(([k,c])=>{ g.fillStyle=c; g.beginPath(); g.arc(cx,cy,R*k,0,TAU); g.fill(); });
+    // wind flag
+    g.fillStyle="#6b4a32"; g.fillRect(W*.82,H*.2,3,H*.23); g.fillStyle="#c8452f"; g.beginPath(); g.moveTo(W*.82+3,H*.2); g.lineTo(W*.82+3+this.wind*40+Math.sin(this.t*6)*4,H*.215); g.lineTo(W*.82+3,H*.23); g.fill();
+    // stuck arrows
+    this.arrows.forEach(a=>{ const ax=a.x*W, ay=a.y*H; g.strokeStyle="#4a3424"; g.lineWidth=2; g.beginPath(); g.moveTo(ax,ay); g.lineTo(ax+6,ay+10); g.stroke(); g.fillStyle="#f4f1ea"; g.fillRect(ax+5,ay+9,4,5); });
+    // flying arrow
+    if(this.fly){ this.fly.t+=dt/.55; const f=this.fly, k=Math.min(1,f.t); const sx=W*.5, sy=H*1.05; const x=sx+(f.x*W-sx)*k, y=sy+(f.y*H-sy)*k-Math.sin(k*Math.PI)*H*.08; const L=60*(1-k)+8;
+      g.strokeStyle="#4a3424"; g.lineWidth=3*(1-k)+1; g.beginPath(); g.moveTo(x,y); g.lineTo(x,y+L); g.stroke();
+      if(k>=1){ const d=Math.hypot(f.x*W-cx,f.y*H-cy)/R; const pts=d<.2?10:d<.4?7:d<.56?5:d<.86?3:d<1?1:0; this.arrows.push({x:f.x,y:f.y,pts}); this.n++; this.fly=null;
+        sfx((a,t)=>{ const o=a.createOscillator(),og=a.createGain(); o.frequency.value=pts?140:60; og.gain.setValueAtTime(.18,t); og.gain.exponentialRampToValueAtTime(.001,t+.25); o.connect(og); og.connect(voiceBus); o.start(t); o.stop(t+.3); });
+        this.msg=pts>=10?"Kaichū. The center. Hm… do not let it go to your head.":pts>=7?"Close to the heart of it.":pts>=3?"On the target. The bow is honest.":pts?"Just on the edge.":"Into the sand. The sand thanks you."; hostBuzz();
+        this.wind=rand(-1,1);
+        if(this.n>=4){ this.done=true; const tot=this.arrows.reduce((s,a)=>s+a.pts,0); const best=mgBest("kyudo",tot);
+          setTimeout(()=>mgResult(`${tot} / 40`,`${this.arrows.filter(a=>a.pts).length} of 4 arrows on the target${best?" · new best":""}`, tot>=30?"Four arrows, one mind. I am almost impressed.":tot>=18?"Good. The arrow follows the breath. Yours is getting calmer.":tot>=8?"The target is patient. So am I. Again.":"Hm. You were shooting at your thoughts, not the target. Breathe first."),900); } } }
+    // aim & bow
+    const [sx,sy]=this.sway(); const ax=(this.aim[0]+sx)*W, ay=(this.aim[1]+sy)*H;
+    if(!this.fly&&!this.done){ g.strokeStyle="rgba(255,255,255,.85)"; g.lineWidth=1.5; g.beginPath(); g.arc(ax,ay,10+(1-Math.min(1,this.draw))*14,0,TAU); g.stroke(); g.beginPath(); g.moveTo(ax-4,ay); g.lineTo(ax+4,ay); g.moveTo(ax,ay-4); g.lineTo(ax,ay+4); g.stroke(); }
+    const pull=Math.min(1,this.draw); g.strokeStyle="#3a2416"; g.lineWidth=7; g.beginPath(); g.moveTo(W*.36,H*.62); g.quadraticCurveTo(W*.5,H*(.78+pull*.03),W*.64,H*1.04); g.stroke();
+    g.strokeStyle="rgba(240,240,230,.85)"; g.lineWidth=1.5; g.beginPath(); g.moveTo(W*.36,H*.62); g.lineTo(W*.5-pull*W*.06,H*(.86+pull*.08)); g.lineTo(W*.64,H*1.04); g.stroke();
+    // HUD
+    g.fillStyle="rgba(20,18,30,.55)"; g.fillRect(16,H-64,280,48); g.fillStyle="#f4ecd8"; g.font="15px Shippori Mincho, serif"; g.fillText(`Arrow ${Math.min(this.n+1,4)} / 4   ·   ${this.arrows.reduce((s,a)=>s+a.pts,0)} pts`,30,H-34);
+    g.fillStyle="rgba(244,236,216,.95)"; g.font="16px Shippori Mincho, serif"; g.textAlign="center"; g.fillText(this.msg,W/2,H*.08); g.textAlign="left";
+    if(this.drawing){ g.fillStyle="rgba(20,18,30,.5)"; g.fillRect(W/2-90,H*.94,180,10); g.fillStyle=this.draw>1.15?"#c8452f":"#f4ecd8"; g.fillRect(W/2-90,H*.94,180*Math.min(1,this.draw/1.15),10); }
+  }
+};
+
+/* ---------- 太鼓 Taiko ---------- */
+const TAIKO={ title:"太鼓 · Taiko", sub:"Red DON: F / J / left side · Blue KA: D / K / right side",
+  start(){ initAudio(); if(actx.state==="suspended") actx.resume(); this.bpm=108; const beat=60/this.bpm; this.t0=actx.currentTime+2.2; this.notes=[]; let t=0; const bars=16;
+    for(let b=0;b<bars;b++){ const lvl=Math.min(1,.35+b/bars); for(let s=0;s<8;s++){ const strong=s%2===0; if(b===0&&s>3) continue; if(Math.random()<(strong?.62+lvl*.2:.12+lvl*.3)) this.notes.push({time:this.t0+(b*8+s)*beat/2,type:Math.random()<(s%4===0?.78:.42)?"don":"ka",hit:null}); } }
+    this.end_t=this.t0+bars*4*beat+1.2; this.score=0; this.combo=0; this.maxc=0; this.good=0; this.ok=0; this.miss=0; this.flash=null; this.finished=false;
+    // backing: koto on the downbeat + soft shaker, scheduled ahead
+    const kot=[146.83,196,220,233.08,293.66]; for(let b=0;b<bars;b++){ for(let q=0;q<4;q++){ const tt=this.t0+(b*4+q)*beat; if(q===0||Math.random()<.35){ const ps=actx.createBufferSource(); ps.buffer=ks(kot[(b+q*2)%kot.length]*(q===0?1:2)); const pg=actx.createGain(); pg.gain.value=q===0?.4:.18; ps.connect(pg); pg.connect(voiceBus); ps.start(tt); } const n=actx.createBufferSource(); n.buffer=noiseBuf; const f=actx.createBiquadFilter(); f.type="highpass"; f.frequency.value=6000; const g=actx.createGain(); g.gain.setValueAtTime(.03,tt+beat/2); g.gain.exponentialRampToValueAtTime(.001,tt+beat/2+.06); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(tt+beat/2); n.stop(tt+beat/2+.08); } }
+  },
+  end(){},
+  drum(type){ sfx((a,t)=>{ if(type==="don"){ const o=a.createOscillator(),g=a.createGain(); o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(55,t+.18); g.gain.setValueAtTime(.55,t); g.gain.exponentialRampToValueAtTime(.001,t+.35); o.connect(g); g.connect(voiceBus); o.start(t); o.stop(t+.4); }
+      else { const n=a.createBufferSource(); n.buffer=noiseBuf; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=2400; f.Q.value=2; const g=a.createGain(); g.gain.setValueAtTime(.35,t); g.gain.exponentialRampToValueAtTime(.001,t+.07); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(t); n.stop(t+.1); const o=a.createOscillator(),og=a.createGain(); o.frequency.value=950; og.gain.setValueAtTime(.08,t); og.gain.exponentialRampToValueAtTime(.001,t+.06); o.connect(og); og.connect(voiceBus); o.start(t); o.stop(t+.08); } });
+    const now=actx.currentTime; let best=null,bd=1; for(const n of this.notes){ if(n.hit) continue; const d=Math.abs(n.time-now); if(d<bd){ bd=d; best=n; } }
+    if(best&&bd<.14){ if(best.type!==type){ this.flash={txt:"wrong drum",c:"#9a8670",t:.4}; return; } best.hit=bd<.055?"good":"ok"; if(best.hit==="good"){ this.good++; this.score+=300; } else { this.ok++; this.score+=100; } this.combo++; this.maxc=Math.max(this.maxc,this.combo); this.flash={txt:best.hit==="good"?"良 GOOD":"可 OK",c:best.hit==="good"?"#f7c948":"#f4ecd8",t:.4}; if(this.combo%20===0) hostBuzz(); } },
+  key(c,dn){ if(!dn) return; if(c==="KeyF"||c==="KeyJ") this.drum("don"); else if(c==="KeyD"||c==="KeyK") this.drum("ka"); },
+  down(x,y,e){ if(e&&e.button===2) this.drum("ka"); else this.drum(x<.5?"don":"ka"); },
+  hit(type){ this.drum(type); },
+  frame(dt,W,H){ const g=mgX, now=actx.currentTime; const speed=W*.42, hx=W*.18, ly=H*.48;
+    let gr=g.createLinearGradient(0,0,0,H); gr.addColorStop(0,"#2a1a18"); gr.addColorStop(1,"#120c10"); g.fillStyle=gr; g.fillRect(0,0,W,H);
+    g.fillStyle="rgba(200,69,47,.12)"; for(let i=0;i<8;i++){ g.beginPath(); g.arc(W*(i/7),H*.15,40+Math.sin(now*2+i)*6,0,TAU); g.fill(); }
+    g.fillStyle="#3a2420"; g.fillRect(0,ly-48,W,96); g.fillStyle="#1d1210"; g.fillRect(0,ly-44,W,88);
+    // hit circle & drum
+    g.strokeStyle="rgba(244,236,216,.75)"; g.lineWidth=3; g.beginPath(); g.arc(hx,ly,34,0,TAU); g.stroke();
+    g.fillStyle="#7a3a26"; g.beginPath(); g.arc(hx-W*.11,ly,52,0,TAU); g.fill(); g.fillStyle="#efe3cc"; g.beginPath(); g.arc(hx-W*.11,ly,40,0,TAU); g.fill(); g.fillStyle="#c8452f"; g.font="bold 22px serif"; g.textAlign="center"; g.fillText("太",hx-W*.11,ly+8);
+    // notes
+    for(let i=this.notes.length-1;i>=0;i--){ const n=this.notes[i]; const x=hx+(n.time-now)*speed; if(n.hit){ continue; } if(now-n.time>.14){ n.hit="miss"; this.miss++; this.combo=0; this.flash={txt:"不 MISS",c:"#7a8aa8",t:.35}; continue; }
+      if(x>W+40) continue; g.fillStyle=n.type==="don"?"#e2553a":"#4aa3d8"; g.beginPath(); g.arc(x,ly,26,0,TAU); g.fill(); g.strokeStyle="#f4ecd8"; g.lineWidth=3; g.stroke(); g.fillStyle="#fff"; g.font="bold 15px sans-serif"; g.fillText(n.type==="don"?"ドン":"カッ",x,ly+5); }
+    if(this.flash){ this.flash.t-=dt; g.fillStyle=this.flash.c; g.font="bold 24px Shippori Mincho, serif"; g.fillText(this.flash.txt,hx,ly-62); if(this.flash.t<=0) this.flash=null; }
+    g.fillStyle="#f4ecd8"; g.font="18px Shippori Mincho, serif"; g.fillText(`${this.score}`,W*.5,H*.82); g.font="13px sans-serif"; g.fillStyle="rgba(244,236,216,.7)"; g.fillText(this.combo>2?`${this.combo} combo`:"",W*.5,H*.86);
+    if(now<this.t0){ g.font="30px Shippori Mincho, serif"; g.fillStyle="#f4ecd8"; g.fillText(Math.ceil(this.t0-now)||"始",W*.5,H*.3); }
+    g.textAlign="left";
+    if(!this.finished&&now>this.end_t){ this.finished=true; const total=this.notes.length, acc=Math.round((this.good+this.ok*.5)/Math.max(1,total)*100); const best=mgBest("taiko",this.score);
+      mgResult(`${this.score} pts · ${acc}%`,`良 ${this.good} · 可 ${this.ok} · 不 ${this.miss} · best combo ${this.maxc}${best?" · new best":""}`, acc>=90?"The drum and you agreed on everything. Rare.":acc>=70?"Your hands found the heartbeat. Mostly.":acc>=45?"The rhythm was there. You arrived a little late to it.":"Hm. The drum spoke. You were thinking of something else."); } }
+};
+
+/* ---------- 砂紋 Sand raking ---------- */
+const sandCv=document.createElement("canvas"); sandCv.width=1024; sandCv.height=640; const sandX=sandCv.getContext("2d");
+const SAND_ROCKS=[[-4,-1,1.3],[3.2,1.6,1],[4.6,-2.4,.7]];
+const rockPx=([rx,ry,r])=>[(rx+8)/16*1024,(ry+5)/10*640,r/16*1024];
+function sandBase(){ const g=sandX; g.fillStyle="#d9d1bf"; g.fillRect(0,0,1024,640);
+  for(let y=6;y<640;y+=11){ g.strokeStyle="rgba(140,128,104,.55)"; g.lineWidth=2.4; g.beginPath(); g.moveTo(0,y); g.lineTo(1024,y); g.stroke(); g.strokeStyle="rgba(250,246,236,.8)"; g.lineWidth=1.6; g.beginPath(); g.moveTo(0,y+3); g.lineTo(1024,y+3); g.stroke(); }
+  SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); for(let k=1;k<5;k++){ const rr=r*1.15+k*12; g.fillStyle="#d9d1bf"; g.beginPath(); g.arc(x,y,rr+6,0,TAU); g.fill(); } for(let k=4;k>=1;k--){ const rr=r*1.15+k*12; g.strokeStyle="rgba(140,128,104,.6)"; g.lineWidth=2.4; g.beginPath(); g.arc(x,y,rr,0,TAU); g.stroke(); g.strokeStyle="rgba(250,246,236,.8)"; g.lineWidth=1.6; g.beginPath(); g.arc(x,y,rr+3,0,TAU); g.stroke(); } }); }
+let sandTex=null;
+function applySand(){ if(!SAND) return; if(!sandTex){ sandTex=new THREE.CanvasTexture(sandCv); sandTex.colorSpace=THREE.SRGBColorSpace; SAND.material=new THREE.MeshToonMaterial({map:sandTex,gradientMap:gm}); } sandTex.needsUpdate=true; }
+function loadSandArt(){ if(!store.sandArt) return; const im=new Image(); im.onload=()=>{ sandX.drawImage(im,0,0,1024,640); applySand(); }; im.src=store.sandArt; }
+const RAKE={ title:"砂紋 · Raking the Dry Garden", sub:"Drag to rake · the stones stay where they are",
+  start(){ if(!store.sandArt&&!this.started) sandBase(); this.started=true; this.last=null; this.verdict=""; },
+  rake(x,y,down){ const px=x*1024, py=y*640; if(!down){ this.last=null; return; } if(!this.last){ this.last=[px,py]; return; }
+    const [lx,ly]=this.last, dx=px-lx, dy=py-ly, d=Math.hypot(dx,dy); if(d<3) return; const nx=-dy/d, ny=dx/d; const g=sandX;
+    g.lineCap="round"; g.strokeStyle="#d9d1bf"; g.lineWidth=58; g.beginPath(); g.moveTo(lx,ly); g.lineTo(px,py); g.stroke();
+    for(let k=-2;k<=2;k++){ const o=k*11; g.strokeStyle="rgba(140,128,104,.6)"; g.lineWidth=2.6; g.beginPath(); g.moveTo(lx+nx*o,ly+ny*o); g.lineTo(px+nx*o,py+ny*o); g.stroke(); g.strokeStyle="rgba(250,246,236,.85)"; g.lineWidth=1.8; g.beginPath(); g.moveTo(lx+nx*(o+3),ly+ny*(o+3)); g.lineTo(px+nx*(o+3),py+ny*(o+3)); g.stroke(); }
+    this.last=[px,py]; this.dirty=true; },
+  view(W,H){ const s=Math.min(W*.92/1024,H*.78/640); return {s,ox:(W-1024*s)/2,oy:(H-640*s)/2+H*.02}; },
+  toSand(x,y){ const W=innerWidth,H=innerHeight,v=this.view(W,H); return [(x*W-v.ox)/(1024*v.s),(y*H-v.oy)/(640*v.s)]; },
+  down(x,y){ this.rake(...this.toSand(x,y),true); }, move(x,y,e){ if(e&&e.buttons) this.rake(...this.toSand(x,y),true); }, up(){ this.rake(0,0,false); this.commit(); },
+  pen(x,y,dn){ this.rake(x,y,dn); if(!dn) this.commit(); },
+  commit(){ if(!this.dirty) return; this.dirty=false; applySand(); clearTimeout(this._t); this._t=setTimeout(()=>{ const c=document.createElement("canvas"); c.width=512; c.height=320; c.getContext("2d").drawImage(sandCv,0,0,512,320); store.sandArt=c.toDataURL("image/jpeg",.72); save(); },800); },
+  frame(dt,W,H){ const g=mgX; g.fillStyle="#2f3a2a"; g.fillRect(0,0,W,H); const v=this.view(W,H);
+    g.fillStyle="#5a3b26"; g.fillRect(v.ox-12,v.oy-12,1024*v.s+24,640*v.s+24); g.drawImage(sandCv,v.ox,v.oy,1024*v.s,640*v.s);
+    SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); const X=v.ox+x*v.s, Y=v.oy+y*v.s, R=r*v.s; g.fillStyle="rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(X+R*.15,Y+R*.2,R,R*.85,0,0,TAU); g.fill(); g.fillStyle="#6e6b63"; g.beginPath(); g.ellipse(X,Y,R,R*.85,.3,0,TAU); g.fill(); g.fillStyle="#5d7a3a"; g.beginPath(); g.ellipse(X-R*.15,Y-R*.2,R*.6,R*.35,.3,0,TAU); g.fill(); });
+    g.fillStyle="#f4ecd8"; g.font="16px Shippori Mincho, serif"; g.textAlign="center"; g.fillText(this.verdict||"Rake slow, even lines. Circle the stones like water would.",W/2,Math.min(H-14,v.oy+640*v.s+34)); g.textAlign="left"; }
+};
+async function sandJudge(){ await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
+  if(!sample||!lim||!lim.images){ RAKE.verdict="Hm. I see sea in it. That is enough for today."; speak(RAKE.verdict); return; }
+  RAKE.verdict="Sensei floats over the sand…";
+  const c=document.createElement("canvas"); c.width=640; c.height=400; const g=c.getContext("2d"); g.drawImage(sandCv,0,0,640,400); SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); g.fillStyle="#6e6b63"; g.beginPath(); g.arc(x*.625,y*.625,r*.625,0,TAU); g.fill(); });
+  const blob=await new Promise(r=>c.toBlob(r,"image/png"));
+  try{ const v=await sample.json(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi zen master. The image is a top-down view of the dry garden (karesansui) your student Gabriel just raked; the grey circles are the stones. Judge it like a zen gardener: flow, evenness of lines, how the patterns respond to the stones, sense of calm. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice"}.`,{images:[blob],cache:false});
+    const sc=clamp(Math.round(+v.score||0),1,10); RAKE.verdict=`${sc}/10 — ${String(v.words||"").slice(0,300)}`; mgBest("rake",sc); speak(String(v.words||"")); if(sc>=8) hostBuzz();
+  }catch(e){ RAKE.verdict="…the wind blew sand in my eyes. Show me again."; } }
+$("#mgJudge").addEventListener("click",()=>{ if(MG===RAKE) sandJudge(); });
+$("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
+const GAMES={kyudo:KYUDO,taiko:TAIKO,rake:RAKE};
+function openGame(id){ const g=GAMES[id]; if(!g) return; $("#mgJudge").style.display=id==="rake"?"":"none"; $("#mgReset").style.display=id==="rake"?"":"none"; if(!entered) enterGame(); else hideMenu(); setTimeout(()=>mgOpen(g),entered?50:400); }
+$("#miGames").addEventListener("click",()=>{ $("#gamesPanel").classList.add("show"); });
+document.querySelectorAll("[data-game]").forEach(b=>b.addEventListener("click",()=>{ $("#gamesPanel").classList.remove("show"); const id=b.dataset.game; if(id==="shodo"){ if(!entered) enterGame(); else hideMenu(); setTimeout(openShodo,300); } else if(id==="koi"){ if(!entered) enterGame(); else hideMenu(); toast("Walk to the pond, then tap the water, press F, or flick up on your phone."); } else openGame(id); }));
+
+/* ===================== main menu ===================== */
+let menuOpen=true, lastReply="", firstEnter=true;
+function showMenu(){ menuOpen=true; $("#hint").style.opacity=0; $("#title").classList.remove("gone"); $("#miEnterT").textContent=entered?"Return to the Garden":"Enter the Garden"; closeChat(); hostPush(); }
+function hideMenu(){ menuOpen=false; $("#hint").style.opacity=chatOpen?0:1; $("#title").classList.add("gone"); ["pairPanel","setPanel"].forEach(id=>$("#"+id).classList.remove("show")); hostPush(); }
+async function enterGame(){
+  hideMenu(); controls.autoRotate=false;
+  if(firstEnter){ firstEnter=false; if(musicPref) startSound();
+    controls.target.set(player.position.x,player.position.y+1.7,player.position.z); camera.position.set(player.position.x,player.position.y+5,player.position.z+9.5);
+    controls.update(); entered=true;
+    await memReady; store.visits=(store.visits||0)+1; store.found=store.found||[]; renderHistory();
+    const g=greeting(); addMsg("s",g); store.history.push({r:"s",c:g}); store.prevVisit=store.lastVisit||null; store.lastVisit=Date.now(); save(); lastReply=g; hostPush();
+    setTimeout(()=>{ whisper(g); speak(g); },1500); }
+}
+$("#miEnter").addEventListener("click",()=>enterGame());
+$("#miScrolls").addEventListener("click",()=>openScrolls());
+$("#miTalk").addEventListener("click",async()=>{ await enterGame(); setTimeout(()=>{ openChat(); toast("Sensei drifts over to you."); },400); });
+$("#miSettings").addEventListener("click",()=>{ refreshSettings(); $("#setPanel").classList.add("show"); });
+$("#miPair").addEventListener("click",()=>{ if(window.sensei){ window.sensei.send("open","pair"); return; } initAudio(); $("#pairPanel").classList.add("show"); hostInit(); });
+// when the window is hidden (the app closes it to the tray) the garden freezes: no sound, no speech
+let wasSound=false; document.addEventListener("visibilitychange",()=>{ if(document.hidden){ wasSound=soundOn; if(soundOn) stopSound(); stopSpeaking(); if(window.senseiVoice) senseiVoice.stop(); } else if(wasSound){ startSound(); wasSound=false; } });
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>$("#"+b.dataset.close).classList.remove("show")));
+let musicPref=true, speakPref=true;
+function refreshSettings(){ $("#setVoiceV").textContent=MODES[modeIdx].label; $("#setSpeakV").textContent=voiceOn?"On":"Off"; $("#setMusicV").textContent=soundOn||(!entered&&musicPref)?"On":"Off"; }
+$("#setVoice").addEventListener("click",async()=>{ await cycleVoice(); refreshSettings(); });
+$("#setSpeak").addEventListener("click",()=>{ $("#voiceBtn").click(); refreshSettings(); });
+$("#setMusic").addEventListener("click",()=>{ if(soundOn){ stopSound(); musicPref=false; } else { musicPref=true; if(entered) startSound(); } refreshSettings(); });
+
+/* ===================== phone remote: host side (computer) ===================== */
+const PAIR=String(Math.floor(1000+Math.random()*9000)); $("#pairCode").textContent=PAIR;
+let hRoom=null, hostStarted=false, rPeerSeen=false, prevLk=null; const rjoy={x:0,y:0}; let rptr={x:.5,y:.5,seen:0};
+const ptrEl=$("#pointer"); const sph=new THREE.Spherical();
+async function hostInit(){ if(hostStarted) return; hostStarted=true;
+  try{ if(!window.claude||!claude.use) throw 0; const room=await claude.use("room"); if(!room) throw 0;
+    hRoom=await room.join("sensei-"+PAIR);
+    hRoom.on("rc",m=>{ if(!m.sameTab) handleRc(m.data||{}); });
+    hRoom.onPeers(ch=>{ const r=ch.peers.find(p=>!p.sameTab&&p.presence&&p.presence.rc); if(r&&!rPeerSeen){ rPeerSeen=true; $("#pairStat").textContent="Phone connected. Point and press A."; toast("Phone remote connected."); chime(); } if(!r&&rPeerSeen&&ch.left.length){ rPeerSeen=false; $("#pairStat").textContent="Waiting for your phone…"; } });
+    hostPush();
+  }catch(e){ $("#pairStat").textContent="Live connection isn't available in this view. Open the page on claude.ai in a browser."; hostStarted=false; } }
+function hostMode(){ return MG?(MG===KYUDO?"kyudo":MG===TAIKO?"taiko":"rake"):shodoOpen?"shodo":(menuOpen||document.querySelector(".panel.show"))?"menu":chatOpen?"chat":"game"; }
+function hostBuzz(){ if(hRoom) hRoom.emit("buzz",{}).catch(()=>{}); }
+function hostPush(){ if(!hRoom) return; hRoom.presence({host:{mode:hostMode(),last:(lastReply||"").slice(0,600),act:ai.act?actName(ai.act):""}}).catch(()=>{}); }
+function remotePeer(){ if(!hRoom) return null; return hRoom.peers().find(p=>!p.sameTab&&p.presence&&p.presence.rc)||null; }
+const CLICKABLE=".mi,.pbtn,.ibtn,#act,.x,#send,#whisper,.m.s,#clock,#voiceCycle,.scrollItem,.shB";
+function hoverAtPointer(){ document.querySelectorAll(".rc-hover").forEach(e=>e.classList.remove("rc-hover")); if(!ptrVisible()) return null;
+  const el=document.elementFromPoint(rptr.x*innerWidth,rptr.y*innerHeight); const c=el&&el.closest(CLICKABLE); if(c) c.classList.add("rc-hover"); return {el,c}; }
+const ptrVisible=()=>rPeerSeen&&hostMode()!=="game"&&hostMode()!=="shodo"&&performance.now()-rptr.seen<8000;
+function clickAtPointer(){ ptrEl.classList.add("press"); setTimeout(()=>ptrEl.classList.remove("press"),120);
+  const h=hoverAtPointer(); if(h&&h.c){ h.c.click(); return; }
+  if(h&&h.el===canvas){ ptr.set(rptr.x*2-1,-(rptr.y*2-1)); ray.setFromCamera(ptr,camera); for(const it of ray.intersectObjects(tappables,true)){ let o=it.object; while(o&&!o.userData.tap) o=o.parent; if(o){ o.userData.tap(it.point); return; } } } }
+function handleRc(d){
+  if(typeof d.say==="string"&&d.say.trim()){ if(!entered){ enterGame(); } if(!chatOpen) openChat(); inp.value=d.say.slice(0,500); $("#form").requestSubmit(); return; }
+  const b=d.b;
+  if(b==="toss"){ if(hostMode()==="game") tossFood(clamp(+d.p||.6,.1,1)); return; }
+  if(b==="a"){ if(hostMode()==="game"){ if(nearest) doInteract(); else toast("Nothing here to use. Walk closer to something, or press 話 to call Sensei."); } else clickAtPointer(); }
+  else if(b==="don"||b==="ka"){ if(MG===TAIKO) TAIKO.hit(b); }
+  else if(b==="b"){ if(MG) mgClose(); else if(shodoOpen) closeShodo(); else if(chatOpen) closeChat(); else if($(".panel.show")) $(".panel.show").classList.remove("show"); else if(menuOpen&&entered) hideMenu(); }
+  else if(b==="talk"){ if(!entered){ $("#miTalk").click(); } else { if(menuOpen) hideMenu(); openChat(); } }
+  else if(b==="home"){ if(!entered) return; menuOpen?hideMenu():showMenu(); }
+  hostPush();
+}
+let lastMode="", lastPen="";
+function hostFrame(){
+  const m=hostMode(); if(m!==lastMode){ lastMode=m; hostPush(); }
+  const rp=remotePeer(); if(!rp){ rjoy.x=rjoy.y=0; ptrEl.style.display="none"; return; }
+  const rc=rp.presence.rc||{};
+  const j=Array.isArray(rc.j)?rc.j:[0,0]; rjoy.x=clamp(+j[0]||0,-1,1); rjoy.y=clamp(+j[1]||0,-1,1);
+  if(Array.isArray(rc.p)){ const nx=clamp(+rc.p[0]||0,0,1), ny=clamp(+rc.p[1]||0,0,1); if(nx!==rptr.x||ny!==rptr.y){ rptr.x=nx; rptr.y=ny; rptr.seen=performance.now(); } }
+  if(Array.isArray(rc.lk)){ const lk=[+rc.lk[0]||0,+rc.lk[1]||0]; if(prevLk&&entered&&!menuOpen){ const dx=lk[0]-prevLk[0], dy=lk[1]-prevLk[1]; if(dx||dy){ const off=camera.position.clone().sub(controls.target); sph.setFromVector3(off); sph.theta-=dx; sph.phi=clamp(sph.phi-dy,controls.minPolarAngle,controls.maxPolarAngle); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); } } prevLk=lk; }
+  if(MG&&MG.pen&&Array.isArray(rc.pen)){ const pk=rc.pen.join(","); if(pk!==lastPen){ lastPen=pk; const [x,y,dn]=rc.pen; MG.pen(clamp(+x,0,1),clamp(+y,0,1),!!dn); } ptrEl.style.display="none"; return; }
+  if(shodoOpen&&Array.isArray(rc.pen)){ const pk=rc.pen.join(","); if(pk!==lastPen){ lastPen=pk; const [x,y,dn]=rc.pen; shStroke(clamp(+x,0,1),clamp(+y,0,1),!!dn); const r=shC.getBoundingClientRect(); ptrEl.style.display="block"; ptrEl.style.left=(r.left+x*r.width)+"px"; ptrEl.style.top=(r.top+y*r.height)+"px"; } return; }
+  if(ptrVisible()){ ptrEl.style.display="block"; ptrEl.style.left=(rptr.x*innerWidth)+"px"; ptrEl.style.top=(rptr.y*innerHeight)+"px"; hoverAtPointer(); } else { ptrEl.style.display="none"; }
+}
+
+/* ===================== phone remote: controller side (phone) ===================== */
+let remoteMode=false, cRoom=null; const rs={j:[0,0],p:[.5,.5],lk:[0,0],pen:[0,0,0]}; let hostInfo=null;
+if(isTouch) $("#miRemote").classList.remove("hidden");
+$("#miRemote").addEventListener("click",()=>{ remoteMode=true; $("#remote").classList.add("show"); $("#title").classList.add("gone"); stopSound(); stopSpeaking(); setTimeout(()=>$("#rCode").focus(),200); });
+function cPush(){ if(cRoom) cRoom.presence({rc:{j:rs.j,p:rs.p,lk:rs.lk,pen:rs.pen,t:Date.now()}}).catch(()=>{}); }
+function cEmit(d){ if(cRoom) cRoom.emit("rc",d).catch(()=>{}); try{ navigator.vibrate&&navigator.vibrate(12); }catch(e){} }
+$("#rJoin").addEventListener("click",async()=>{ const code=$("#rCode").value.replace(/\D/g,""); if(code.length!==4){ $("#rStatus").textContent="enter the 4-digit code"; return; }
+  $("#rStatus").textContent="connecting…";
+  try{ if(!window.claude||!claude.use) throw 0; const room=await claude.use("room"); if(!room) throw 0;
+    if(cRoom) await cRoom.leave().catch(()=>{}); cRoom=await room.join("sensei-"+code); cRoom.on("buzz",()=>{ try{ navigator.vibrate&&navigator.vibrate([30,40,60]); }catch(e){} $("#rPad").animate([{boxShadow:"0 0 0 0 rgba(247,201,72,.8)"},{boxShadow:"0 0 0 16px rgba(247,201,72,0)"}],{duration:600}); });
+    cRoom.onPeers(ch=>{ const h=ch.peers.find(p=>!p.sameTab&&p.presence&&p.presence.host); hostInfo=h?h.presence.host:null;
+      $("#rDot").classList.toggle("on",!!h); $("#rStatus").textContent=h?"connected":"waiting for computer…";
+      if(h){ $("#rPair").style.display="none"; const md=hostInfo.mode; $("#rPadLbl").textContent=md==="game"?"Swipe to look · flick up to toss koi food · stick to walk · A to interact":md==="shodo"?"Write the kanji with your finger. The pad is your paper.":md==="rake"?"Drag to rake the sand.":md==="kyudo"?"Press and hold to draw the bow · slide to aim · lift to release":md==="taiko"?"Tap LEFT half for DON (red) · RIGHT half for KA (blue)":"Swipe to point · tap or A to select";
+        const last=String(hostInfo.last||""); $("#rLast").style.display=last?"block":"none"; $("#rLast").textContent="Sensei: "+last; } else $("#rPair").style.display="flex"; });
+    cPush();
+  }catch(e){ $("#rStatus").textContent="live connection unavailable here — open this page on claude.ai in your phone's browser"; } });
+{ // touchpad
+  const pad=$("#rPad"); let pid=null, lx=0, ly=0, sx=0, sy=0, st=0, moved=0;
+  const penAt=e=>{ const r=pad.getBoundingClientRect(); return [+((e.clientX-r.left)/r.width).toFixed(4),+((e.clientY-r.top)/r.height).toFixed(4)]; };
+  pad.addEventListener("pointerdown",e=>{ pid=e.pointerId; pad.setPointerCapture(pid); lx=sx=e.clientX; ly=sy=e.clientY; st=performance.now(); moved=0; if(hostInfo&&hostInfo.mode==="taiko"){ cEmit({b:penAt(e)[0]<.5?"don":"ka"}); return; } if(hostInfo&&["shodo","rake","kyudo"].includes(hostInfo.mode)){ rs.pen=[...penAt(e),1]; cPush(); } });
+  pad.addEventListener("pointermove",e=>{ if(e.pointerId!==pid) return; const dx=e.clientX-lx, dy=e.clientY-ly; lx=e.clientX; ly=e.clientY; moved+=Math.abs(dx)+Math.abs(dy);
+    if(hostInfo&&hostInfo.mode==="taiko") return;
+    if(hostInfo&&["shodo","rake","kyudo"].includes(hostInfo.mode)){ rs.pen=[...penAt(e),1]; }
+    else if(hostInfo&&hostInfo.mode==="game"){ rs.lk=[rs.lk[0]+dx*.0085, rs.lk[1]+dy*.0065]; }
+    else { const r=pad.getBoundingClientRect(); rs.p=[clamp(rs.p[0]+dx/r.width*1.5,0,1), clamp(rs.p[1]+dy/r.height*1.3,0,1)]; }
+    cPush(); });
+  const up=e=>{ if(e.pointerId!==pid) return; pid=null; const el=performance.now()-st, vy=(e.clientY-sy)/Math.max(el,1);
+    if(hostInfo&&hostInfo.mode==="taiko") return;
+    if(hostInfo&&["shodo","rake","kyudo"].includes(hostInfo.mode)){ rs.pen=[rs.pen[0],rs.pen[1],0]; cPush(); return; }
+    if(hostInfo&&hostInfo.mode==="game"&&vy<-.9&&el<450&&Math.abs(e.clientY-sy)>70){ cEmit({b:"toss",p:clamp((-vy-.9)/2.2+.25,.15,1)}); return; }
+    if(moved<10&&el<300) cEmit({b:"a"}); };
+  pad.addEventListener("pointerup",up); pad.addEventListener("pointercancel",up);
+}
+{ // stick
+  const jEl=$("#rJoy"), k=jEl.querySelector(".k"); let id=null;
+  const mv=e=>{ const r=jEl.getBoundingClientRect(); let dx=e.clientX-(r.left+r.width/2), dy=e.clientY-(r.top+r.height/2); const m=Math.hypot(dx,dy), R=52; if(m>R){ dx*=R/m; dy*=R/m; } rs.j=[+(dx/R).toFixed(3),+(dy/R).toFixed(3)]; k.style.transform=`translate(${dx}px,${dy}px)`; cPush(); };
+  jEl.addEventListener("pointerdown",e=>{ id=e.pointerId; jEl.setPointerCapture(id); mv(e); });
+  jEl.addEventListener("pointermove",e=>{ if(e.pointerId===id) mv(e); });
+  const end=e=>{ if(e.pointerId!==id) return; id=null; rs.j=[0,0]; k.style.transform=""; cPush(); };
+  jEl.addEventListener("pointerup",end); jEl.addEventListener("pointercancel",end);
+}
+document.querySelectorAll(".rb").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); b.classList.add("down"); setTimeout(()=>b.classList.remove("down"),130); cEmit({b:b.dataset.b}); }));
+$("#rForm").addEventListener("submit",e=>{ e.preventDefault(); const t=$("#rInp").value.trim(); if(!t) return; $("#rInp").value=""; cEmit({say:t}); $("#rInp").blur(); });
+</script>
+</body>
+</html>

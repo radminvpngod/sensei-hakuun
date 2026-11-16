@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>pointer</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:transparent;pointer-events:none;font-family:"Segoe UI",system-ui,sans-serif}
+#ptr{position:fixed;left:0;top:0;width:46px;height:46px;margin:-23px 0 0 -23px;border-radius:50%;opacity:0;transition:opacity .25s;
+ background:radial-gradient(circle,rgba(255,255,255,.95) 0 14%,rgba(190,235,255,.6) 26%,rgba(190,235,255,0) 70%);box-shadow:0 0 26px rgba(190,235,255,.85)}
+#ptr.on{opacity:1}
+.tgt{position:fixed;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:4px solid #c8452f;box-shadow:0 0 0 9999px rgba(10,12,22,.25),0 0 30px #c8452f;display:none;animation:p 1s ease-in-out infinite}
+.tgt:after{content:"";position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#c8452f}
+.lbl{position:fixed;transform:translate(-50%,0);color:#fff;font-size:22px;font-weight:600;text-shadow:0 2px 10px rgba(0,0,0,.7);display:none;white-space:nowrap}
+@keyframes p{50%{transform:scale(1.12)}}
+</style></head>
+<body><div id="ptr"></div><div class="tgt" id="tgt"></div><div class="lbl" id="lbl"></div>
+<script>
+const S = window.sensei, ptr = document.getElementById("ptr"), tgt = document.getElementById("tgt"), lbl = document.getElementById("lbl"); let idle;
+S.on("pointer", p => { ptr.style.left = p.x + "px"; ptr.style.top = p.y + "px"; ptr.classList.add("on"); clearTimeout(idle); idle = setTimeout(() => ptr.classList.remove("on"), 1500); });
+S.on("calib", c => {
+  if (!c.step || c.step === "done") { tgt.style.display = lbl.style.display = "none"; return; }
+  const P = c.primary, corner = c.step === "corner";
+  const x = corner ? P.x + P.w - 70 : P.x + P.w / 2, y = corner ? P.y + 70 : P.y + P.h / 2;
+  tgt.style.left = x + "px"; tgt.style.top = y + "px"; tgt.style.display = "block";
+  lbl.textContent = corner ? "Now point at this corner, then tap" : "Point the top of your phone here, then tap";
+  lbl.style.left = (corner ? x - 220 : x) + "px"; lbl.style.top = (y + 80) + "px"; lbl.style.display = "block";
+});
+</script></body></html>
