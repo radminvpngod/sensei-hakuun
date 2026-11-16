@@ -79,7 +79,7 @@ S.on("remote", r => { if (r.connected) say("Ah, the phone remote. Point it at me
 let rec = null;
 async function listen(){
   if (listening) { stopListening(); return; }
-  if (!(await S.invoke("ears:ready"))) { say("Let me open my ears first. This happens only once…", 15000); const r = await S.invoke("voice:setup"); if (!r || !r.ears) { say("My ears would not open. Check your internet, then try again.", 7000); return; } }
+  if (!(await S.invoke("ears:ready"))) { say("Let me open my ears first. This happens only once…", 15000); const r = await S.invoke("voice:setup"); if (!r || !r.ears) { say("My ears would not open" + (r && r.error ? ": " + r.error : ".") + " Settings → Voice commands → Show log has the details.", 12000); return; } }
   listening = true; $("#ring").classList.add("on"); say("…I am listening.", 20000);
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });

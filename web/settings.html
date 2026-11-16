@@ -35,8 +35,9 @@ input[type=range]{width:150px;accent-color:#c8452f}
 
 <h2>His voice</h2>
 <div class="row"><div class="l">Speak aloud</div><div class="sw" data-k="voice"></div></div>
-<div class="row"><div class="l">Voice<small id="voiceStat"></small></div><div class="seg" data-k="voiceModel"><button data-v="ghost">Ghost sensei</button><button data-v="elder">Elder</button><button data-v="north">Mountain</button></div></div>
-<div class="row"><div class="l">Echo &amp; reverb<small>How far his voice carries through the garden</small></div><input type="range" min="0" max="1" step=".05" data-k="echo"></div>
+<div class="row"><div class="l">Voice<small>Classic is the deep, slow voice from the first version</small></div><div class="seg" data-k="voiceEngine"><button data-v="classic">Classic</button><button data-v="ghost">Ghost (experimental)</button></div></div>
+<div class="row" id="ghostRow"><div class="l">Ghost voice<small id="voiceStat"></small></div><div class="seg" data-k="voiceModel"><button data-v="ghost">Alan</button><button data-v="elder">Ryan</button><button data-v="north">Northern</button></div></div>
+<div class="row" id="echoRow"><div class="l">Echo &amp; reverb<small>Ghost voice only</small></div><input type="range" min="0" max="1" step=".05" data-k="echo"></div>
 <div class="row"><div class="l">Volume</div><input type="range" min="0" max="1" step=".05" data-k="voiceVolume"></div>
 <div class="row"><div class="l"></div><button class="btn" id="test">Hear him</button></div>
 
@@ -49,7 +50,7 @@ input[type=range]{width:150px;accent-color:#c8452f}
 <div class="row"><div class="l">Open the Garden</div><div class="hk" data-hk="garden"></div></div>
 
 <h2>Voice commands</h2>
-<div class="row"><div class="l"><span class="dot" id="earsDot"></span><span id="earsStat"></span><small>Press your talk hotkey, or hold 🎙 on the phone remote, then say things like “open Deadlock”, “play lofi”, “youtube cat videos”, “volume up”, “go rest”, or just ask him anything.</small></div><button class="btn" id="ears">Set up</button></div>
+<div class="row"><div class="l"><span class="dot" id="earsDot"></span><span id="earsStat"></span><small>Press your talk hotkey, or hold 🎙 on the phone remote, then say things like “open Deadlock”, “play lofi”, “youtube cat videos”, “volume up”, “go rest”, or just ask him anything.</small></div><div style="display:flex;gap:6px"><button class="btn" id="log">Show log</button><button class="btn" id="ears">Set up</button></div></div>
 
 <h2>Sensei's mind</h2>
 <div class="row"><div class="l"><span class="dot" id="mindDot"></span><span id="mindStat">Checking…</span><small>His conversations run through your claude.ai plan. Sign in once (email code works best), then press “Wake Sensei's mind”.</small></div><button class="btn main" id="mind">Open</button></div>
@@ -74,6 +75,7 @@ function render(){
   document.querySelectorAll(".sw").forEach(sw => sw.classList.toggle("on", !!st[sw.dataset.k]));
   document.querySelectorAll("input[type=range]").forEach(r => { if (document.activeElement !== r) r.value = st[r.dataset.k] ?? .5; });
   document.querySelectorAll(".hk").forEach(h => { if (!h.classList.contains("rec")) h.textContent = ((st.hotkeys || {})[h.dataset.hk] || "— none —").replace(/Control/g, "Ctrl"); });
+  document.getElementById("ghostRow").style.display = document.getElementById("echoRow").style.display = st.voiceEngine === "ghost" ? "" : "none";
   document.getElementById("ver").textContent = `app ${st.version} · ui ${st.web}`;
   document.getElementById("voiceStat").textContent = st.voiceReady ? "Natural voice installed" : "Downloads once (~85 MB) the first time he speaks";
   document.getElementById("earsDot").classList.toggle("ok", !!st.earsReady); document.getElementById("earsStat").textContent = st.earsReady ? "Ready — speech is understood on your PC" : "Not set up yet (one-time ~150 MB download)";
@@ -84,10 +86,11 @@ document.querySelectorAll(".seg").forEach(g => g.addEventListener("click", e => 
 document.querySelectorAll(".sw").forEach(sw => sw.addEventListener("click", () => set(sw.dataset.k, !st[sw.dataset.k])));
 document.querySelectorAll("input[type=range]").forEach(r => r.addEventListener("change", () => set(r.dataset.k, +r.value)));
 document.getElementById("test").onclick = () => window.senseiVoice && senseiVoice.speak("Hm. Can you hear me, my student? Good. Now… breathe.");
+document.getElementById("log").onclick = () => S.send("openLog");
 document.getElementById("addF").onclick = () => S.invoke("addFolder");
 document.getElementById("pair").onclick = () => S.send("open", "pair");
 document.getElementById("mind").onclick = () => S.send("open", "mind");
-document.getElementById("ears").onclick = async () => { document.getElementById("earsStat").textContent = "Downloading… this can take a few minutes"; await S.invoke("voice:setup"); st = await S.invoke("settings"); render(); };
+document.getElementById("ears").onclick = async () => { document.getElementById("earsStat").textContent = "Downloading… this can take a few minutes"; const r = await S.invoke("voice:setup"); st = await S.invoke("settings"); render(); if (!st.earsReady) document.getElementById("earsStat").textContent = "Failed: " + (r && r.error || "see log"); };
 // hotkey capture
 let recEl = null;
 document.querySelectorAll(".hk").forEach(h => h.addEventListener("click", () => { if (recEl) recEl.classList.remove("rec"); recEl = h; h.classList.add("rec"); h.textContent = "press keys…"; S.send("hotkeys:pause", true); }));

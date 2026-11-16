@@ -1,7 +1,7 @@
 {
- "version": 2,
+ "version": 3,
  "shellApi": 2,
- "notes": "Calibrated phone aiming, voice commands, the garden built in, a real ghost voice, Settings, lighter on CPU.",
+ "notes": "Ears fixed, classic voice is back.",
  "files": [
   "brain-client.js",
   "core.js",

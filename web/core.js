@@ -16,7 +16,7 @@ module.exports = function core(ctx) {
 
   /* ================= settings ================= */
   const SETTINGS = path.join(UD, 'settings.json');
-  const DEFAULTS = { customFolders: [], overlay: 'swim', voice: true, voiceModel: 'ghost', voiceVolume: .9, echo: .55, autostart: true, sens: 16,
+  const DEFAULTS = { customFolders: [], overlay: 'swim', voice: true, voiceEngine: 'classic', voiceModel: 'ghost', voiceVolume: .9, echo: .55, autostart: true, sens: 16,
     alwaysOnTop: true, monitors: 'main', gardenUnloadMin: 15, token: null,
     hotkeys: { palette: 'Control+Shift+Space', summon: 'Control+Alt+S', listen: 'Control+Alt+Space', hide: 'Control+Shift+H', garden: 'Control+Shift+G' } };
   let settings = { ...DEFAULTS };
@@ -56,6 +56,9 @@ module.exports = function core(ctx) {
     return fallback;
   }
   function say(text, kind = 'info') { broadcast('say', { kind, text }); }
+  const LOG = path.join(UD, 'sensei.log');
+  function log(...a) { try { fs.appendFileSync(LOG, new Date().toISOString() + ' ' + a.map(x => x instanceof Error ? x.stack || x.message : typeof x === 'string' ? x : JSON.stringify(x)).join(' ') + '\n'); } catch (e) {} }
+  ipcMain.on('openLog', () => shell.openPath(LOG));
 
   /* ================= Sensei's voice: Piper (natural neural voice, offline) ================= */
   const VOICE_DIR = path.join(UD, 'voice');
@@ -84,7 +87,7 @@ module.exports = function core(ctx) {
         if (!fs.existsSync(voiceModelPath() + '.json')) await download(v.url + v.file + '.onnx.json', voiceModelPath() + '.json');
         broadcast('settings', publicSettings());
         return true;
-      } catch (e) { say('My voice could not be fetched: ' + e.message + '. I will use the Windows voice for now.', 'error'); return false; }
+      } catch (e) { log('voice setup failed', e); say('My ghost voice could not be fetched: ' + e.message + '. I will use my classic voice.', 'error'); return false; }
       finally { voiceSetup = null; }
     })();
     return voiceSetup;
@@ -104,22 +107,26 @@ module.exports = function core(ctx) {
   /* ================= Sensei's ears: whisper.cpp (offline speech recognition) ================= */
   const EARS_DIR = path.join(UD, 'ears');
   const EARS_MODEL = path.join(EARS_DIR, 'ggml-base.en.bin');
-  const whisperExe = () => findFile(path.join(EARS_DIR, 'bin'), /^(whisper-cli|main)\.exe$/i, 3);
+  const whisperExe = () => findFile(path.join(EARS_DIR, 'bin'), /^whisper-cli\.exe$/i, 3);
   function earsReady() { return !!(whisperExe() && fs.existsSync(EARS_MODEL)); }
-  let earsSetup = null;
+  let earsSetup = null, earsError = '';
   function ensureEars() {
     if (earsReady()) return Promise.resolve(true);
     if (earsSetup) return earsSetup;
     earsSetup = (async () => {
       try {
         if (!whisperExe()) {
-          say('Opening my ears… (one time download, a few MB)', 'setup');
-          const url = await latestAsset('ggml-org/whisper.cpp', 'whisper-bin-x64.zip', 'https://github.com/ggml-org/whisper.cpp/releases/download/v1.9.5/whisper-bin-x64.zip');
-          const zip = path.join(EARS_DIR, 'w.zip'); await download(url, zip); await unzip(zip, path.join(EARS_DIR, 'bin')); fs.rmSync(zip, { force: true });
+          say('Opening my ears… (one time download, about 5 MB)', 'setup');
+          // the newest whisper.cpp releases sometimes ship without Windows builds, so try known-good ones too
+          const cands = [await latestAsset('ggml-org/whisper.cpp', 'whisper-bin-x64.zip', null), ...['v1.9.0', 'v1.8.3', 'v1.8.2', 'v1.7.6'].map(v => `https://github.com/ggml-org/whisper.cpp/releases/download/${v}/whisper-bin-x64.zip`)].filter(Boolean);
+          const zip = path.join(EARS_DIR, 'w.zip'); let ok = false, lastErr = null;
+          for (const url of cands) { try { log('ears: downloading', url); await download(url, zip); fs.rmSync(path.join(EARS_DIR, 'bin'), { recursive: true, force: true }); await unzip(zip, path.join(EARS_DIR, 'bin')); if (whisperExe()) { ok = true; break; } } catch (e) { lastErr = e; log('ears: failed', url, e); } }
+          fs.rmSync(zip, { force: true });
+          if (!ok) throw lastErr || new Error('no Windows build of whisper found');
         }
         if (!fs.existsSync(EARS_MODEL)) { say('Learning to listen… (one time, about 140 MB)', 'setup'); await download('https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.en.bin', EARS_MODEL + '.part', p => broadcast('setup-progress', { what: 'ears', p })); fs.renameSync(EARS_MODEL + '.part', EARS_MODEL); }
         broadcast('settings', publicSettings()); return true;
-      } catch (e) { say('My ears could not be opened: ' + e.message, 'error'); return false; }
+      } catch (e) { log('ears setup failed', e); earsError = e.message; say('My ears could not be opened: ' + e.message, 'error'); return false; }
       finally { earsSetup = null; }
     })();
     return earsSetup;
@@ -128,7 +135,7 @@ module.exports = function core(ctx) {
     if (!(await ensureEars())) return '';
     const f = path.join(os.tmpdir(), 'sensei-hear-' + Date.now() + '.wav'); fs.writeFileSync(f, Buffer.from(wav));
     const text = await new Promise(res => execFile(whisperExe(), ['-m', EARS_MODEL, '-f', f, '-nt', '-np', '-l', 'en', '-t', String(Math.max(2, Math.min(8, os.cpus().length - 1)))], { windowsHide: true, timeout: 90000, maxBuffer: 1 << 20 },
-      (e, out) => res(String(out || '').replace(/\[[^\]]*\]|\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim())));
+      (e, out, err) => { if (e) log('whisper error', e, String(err || '').slice(-600)); res(String(out || '').replace(/\[[^\]]*\]|\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()); }));
     fs.rmSync(f, { force: true }); return text;
   }
 
@@ -386,21 +393,22 @@ module.exports = function core(ctx) {
   ipcMain.handle('removeFolder', async (e, p) => { settings.customFolders = settings.customFolders.filter(x => x !== p); saveSettings(); await rescan(); broadcast('settings', publicSettings()); return settings.customFolders; });
   ipcMain.handle('settings', () => publicSettings());
   ipcMain.handle('setSetting', (e, k, v) => {
-    if (!['overlay', 'voice', 'voiceModel', 'voiceVolume', 'echo', 'autostart', 'sens', 'alwaysOnTop', 'monitors', 'gardenUnloadMin'].includes(k)) return publicSettings();
+    if (!['overlay', 'voice', 'voiceEngine', 'voiceModel', 'voiceVolume', 'echo', 'autostart', 'sens', 'alwaysOnTop', 'monitors', 'gardenUnloadMin'].includes(k)) return publicSettings();
     settings[k] = v; saveSettings();
     if (k === 'overlay') applyOverlayMode();
     if (k === 'autostart') app.setLoginItemSettings({ openAtLogin: !!v });
     if (k === 'alwaysOnTop') applyOnTop();
     if (k === 'monitors') applyMonitors();
-    if (k === 'voiceModel') ensureVoice();
+    if (k === 'voiceModel' || (k === 'voiceEngine' && v === 'ghost')) ensureVoice();
     buildTray(); broadcast('settings', publicSettings()); return publicSettings();
   });
   ipcMain.handle('pairInfo', async () => { const url = remoteURL(); return { url, ip: lanIP(), port: PORT, qr: await QRCode.toDataURL(url, { margin: 1, width: 360, color: { dark: '#2b2420', light: '#f4ecd8' } }), connected: remotes.size }; });
   ipcMain.handle('newToken', async () => { settings.token = crypto.randomBytes(8).toString('hex'); saveSettings(); remotes.forEach(w => w.close()); return true; });
-  ipcMain.handle('voice:synth', async (e, text) => { try { const b = await synth(text); return b ? new Uint8Array(b) : null; } catch (err) { return null; } });
-  ipcMain.handle('voice:setup', async () => ({ voice: await ensureVoice(), ears: await ensureEars() }));
+  ipcMain.handle('voice:synth', async (e, text) => { if (settings.voiceEngine !== 'ghost') return null; try { const b = await synth(text); return b ? new Uint8Array(b) : null; } catch (err) { log('synth failed', err); return null; } });
+  ipcMain.handle('voice:setup', async () => ({ ears: await ensureEars(), voice: settings.voiceEngine === 'ghost' ? await ensureVoice() : true, error: earsError }));
   ipcMain.handle('ears:transcribe', async (e, wav) => { try { return await transcribe(wav); } catch (err) { return ''; } });
   ipcMain.handle('ears:ready', async () => earsReady());
+  ipcMain.handle('ears:error', async () => earsError);
   ipcMain.on('quit', () => app.quit());
   ipcMain.on('talk', () => { if (overlay && !overlay.isDestroyed()) { if (settings.overlay === 'hidden') { settings.overlay = 'swim'; applyOverlayMode(); } overlay.webContents.send('listen', { from: 'palette' }); } });
 
@@ -460,7 +468,7 @@ module.exports = function core(ctx) {
     const failed = registerHotkeys(); if (failed.includes(k)) { settings.hotkeys[k] = old; registerHotkeys(); return { ok: false, settings: publicSettings() }; }
     saveSettings(); buildTray(); broadcast('settings', publicSettings()); return { ok: true, settings: publicSettings() }; });
   ipcMain.on('hotkeys:pause', (e, on) => { if (on) globalShortcut.unregisterAll(); else registerHotkeys(); });
-  setTimeout(() => { ensureVoice(); }, 8000);          // fetch his voice once, in the background
+  if (settings.voiceEngine === 'ghost') setTimeout(() => { ensureVoice(); }, 8000);
   app.on('second-instance', () => togglePalette(true));
   app.on('window-all-closed', () => {});
   app.on('will-quit', () => { globalShortcut.unregisterAll(); if (ps) try { ps.kill(); } catch (e) {} });

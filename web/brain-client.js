@@ -73,7 +73,7 @@
     if (settings.voice === false || !text) return;
     stop();
     const clean = String(text).replace(/[぀-ヿ㐀-鿿]+/g, '').replace(/\(\s*\)/g, '').replace(/https?:\/\/\S+/g, '').replace(/\s+/g, ' ').trim(); if (!clean) return;
-    let wav = null; try { wav = await S.invoke('voice:synth', clean); } catch (e) {}
+    let wav = null; if (settings.voiceEngine === 'ghost') { try { wav = await S.invoke('voice:synth', clean); } catch (e) {} }
     if (wav && wav.byteLength > 1000) {
       try {
         graph(); if (ac.state === 'suspended') await ac.resume();
@@ -85,7 +85,7 @@
       } catch (e) {}
     }
     try { const u = new SpeechSynthesisUtterance(clean); const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
-      u.voice = vs.find(v => /David|Guy|George|Mark|James|Ryan|Male/i.test(v.name)) || vs[0] || null; u.pitch = .5; u.rate = .8;
+      u.voice = vs.find(v => /Daniel|UK English Male|George|David|Guy|Mark|James|Ryan|Male/i.test(v.name)) || vs[0] || null; u.pitch = .6; u.rate = .82;
       u.onstart = () => cb.onstart && cb.onstart(); u.onend = u.onerror = () => cb.onend && cb.onend(); speechSynthesis.speak(u); } catch (e) {}
   }
   window.senseiVoice = { speak, stop };
