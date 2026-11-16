@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Sensei</title>
+<style>
+html,body{margin:0;height:100%;background:transparent;font-family:"Segoe UI",system-ui,sans-serif;overflow:hidden}
+.box{margin:10px;height:calc(100% - 20px);border-radius:18px;background:linear-gradient(#f7f0de,#efe4c9);box-shadow:0 18px 50px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden;color:#2b2420}
+.top{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid rgba(43,36,32,.14)}
+.seal{width:40px;height:40px;border-radius:9px;background:#c8452f;color:#fff;display:grid;place-items:center;font-family:"Yu Mincho",serif;font-size:21px;flex:none}
+#q{flex:1;border:0;background:transparent;font-size:20px;font-family:"Yu Mincho",Georgia,serif;outline:none;color:#2b2420}
+#list{flex:1;overflow-y:auto;padding:6px 8px}
+.it{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:10px;cursor:pointer}
+.it.sel,.it:hover{background:rgba(200,69,47,.13)}
+.ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-family:"Yu Mincho",serif;font-size:15px;background:rgba(43,36,32,.08);flex:none}
+.nm{font-size:15px}.sub{font-size:11.5px;color:#8a7660}
+.tag{margin-left:auto;font-size:10.5px;letter-spacing:.1em;color:#8a7660;text-transform:uppercase}
+.foot{padding:8px 16px;font-size:11.5px;color:#8a7660;border-top:1px solid rgba(43,36,32,.1);display:flex;gap:14px;flex-wrap:wrap}
+.foot a{color:#8c2f2f;cursor:pointer;text-decoration:underline}
+</style></head>
+<body><div class="box">
+<div class="top"><div class="seal">白</div><input id="q" placeholder="Open a game or app… or try: youtube lofi · music · garden · remote" autocomplete="off" spellcheck="false"></div>
+<div id="list"></div>
+<div class="foot"><span>↑↓ choose · Enter open · Esc close</span><a id="addF">+ Add a game folder</a><a id="rescan">Rescan</a><span id="folders"></span></div>
+</div>
+<script>
+const S = window.sensei; const $ = s => document.querySelector(s);
+let catalog = [], sel = 0, shown = [];
+const CMDS = [
+  { k: "庭", name: "Open the Garden", sub: "Walk with Sensei in the zen world", run: () => S.send("open", "garden"), words: "garden zen world sensei talk chat" },
+  { k: "遙", name: "Connect phone remote", sub: "Use your phone as a motion pointer", run: () => S.send("open", "pair"), words: "remote phone wii pair connect controller" },
+  { k: "休", name: "Sensei: rest in the corner", run: () => S.invoke("setSetting", "overlay", "rest").then(close), words: "rest corner quiet" },
+  { k: "泳", name: "Sensei: swim around", run: () => S.invoke("setSetting", "overlay", "swim").then(close), words: "swim wander show" },
+  { k: "隠", name: "Hide Sensei", sub: "Ctrl+Shift+H brings him back", run: () => S.invoke("setSetting", "overlay", "hidden").then(close), words: "hide away gaming focus" },
+  { k: "＋", name: "Add a game folder", sub: "Like Cemu: point at a folder of games", run: addFolder, words: "add folder games directory emulator" },
+  { k: "終", name: "Quit Sensei", run: () => S.send("quit"), words: "quit exit close" }
+];
+function close(){ S.send("palette:hide"); }
+async function load(fresh){ catalog = await S.invoke("catalog", fresh) || []; render(); showFolders(); }
+async function showFolders(){ const st = await S.invoke("settings"); const f = (st.customFolders || []); $("#folders").textContent = f.length ? `${f.length} game folder${f.length > 1 ? "s" : ""}` : ""; }
+async function addFolder(){ await S.invoke("addFolder"); await load(true); $("#q").focus(); }
+function score(name, q){ name = name.toLowerCase(); if (!q) return 1; if (name.startsWith(q)) return 3; if (name.includes(" " + q)) return 2.5; if (name.includes(q)) return 2;
+  let i = 0; for (const ch of name) if (ch === q[i]) i++; return i === q.length ? 1 : 0; }
+function render(){
+  const raw = $("#q").value.trim(), q = raw.toLowerCase(); const items = [];
+  const m = raw.match(/^(youtube|yt)\s+(.+)/i); if (m) items.push({ k: "▶", name: `Search YouTube for “${m[2]}”`, run: () => S.send("openExternal", "https://www.youtube.com/results?search_query=" + encodeURIComponent(m[2])) });
+  const mu = raw.match(/^(music|play)\s+(.+)/i); if (mu) items.push({ k: "♪", name: `Play “${mu[2]}” on YouTube Music`, run: () => S.send("openExternal", "https://music.youtube.com/search?q=" + encodeURIComponent(mu[2])) });
+  if (/^(youtube|yt)$/i.test(raw)) items.push({ k: "▶", name: "Open YouTube", run: () => S.send("openExternal", "https://www.youtube.com") });
+  if (/^music$/i.test(raw)) items.push({ k: "♪", name: "Open YouTube Music", run: () => S.send("openExternal", "https://music.youtube.com") });
+  const cmdItems = []; CMDS.forEach(c => { const s = Math.max(score(c.name, q), q ? score(c.words, q) : 0); if (!q || s >= 2) cmdItems.push(c); }); if (!q) items.push(...cmdItems);
+  const games = catalog.map(g => ({ g, s: score(g.name, q) })).filter(x => x.s).sort((a, b) => b.s - a.s || (a.g.type === "app") - (b.g.type === "app") || a.g.name.localeCompare(b.g.name)).slice(0, q ? 40 : 30);
+  games.forEach(({ g }) => items.push({ k: g.type === "steam" ? "蒸" : g.type === "game" ? "遊" : "窓", name: g.name, sub: g.where ? "in " + g.where : "", tag: g.type === "steam" ? "Steam" : g.type === "game" ? "Folder" : "App", run: () => S.send("launch", g) }));
+  if (q) items.push(...cmdItems);
+  if (q && !items.length) items.push({ k: "?", name: `Search the web for “${raw}”`, run: () => S.send("openExternal", "https://www.google.com/search?q=" + encodeURIComponent(raw)) });
+  shown = items; sel = Math.min(sel, shown.length - 1); if (sel < 0) sel = 0;
+  const L = $("#list"); L.innerHTML = "";
+  shown.forEach((it, i) => { const d = document.createElement("div"); d.className = "it" + (i === sel ? " sel" : "");
+    const ic = document.createElement("div"); ic.className = "ic"; ic.textContent = it.k;
+    const tx = document.createElement("div"); const nm = document.createElement("div"); nm.className = "nm"; nm.textContent = it.name; tx.appendChild(nm);
+    if (it.sub) { const sb = document.createElement("div"); sb.className = "sub"; sb.textContent = it.sub; tx.appendChild(sb); }
+    d.append(ic, tx); if (it.tag) { const t = document.createElement("div"); t.className = "tag"; t.textContent = it.tag; d.appendChild(t); }
+    d.addEventListener("click", () => run(i)); d.addEventListener("mousemove", () => { if (sel !== i) { sel = i; mark(); } }); L.appendChild(d); });
+}
+function mark(){ [...document.querySelectorAll(".it")].forEach((d, i) => d.classList.toggle("sel", i === sel)); const e = document.querySelectorAll(".it")[sel]; if (e) e.scrollIntoView({ block: "nearest" }); }
+function run(i){ const it = shown[i]; if (!it) return; it.run(); }
+$("#q").addEventListener("input", () => { sel = 0; render(); });
+addEventListener("keydown", e => {
+  if (e.key === "Escape") { close(); }
+  else if (e.key === "ArrowDown") { sel = Math.min(shown.length - 1, sel + 1); mark(); e.preventDefault(); }
+  else if (e.key === "ArrowUp") { sel = Math.max(0, sel - 1); mark(); e.preventDefault(); }
+  else if (e.key === "Enter") { run(sel); }
+});
+$("#addF").addEventListener("click", addFolder);
+$("#rescan").addEventListener("click", () => load(true));
+S.on("palette:open", () => { $("#q").value = ""; sel = 0; load(false); setTimeout(() => $("#q").focus(), 30); });
+S.on("palette:type", async t => { if (!catalog.length) await load(false); $("#q").value = t; sel = 0; render(); $("#q").focus();
+  const top = shown[0]; if (top && top.tag && score(top.name, t.toLowerCase()) >= 3) setTimeout(() => run(0), 400); });
+load(false);
+</script></body></html>

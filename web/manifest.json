@@ -1,0 +1,1 @@
+{"version": 1, "minShell": "0.1.0", "notes": "First preview: desktop Sensei, launcher, phone Wii remote.", "files": ["overlay.html", "palette.html", "pair.html", "remote.html", "sensei-model.js", "vendor/three.module.min.js"]}

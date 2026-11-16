@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Sensei overlay</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:transparent;font-family:"Segoe UI",system-ui,sans-serif;user-select:none}
+canvas{position:fixed;inset:0;pointer-events:none}
+#bubble{position:fixed;max-width:320px;padding:12px 16px;border-radius:14px;background:rgba(247,240,222,.96);color:#2b2420;font-family:"Yu Mincho","MS Mincho",Georgia,serif;font-size:15px;line-height:1.5;
+ box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transform:translateY(6px);transition:opacity .5s,transform .5s;pointer-events:none}
+#bubble.show{opacity:1;transform:none}
+#bubble b{display:block;font-size:10.5px;letter-spacing:.2em;color:#c8452f;margin-bottom:3px;font-family:"Segoe UI",sans-serif}
+#menu{position:fixed;width:0;height:0;pointer-events:none}
+.mbtn{position:absolute;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:rgba(20,18,30,.82);color:#f4ecd8;display:grid;place-items:center;text-align:center;
+ font-size:20px;line-height:1;cursor:pointer;opacity:0;transform:scale(.4);transition:opacity .25s,transform .25s;border:1px solid rgba(255,255,255,.25);box-shadow:0 6px 18px rgba(0,0,0,.35);font-family:"Yu Mincho",serif}
+.mbtn small{display:block;font-size:9.5px;letter-spacing:.06em;margin-top:3px;font-family:"Segoe UI",sans-serif;opacity:.85}
+#menu.open .mbtn{opacity:1;transform:scale(1);pointer-events:auto}
+.mbtn:hover{background:#c8452f}
+#ptr{position:fixed;left:0;top:0;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;pointer-events:none;opacity:0;transition:opacity .3s;
+ background:radial-gradient(circle,rgba(255,255,255,.95) 0 14%,rgba(190,235,255,.6) 26%,rgba(190,235,255,0) 70%);box-shadow:0 0 26px rgba(190,235,255,.85)}
+#ptr.on{opacity:1}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div id="bubble"><b>白雲 · SENSEI</b><span id="btxt"></span></div>
+<div id="menu">
+  <div class="mbtn" data-a="garden">話<small>Garden</small></div>
+  <div class="mbtn" data-a="palette">遊<small>Launch</small></div>
+  <div class="mbtn" data-a="pair">遙<small>Remote</small></div>
+  <div class="mbtn" data-a="mode">休<small id="modeLbl">Rest</small></div>
+  <div class="mbtn" data-a="wisdom">言<small>Wisdom</small></div>
+</div>
+<div id="ptr"></div>
+<script type="module">
+import * as THREE from "./vendor/three.module.min.js";
+import { buildSensei } from "./sensei-model.js";
+const S = window.sensei || { send(){}, invoke: async()=>({}), on(){} };
+const $ = s => document.querySelector(s);
+const W = () => innerWidth, Hh = () => innerHeight;
+
+const renderer = new THREE.WebGLRenderer({ canvas: $("#c"), alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setClearColor(0x000000, 0);
+const scene = new THREE.Scene();
+const cam = new THREE.OrthographicCamera(0, 1, 0, -1, -2000, 2000);
+function resize(){ renderer.setSize(W(), Hh(), false); cam.left = 0; cam.right = W(); cam.top = 0; cam.bottom = -Hh(); cam.updateProjectionMatrix(); }
+addEventListener("resize", resize); resize();
+scene.add(new THREE.AmbientLight(0xffffff, 1.6)); const dl = new THREE.DirectionalLight(0xffffff, 1.4); dl.position.set(200, 300, 500); scene.add(dl);
+const sensei = buildSensei(THREE); scene.add(sensei.root);
+const SCALE = 46; sensei.root.scale.setScalar(SCALE);
+
+let settings = await S.invoke("settings") || {};
+let mode = settings.overlay || "swim";
+const pos = { x: W() * .78, y: Hh() * .72 }, target = { x: pos.x, y: pos.y };
+let facing = -1, nextWander = 0, clock = 0, last = performance.now(), talking = false, boop = 0;
+function restSpot(){ return { x: W() - 170, y: Hh() - 150 }; }
+function pickTarget(){
+  if (mode === "rest"){ Object.assign(target, restSpot()); return; }
+  // drift along the edges and lower third, away from the middle of the screen where you work
+  const edge = Math.random();
+  if (edge < .45) { target.x = 160 + Math.random() * (W() - 320); target.y = Hh() - 120 - Math.random() * Hh() * .22; }
+  else if (edge < .7) { target.x = Math.random() < .5 ? 150 : W() - 150; target.y = 160 + Math.random() * (Hh() - 320); }
+  else { target.x = 160 + Math.random() * (W() - 320); target.y = 140 + Math.random() * 90; }
+  nextWander = clock + 14 + Math.random() * 26;
+}
+pickTarget();
+S.on("mode", m => { mode = m; $("#modeLbl").textContent = m === "rest" ? "Swim" : "Rest"; pickTarget(); });
+$("#modeLbl").textContent = mode === "rest" ? "Swim" : "Rest";
+
+/* ---- hover: make the window clickable only while the mouse is on Sensei or his menu ---- */
+let interactive = false, menuOpen = false, mouse = { x: -999, y: -999 };
+function setInteractive(on){ if (on !== interactive){ interactive = on; S.send("overlay:interactive", on); } }
+addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+const onSensei = () => Math.hypot(mouse.x - pos.x, mouse.y - pos.y) < 85;
+const onMenu = () => menuOpen && Math.hypot(mouse.x - pos.x, mouse.y - pos.y) < 175;
+addEventListener("mousedown", e => { if (onSensei()) { boop = 1; toggleMenu(); } else if (menuOpen && !e.target.closest(".mbtn")) toggleMenu(false); });
+function toggleMenu(force){ menuOpen = force ?? !menuOpen; $("#menu").classList.toggle("open", menuOpen); if (menuOpen) layoutMenu(); }
+function layoutMenu(){ const btns = [...document.querySelectorAll(".mbtn")]; const n = btns.length, R = 112;
+  const toLeft = pos.x > W() / 2, base = toLeft ? Math.PI : 0;
+  btns.forEach((b, i) => { const a = base + (i - (n - 1) / 2) * .62 * (toLeft ? -1 : 1) - (pos.y > Hh() * .6 ? .35 * (toLeft ? -1 : 1) : 0);
+    b.style.left = Math.cos(a) * R + "px"; b.style.top = Math.sin(a) * R + "px"; }); }
+document.querySelectorAll(".mbtn").forEach(b => b.addEventListener("click", () => {
+  const a = b.dataset.a; toggleMenu(false);
+  if (a === "garden") { say("I will be waiting by the pond.", 3500); S.send("open", "garden"); }
+  else if (a === "palette") S.send("open", "palette");
+  else if (a === "pair") S.send("open", "pair");
+  else if (a === "mode") { mode = mode === "rest" ? "swim" : "rest"; S.invoke("setSetting", "overlay", mode); $("#modeLbl").textContent = mode === "rest" ? "Swim" : "Rest"; pickTarget(); say(mode === "rest" ? "I will rest here. Call if you need me." : "Ah. Time to stretch the fins.", 3500); }
+  else if (a === "wisdom") say(pick(WISDOM), 9000, true);
+}));
+
+/* ---- speech ---- */
+let bubbleT = 0;
+function say(text, ms = 7000, aloud = false){
+  $("#btxt").textContent = text; $("#bubble").classList.add("show"); bubbleT = clock + ms / 1000;
+  if (aloud && settings.voice !== false) speakMonk(text);
+}
+function speakMonk(text){
+  try{ speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text.replace(/[぀-ヿ㐀-鿿]+/g, ""));
+    const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang)); const pref = vs.find(v => /David|Guy|George|Mark|James|Ryan|Male/i.test(v.name)) || vs[0];
+    if (pref) u.voice = pref; u.pitch = .5; u.rate = .78; u.onstart = () => talking = true; u.onend = u.onerror = () => talking = false; speechSynthesis.speak(u);
+  }catch(e){}
+}
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const WISDOM = ["Still water reflects the moon. Rest your eyes a moment.","The koi does not hurry the current. It reads it.","Even the castle was built one stone at a time.","When the mind is muddy, let it settle. Then look again.","Fall seven times. Stand up eight.","A bow that is always drawn will break. Stretch your back, my student.","Drink some water. Ghosts cannot, so do it for both of us."];
+const LAUNCH = n => pick([`${n}. Go well. Remember to blink.`,`Ah, ${n}. I will watch from up here.`,`${n}. Play with a calm mind.`]);
+S.on("say", d => { if (d.kind === "launch") say(LAUNCH(d.name), 5000); else if (d.kind === "update") say("I have learned something new while you were away." + (d.text ? " " + d.text : ""), 9000, true); else if (d.text) say(d.text, 8000); });
+S.on("summon", () => { mode = "swim"; target.x = W() / 2 + 120; target.y = Hh() / 2; nextWander = clock + 20; say("You called, my student?", 4000, true); });
+S.on("remote", r => { if (r.connected) say("Ah, the phone remote. Point it at me. Gently.", 5000); });
+
+/* ---- greeting & gentle reminders ---- */
+const h = new Date().getHours();
+setTimeout(() => say(h < 5 ? "Awake at this hour? The lantern and I keep strange company." : h < 11 ? "Good morning, Gabriel-san. The pond is still. Let us begin." : h < 17 ? "Afternoon, my student. I will float nearby." : h < 21 ? "Evening. The castle lights itself. So should you." : "Night has come. I am only… resting. Certainly not playing games.", 8000, true), 2500);
+let sessionStart = Date.now(), lastNudge = Date.now();
+setInterval(() => { const mins = (Date.now() - lastNudge) / 60000;
+  if (mins > 75) { lastNudge = Date.now(); const hrs = Math.round((Date.now() - sessionStart) / 36e5 * 10) / 10;
+    say(hrs >= 2 ? `${hrs} hours at the screen. Stand. Stretch. Look at something far away.` : pick(WISDOM), 9000, true); } }, 60000);
+
+/* ---- Wii-style pointer from the phone ---- */
+const ptr = $("#ptr");
+S.on("pointer", p => { ptr.style.left = p.x + "px"; ptr.style.top = p.y + "px"; ptr.classList.toggle("on", !!p.on); });
+
+/* ---- loop ---- */
+function frame(now){
+  const dt = Math.min(.05, (now - last) / 1000); last = now; clock += dt; boop = Math.max(0, boop - dt * 1.5);
+  if (clock > nextWander && !menuOpen) pickTarget();
+  const dx = target.x - pos.x, dy = target.y - pos.y, d = Math.hypot(dx, dy);
+  const speed = mode === "rest" ? 120 : 42;
+  if (d > 2 && !menuOpen) { const st = Math.min(d, speed * dt); pos.x += dx / d * st; pos.y += dy / d * st; if (Math.abs(dx) > 6) facing = dx > 0 ? 1 : -1; }
+  sensei.root.position.set(pos.x, -pos.y + Math.sin(clock * 1.1) * 6, 0);
+  const wantYaw = facing > 0 ? -.45 : Math.PI + .45; sensei.root.rotation.y += (wantYaw - sensei.root.rotation.y) * Math.min(1, dt * 2.5);
+  sensei.update(clock, dt, { talking, boop });
+  // bubble follows him
+  const b = $("#bubble"); const bw = b.offsetWidth, bh = b.offsetHeight;
+  b.style.left = Math.max(10, Math.min(W() - bw - 10, pos.x - bw / 2)) + "px"; b.style.top = Math.max(10, pos.y - 120 - bh) + "px";
+  if (bubbleT && clock > bubbleT) { b.classList.remove("show"); bubbleT = 0; }
+  $("#menu").style.left = pos.x + "px"; $("#menu").style.top = pos.y + "px";
+  setInteractive(onSensei() || onMenu());
+  renderer.render(scene, cam);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body></html>

@@ -1,0 +1,48 @@
+{
+  "name": "sensei-hakuun",
+  "productName": "Sensei Hakuun",
+  "version": "0.1.0",
+  "description": "Sensei Hakuun \u2014 a ghost koi sensei for your desktop",
+  "main": "main.js",
+  "author": "Gabriel",
+  "license": "UNLICENSED",
+  "scripts": {
+    "prebuild": "node -e \"const fs=require('fs');fs.rmSync('web',{recursive:true,force:true});fs.cpSync('../web','web',{recursive:true})\"",
+    "build": "electron-builder --win zip --x64"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4",
+    "selfsigned": "^2.4.1",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.gabriel.senseihakuun",
+    "productName": "Sensei Hakuun",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "icon.png",
+      "icon.ico",
+      "web/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "zip",
+      "icon": "icon.ico",
+      "signAndEditExecutable": false
+    },
+    "artifactName": "Sensei-Hakuun-${version}-win-x64.${ext}",
+    "electronLanguages": [
+      "en-US"
+    ],
+    "compression": "maximum"
+  },
+  "repository": "https://github.com/radminvpngod/sensei-hakuun"
+}

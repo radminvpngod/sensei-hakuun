@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#e9e6df">
+<title>Sensei Remote</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+html,body{margin:0;height:100%;background:#1a1d2b;font-family:-apple-system,"Segoe UI",system-ui,sans-serif;overflow:hidden;touch-action:none;overscroll-behavior:none}
+.remote{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 10px);bottom:calc(env(safe-area-inset-bottom) + 10px);transform:translateX(-50%);width:min(92vw,330px);
+ border-radius:46px;background:linear-gradient(180deg,#f7f5f0,#e2ded5);box-shadow:inset 0 2px 0 #fff,inset 0 -3px 8px rgba(0,0,0,.08),0 20px 50px rgba(0,0,0,.5);
+ display:flex;flex-direction:column;align-items:center;padding:22px 18px 18px;gap:14px}
+.ir{width:62%;height:16px;border-radius:10px;background:linear-gradient(#2c2f3a,#14161e);box-shadow:inset 0 2px 4px rgba(0,0,0,.6);position:relative}
+.ir .led{position:absolute;right:10px;top:5px;width:6px;height:6px;border-radius:50%;background:#444}
+.ir .led.on{background:#5ad1ff;box-shadow:0 0 8px #5ad1ff}
+.status{font-size:11.5px;color:#7a746a;letter-spacing:.05em;text-align:center;min-height:15px}
+.dpad{position:relative;width:132px;height:132px;flex:none}
+.dpad div{position:absolute;background:#d4d0c6;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12),0 2px 3px rgba(0,0,0,.15)}
+.dpad .h{left:0;top:44px;width:132px;height:44px;border-radius:8px}.dpad .v{left:44px;top:0;width:44px;height:132px;border-radius:8px}
+.dpad .hit{background:transparent;box-shadow:none;z-index:2}
+.dpad .hit.down{background:rgba(0,0,0,.08)}
+.btnA{width:96px;height:96px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fbfaf6,#d9d5cb);box-shadow:inset 0 -4px 0 rgba(0,0,0,.12),0 4px 8px rgba(0,0,0,.2);
+ display:grid;place-items:center;font-size:40px;color:#6f6a60;font-weight:300;flex:none}
+.row{display:flex;gap:18px;align-items:center;justify-content:center}
+.sm{width:46px;height:46px;border-radius:50%;background:#d4d0c6;display:grid;place-items:center;font-size:20px;color:#5f5a52;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12),0 2px 4px rgba(0,0,0,.15)}
+.home{width:50px;height:50px;background:#c8452f;color:#fff;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:21px}
+.num{width:54px;height:54px;font-size:22px;font-weight:600}
+.pill{padding:9px 16px;border-radius:99px;background:#d4d0c6;font-size:13px;color:#5f5a52;font-weight:600;box-shadow:inset 0 -3px 0 rgba(0,0,0,.1)}
+.down,.btnA.down,.sm.down,.pill.down{transform:scale(.93);filter:brightness(.92)}
+.btnB{position:fixed;right:calc(50% - min(46vw,165px) - 4px);top:38%;width:30px;height:110px;border-radius:15px 0 0 15px;background:linear-gradient(90deg,#3b3f4d,#23262f);color:#ddd;font-size:15px;font-weight:700;display:grid;place-items:center;box-shadow:-2px 3px 8px rgba(0,0,0,.4)}
+.scroll{position:fixed;left:calc(50% - min(46vw,165px) - 4px);top:30%;width:30px;height:180px;border-radius:0 15px 15px 0;background:linear-gradient(270deg,#3b3f4d,#23262f);color:#bbb;font-size:10px;display:grid;place-items:center;writing-mode:vertical-rl;letter-spacing:.2em}
+.start{position:fixed;inset:0;background:rgba(10,12,22,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#f4ecd8;text-align:center;padding:30px;z-index:10}
+.start h1{font-family:"Hiragino Mincho ProN","Yu Mincho",Georgia,serif;font-weight:500;margin:0;font-size:26px}
+.start p{opacity:.8;font-size:14px;line-height:1.5;margin:0;max-width:320px}
+.big{border:0;border-radius:14px;padding:16px 26px;background:#c8452f;color:#fff;font-size:18px;font-weight:600}
+.opts{display:flex;gap:10px;align-items:center;font-size:12px;color:#7a746a}
+input[type=range]{width:120px}
+.type{display:flex;gap:6px;width:100%}
+.type input{flex:1;border:0;border-radius:12px;padding:10px 12px;background:#e9e6df;font-size:16px;box-shadow:inset 0 2px 4px rgba(0,0,0,.1);-webkit-user-select:text;user-select:text;touch-action:auto}
+.spacer{flex:1}
+</style></head>
+<body>
+<div class="remote">
+  <div class="ir"><span class="led" id="led"></span></div>
+  <div class="status" id="status">connecting…</div>
+  <div class="dpad"><div class="h"></div><div class="v"></div>
+    <div class="hit" data-k="up" style="left:44px;top:0;width:44px;height:44px"></div><div class="hit" data-k="down" style="left:44px;top:88px;width:44px;height:44px"></div>
+    <div class="hit" data-k="left" style="left:0;top:44px;width:44px;height:44px"></div><div class="hit" data-k="right" style="left:88px;top:44px;width:44px;height:44px"></div></div>
+  <div class="btnA" id="A">A</div>
+  <div class="row"><div class="sm" data-k="minus">−</div><div class="sm home" data-k="home">⌂</div><div class="sm" data-k="plus">+</div></div>
+  <div class="row"><div class="pill" id="center">◎ Center</div><div class="pill" id="pause">❚❚ Pointer</div><div class="pill" data-k="sensei">白 Sensei</div></div>
+  <div class="spacer"></div>
+  <div class="type"><input id="txt" placeholder="Type a game or command…" enterkeyhint="go"></div>
+  <div class="row"><div class="sm num" data-k="one">1</div><div class="sm num" data-k="two">2</div></div>
+  <div class="opts">speed <input type="range" id="sens" min="4" max="40" value="16"> <label><input type="checkbox" id="inv"> invert</label></div>
+</div>
+<div class="btnB" id="B">B</div>
+<div class="scroll" id="scroll">SCROLL</div>
+<div class="start" id="start"><h1>遙 Sensei Remote</h1><p>Hold your phone flat with the top edge pointing at your screen, like a Wii remote. Turn it left and right, tilt it up and down, and the cursor follows.</p><button class="big" id="go">Start pointer</button><p style="font-size:12px;opacity:.6">1 = play/pause · 2 = back (Esc) · ⌂ = Sensei launcher · − / + = volume · B = right-click</p></div>
+<script>
+const $ = s => document.querySelector(s);
+const key = new URLSearchParams(location.search).get("k") || "";
+let ws = null, open = false, paused = false, sens = 16, inv = false;
+function connect(){
+  if (!location.host) { $("#status").textContent = "open this page from the QR code on your PC"; return; }
+  ws = new WebSocket(`wss://${location.host}/?k=${encodeURIComponent(key)}`);
+  ws.onopen = () => { open = true; $("#led").classList.add("on"); $("#status").textContent = "connected to your PC"; };
+  ws.onclose = () => { open = false; $("#led").classList.remove("on"); $("#status").textContent = "reconnecting…"; setTimeout(connect, 1500); };
+  ws.onmessage = e => { try{ const d = JSON.parse(e.data); if (d.t === "hello" && d.sens) { sens = d.sens; $("#sens").value = sens; } }catch(err){} };
+}
+connect();
+const send = d => { if (open) ws.send(JSON.stringify(d)); };
+const buzz = (ms = 12) => { try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
+
+/* ---- motion: an air mouse from the gyroscope ---- */
+let ax = 0, ay = 0;
+function onMotion(e){
+  const r = e.rotationRate; if (!r || paused) return;
+  let iv = e.interval || 16; if (iv < 1) iv *= 1000; const dt = Math.min(iv, 50) / 1000;
+  const yaw = Math.abs(r.alpha) > 1.2 ? r.alpha : 0, pitch = Math.abs(r.beta) > 1.2 ? r.beta : 0;
+  ax += -yaw * dt * sens * (inv ? -1 : 1); ay += -pitch * dt * sens * (inv ? -1 : 1);
+}
+setInterval(() => { if (Math.abs(ax) >= .5 || Math.abs(ay) >= .5) { send({ t: "move", dx: +ax.toFixed(1), dy: +ay.toFixed(1) }); ax = ay = 0; } }, 16);
+$("#go").addEventListener("click", async () => {
+  try{
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+      const p = await DeviceMotionEvent.requestPermission(); if (p !== "granted") { $("#status").textContent = "motion permission was denied — buttons still work"; }
+    }
+    addEventListener("devicemotion", onMotion);
+    if (!window.isSecureContext) $("#status").textContent = "motion needs the secure link — open the QR link again";
+  }catch(err){ $("#status").textContent = "motion unavailable: " + err.message; }
+  $("#start").style.display = "none"; send({ t: "center" }); buzz(30);
+});
+
+/* ---- buttons ---- */
+function hold(el, b){
+  el.addEventListener("pointerdown", e => { e.preventDefault(); el.classList.add("down"); buzz(); send({ t: "down", b }); });
+  const up = () => { if (!el.classList.contains("down")) return; el.classList.remove("down"); send({ t: "up", b }); };
+  el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
+}
+hold($("#A"), "a"); hold($("#B"), "b");
+document.querySelectorAll("[data-k]").forEach(el => {
+  el.addEventListener("pointerdown", e => { e.preventDefault(); el.classList.add("down"); buzz(); send({ t: "press", b: el.dataset.k }); });
+  const up = () => el.classList.remove("down"); el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
+});
+$("#center").addEventListener("pointerdown", e => { e.preventDefault(); buzz(); send({ t: "center" }); });
+$("#pause").addEventListener("pointerdown", e => { e.preventDefault(); paused = !paused; buzz(); $("#pause").textContent = paused ? "▶ Pointer" : "❚❚ Pointer"; $("#status").textContent = paused ? "pointer paused" : "pointer on"; });
+$("#sens").addEventListener("input", e => { sens = +e.target.value; send({ t: "sens", v: sens }); });
+$("#inv").addEventListener("change", e => { inv = e.target.checked; });
+{ const s = $("#scroll"); let ly = null; s.addEventListener("pointerdown", e => { ly = e.clientY; s.setPointerCapture(e.pointerId); });
+  s.addEventListener("pointermove", e => { if (ly === null) return; const d = e.clientY - ly; if (Math.abs(d) > 6) { send({ t: "scroll", dy: -d * 4 }); ly = e.clientY; } });
+  s.addEventListener("pointerup", () => ly = null); s.addEventListener("pointercancel", () => ly = null); }
+$("#txt").addEventListener("keydown", e => { if (e.key === "Enter") { const v = e.target.value.trim(); if (v) send({ t: "type", text: v }); e.target.value = ""; e.target.blur(); } });
+</script></body></html>

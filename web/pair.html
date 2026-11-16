@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Connect your phone — Sensei</title>
+<style>
+html,body{margin:0;min-height:100%;background:radial-gradient(ellipse at 50% 0%,#24305a,#0b0f22 70%);color:#f4ecd8;font-family:"Segoe UI",system-ui,sans-serif}
+.wrap{padding:26px 28px;text-align:center}
+h1{font-family:"Yu Mincho",Georgia,serif;font-weight:500;font-size:26px;margin:4px 0}
+.k{font-family:"Yu Mincho",serif;font-size:13px;letter-spacing:.3em;opacity:.7}
+#qr{width:300px;height:300px;margin:20px auto 10px;border-radius:16px;background:#f4ecd8;display:block}
+#url{font-family:Consolas,monospace;font-size:12.5px;opacity:.75;word-break:break-all;margin:6px 0 14px}
+.st{display:inline-flex;align-items:center;gap:8px;font-size:14px;padding:6px 14px;border-radius:99px;background:rgba(255,255,255,.08)}
+.dot{width:10px;height:10px;border-radius:50%;background:#7a6a5a}.dot.on{background:#7be3a0;box-shadow:0 0 10px #7be3a0}
+ol{text-align:left;font-size:14px;line-height:1.6;opacity:.92;padding-left:20px;margin:20px 0 10px}
+small{opacity:.6}
+button{margin-top:6px;border:0;border-radius:10px;padding:8px 14px;background:rgba(255,255,255,.12);color:#f4ecd8;cursor:pointer}
+</style></head>
+<body><div class="wrap">
+<div class="k">遙 · WII-STYLE REMOTE</div>
+<h1>Connect your phone</h1>
+<img id="qr" alt="QR code">
+<div id="url"></div>
+<div class="st"><span class="dot" id="dot"></span><span id="st">Waiting for your phone…</span></div>
+<ol>
+<li>Phone on the <b>same Wi-Fi</b> as this PC. Scan the code with your camera.</li>
+<li>Your phone will warn that the connection isn't private: that's Sensei's own certificate on your home network. Tap <b>Show details → visit this website</b> (iPhone) or <b>Advanced → Proceed</b> (Android).</li>
+<li>Tap <b>Start pointer</b> and allow motion access. Hold the phone flat, top edge toward the screen, like a Wii remote.</li>
+<li>If Windows asks about the firewall, allow <b>Private networks</b>.</li>
+</ol>
+<small>The link contains a private key: only phones you show this code to can control your PC.</small><br>
+<button id="newKey">Make a new key (disconnects phones)</button>
+</div>
+<script>
+const S = window.sensei;
+async function load(){ const p = await S.invoke("pairInfo"); document.getElementById("qr").src = p.qr; document.getElementById("url").textContent = p.url; setConn(p.connected); }
+function setConn(n){ document.getElementById("dot").classList.toggle("on", n > 0); document.getElementById("st").textContent = n > 0 ? `Connected (${n} phone${n > 1 ? "s" : ""})` : "Waiting for your phone…"; }
+S.on("remote", r => setConn(r.connected));
+document.getElementById("newKey").onclick = async () => { await S.invoke("newToken"); load(); };
+load();
+</script></body></html>
