@@ -1366,14 +1366,24 @@ $("#shSubmit").addEventListener("click",async()=>{
   await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
   if(!sample||!lim||!lim.images){ const line="Hm. My eyes are only a ghost's eyes here. But I see effort in it. Again tomorrow."; $("#shFb").textContent=line; speak(line); return; }
   const out=document.createElement("canvas"); out.width=out.height=512; const o=out.getContext("2d"); o.fillStyle="#f3ead6"; o.fillRect(0,0,512,512); o.drawImage(shC,0,0,512,512);
-  const blob=await new Promise(r=>out.toBlob(r,"image/png"));
-  try{ const v=await sample.json(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi calligraphy master. The image is your student Gabriel's brush attempt at the kanji ${k} (${m}). He may be a beginner. Judge honestly but kindly: does it read as ${k}? stroke balance, proportion, confidence, spacing. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice, naming one specific thing to improve or one thing done well"}.`,{images:[blob],cache:false});
+  try{ const v=await senseiSees(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi calligraphy master. The image is your student Gabriel's brush attempt at the kanji ${k} (${m}). He may be a beginner. Judge honestly but kindly: does it read as ${k}? stroke balance, proportion, confidence, spacing. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice, naming one specific thing to improve or one thing done well"}.`,out);
     const sc=clamp(Math.round(+v.score||0),1,10), words=String(v.words||"").slice(0,400);
     store.shodo=store.shodo||{}; const prev=store.shodo[k]||0; if(sc>prev){ store.shodo[k]=sc; save(); }
     $("#shFb").textContent=`${sc}/10 — ${words}`; $("#shScore").textContent=`Best: ${Math.max(sc,prev)}/10`; speak(words); if(sc>=8){ chime(); hostBuzz(); }
   }catch(e){ $("#shFb").textContent="…the ink smudged in the spirit world. Show me once more."; } });
 
 /* ===================== minigames: kyūdō, taiko, sand raking ===================== */
+// Robust "Sensei looks at a picture" call: small JPEG, JSON first, then plain text parsed by hand, one retry.
+async function senseiSees(prompt,canvas){
+  const blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",.8));
+  const parse=t=>{ t=String(t||""); const m=t.match(/\{[\s\S]*\}/); if(m){ try{ return JSON.parse(m[0]); }catch(e){} } const n=t.match(/\b(10|[1-9])\s*(?:\/\s*10)?\b/); return n?{score:+n[1],words:t.replace(/[{}"]/g,"").replace(/score\s*:?\s*\d+/i,"").replace(/words\s*:?/i,"").trim()}:null; };
+  let lastErr=null;
+  for(let i=0;i<2;i++){
+    try{ const v=await sample.json(prompt,{images:[blob],cache:false}); if(v&&v.score!=null) return v; }catch(e){ lastErr=e; console.warn("[sensei sees] json",e); }
+    try{ const r=await sample(prompt+"\nReply with only the JSON object.",{images:[blob],cache:false}); const v=parse(r&&r.text); if(v&&v.score!=null) return v; }catch(e){ lastErr=e; console.warn("[sensei sees] text",e); }
+    await new Promise(r=>setTimeout(r,1200)); }
+  throw lastErr||new Error("no answer");
+}
 const mgEl=$("#mg"), mgC=$("#mgC"), mgX=mgC.getContext("2d");
 let MG=null; // the active game object
 function mgResize(){ const r=devicePixelRatio>1?1.5:1; mgC.width=innerWidth*r; mgC.height=innerHeight*r; mgC._r=r; }
@@ -1483,13 +1493,23 @@ function sandBase(){ const g=sandX; g.fillStyle="#d9d1bf"; g.fillRect(0,0,1024,6
 let sandTex=null;
 function applySand(){ if(!SAND) return; if(!sandTex){ sandTex=new THREE.CanvasTexture(sandCv); sandTex.colorSpace=THREE.SRGBColorSpace; SAND.material=new THREE.MeshToonMaterial({map:sandTex,gradientMap:gm}); } sandTex.needsUpdate=true; }
 function loadSandArt(){ if(!store.sandArt) return; const im=new Image(); im.onload=()=>{ sandX.drawImage(im,0,0,1024,640); applySand(); }; im.src=store.sandArt; }
-const RAKE={ title:"砂紋 · Raking the Dry Garden", sub:"Drag to rake · the stones stay where they are",
+const RAKE={ title:"砂紋 · Raking the Dry Garden", sub:"Drag to rake · ring the stones · press Show Sensei when done",
   start(){ if(!store.sandArt&&!this.started) sandBase(); this.started=true; this.last=null; this.verdict=""; },
   rake(x,y,down){ const px=x*1024, py=y*640; if(!down){ this.last=null; return; } if(!this.last){ this.last=[px,py]; return; }
     const [lx,ly]=this.last, dx=px-lx, dy=py-ly, d=Math.hypot(dx,dy); if(d<3) return; const nx=-dy/d, ny=dx/d; const g=sandX;
     g.lineCap="round"; g.strokeStyle="#d9d1bf"; g.lineWidth=58; g.beginPath(); g.moveTo(lx,ly); g.lineTo(px,py); g.stroke();
     for(let k=-2;k<=2;k++){ const o=k*11; g.strokeStyle="rgba(140,128,104,.6)"; g.lineWidth=2.6; g.beginPath(); g.moveTo(lx+nx*o,ly+ny*o); g.lineTo(px+nx*o,py+ny*o); g.stroke(); g.strokeStyle="rgba(250,246,236,.85)"; g.lineWidth=1.8; g.beginPath(); g.moveTo(lx+nx*(o+3),ly+ny*(o+3)); g.lineTo(px+nx*(o+3),py+ny*(o+3)); g.stroke(); }
-    this.last=[px,py]; this.dirty=true; },
+    this.last=[px,py]; this.dirty=true; this.track(px,py,dx/d,dy/d,d); },
+  stats:null,
+  resetStats(){ this.stats={len:0,turns:0,segs:0,bins:SAND_ROCKS.map(()=>new Array(24).fill(0)),pd:null}; },
+  track(px,py,ux,uy,d){ const S=this.stats||(this.resetStats(),this.stats); S.len+=d; S.segs++;
+    if(S.pd){ S.turns+=1-Math.abs(ux*S.pd[0]+uy*S.pd[1]); } S.pd=[ux,uy];
+    SAND_ROCKS.forEach((rk,i)=>{ const [x,y,r]=rockPx(rk), dd=Math.hypot(px-x,py-y); if(dd>r+8&&dd<r+110){ const a=Math.floor(((Math.atan2(py-y,px-x)+Math.PI)/TAU)*24)%24; S.bins[i][a]=1; } }); },
+  localJudge(){ const S=this.stats; if(!S&&store.sandArt) return {score:5,words:"Hm. Yesterday's lines still hold. Rake a little more, then show me again."}; if(!S||S.len<300) return {score:1,words:"Hm. The sand is still sleeping. Drag across it first, then show me."};
+    const ring=S.bins.reduce((a,b)=>a+b.reduce((x,y)=>x+y,0)/24,0)/S.bins.length, fill=Math.min(1,S.len/7000), calm=1-Math.min(1,S.turns/Math.max(1,S.segs)*6);
+    const sc=clamp(Math.round(1+ring*4+fill*3+calm*2),1,10);
+    const words=ring<.35?"The stones stand alone. Let the sand circle them, the way water circles a rock.":fill<.5?"A good beginning. The open sand is still waiting for its lines.":calm<.5?"Your lines wander like a restless mind. Slower. Let the rake breathe.":sc>=8?"Hm. The sand flows. Even the stones look at peace.":"Steady work. Rings around the stones, long lines between them. Again, a little slower.";
+    return {score:sc,words}; },
   view(W,H){ const s=Math.min(W*.92/1024,H*.78/640); return {s,ox:(W-1024*s)/2,oy:(H-640*s)/2+H*.02}; },
   toSand(x,y){ const W=innerWidth,H=innerHeight,v=this.view(W,H); return [(x*W-v.ox)/(1024*v.s),(y*H-v.oy)/(640*v.s)]; },
   down(x,y){ this.rake(...this.toSand(x,y),true); }, move(x,y,e){ if(e&&e.buttons) this.rake(...this.toSand(x,y),true); }, up(){ this.rake(0,0,false); this.commit(); },
@@ -1498,18 +1518,19 @@ const RAKE={ title:"砂紋 · Raking the Dry Garden", sub:"Drag to rake · the s
   frame(dt,W,H){ const g=mgX; g.fillStyle="#2f3a2a"; g.fillRect(0,0,W,H); const v=this.view(W,H);
     g.fillStyle="#5a3b26"; g.fillRect(v.ox-12,v.oy-12,1024*v.s+24,640*v.s+24); g.drawImage(sandCv,v.ox,v.oy,1024*v.s,640*v.s);
     SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); const X=v.ox+x*v.s, Y=v.oy+y*v.s, R=r*v.s; g.fillStyle="rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(X+R*.15,Y+R*.2,R,R*.85,0,0,TAU); g.fill(); g.fillStyle="#6e6b63"; g.beginPath(); g.ellipse(X,Y,R,R*.85,.3,0,TAU); g.fill(); g.fillStyle="#5d7a3a"; g.beginPath(); g.ellipse(X-R*.15,Y-R*.2,R*.6,R*.35,.3,0,TAU); g.fill(); });
-    g.fillStyle="#f4ecd8"; g.font="16px Shippori Mincho, serif"; g.textAlign="center"; g.fillText(this.verdict||"Rake slow, even lines. Circle the stones like water would.",W/2,Math.min(H-14,v.oy+640*v.s+34)); g.textAlign="left"; }
+    g.fillStyle="#f4ecd8"; g.font="16px Shippori Mincho, serif"; g.textAlign="center"; g.fillText(this.verdict||"Click and drag on the sand to rake.  Draw rings around each stone, long straight lines everywhere else.  Then press 見 Show Sensei.",W/2,Math.min(H-14,v.oy+640*v.s+34)); g.textAlign="left"; }
 };
-async function sandJudge(){ await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
-  if(!sample||!lim||!lim.images){ RAKE.verdict="Hm. I see sea in it. That is enough for today."; speak(RAKE.verdict); return; }
-  RAKE.verdict="Sensei floats over the sand…";
+async function sandJudge(){ if(RAKE.judging) return; const local=RAKE.localJudge();
+  if(!store.sandArt&&(!RAKE.stats||RAKE.stats.len<300)){ RAKE.verdict=local.words; speak(local.words); return; }
+  RAKE.judging=true; RAKE.verdict="Sensei floats over the sand…";
+  const done=v=>{ const sc=clamp(Math.round(+v.score||0),1,10), w=String(v.words||"").slice(0,300); RAKE.verdict=`${sc}/10 — ${w}`; mgBest("rake",sc); speak(w); if(sc>=8) hostBuzz(); RAKE.judging=false; };
+  await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
+  if(!sample||!lim||!lim.images){ done(local); return; }
   const c=document.createElement("canvas"); c.width=640; c.height=400; const g=c.getContext("2d"); g.drawImage(sandCv,0,0,640,400); SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); g.fillStyle="#6e6b63"; g.beginPath(); g.arc(x*.625,y*.625,r*.625,0,TAU); g.fill(); });
-  const blob=await new Promise(r=>c.toBlob(r,"image/png"));
-  try{ const v=await sample.json(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi zen master. The image is a top-down view of the dry garden (karesansui) your student Gabriel just raked; the grey circles are the stones. Judge it like a zen gardener: flow, evenness of lines, how the patterns respond to the stones, sense of calm. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice"}.`,{images:[blob],cache:false});
-    const sc=clamp(Math.round(+v.score||0),1,10); RAKE.verdict=`${sc}/10 — ${String(v.words||"").slice(0,300)}`; mgBest("rake",sc); speak(String(v.words||"")); if(sc>=8) hostBuzz();
-  }catch(e){ RAKE.verdict="…the wind blew sand in my eyes. Show me again."; } }
+  try{ done(await senseiSees(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi zen master. The image is a top-down view of the dry garden (karesansui) your student Gabriel just raked; the grey circles are the stones. Judge it like a zen gardener: flow, evenness of lines, how the patterns respond to the stones, sense of calm. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice"}.`,c)); }
+  catch(e){ console.warn("[rake judge] falling back to local eye",e); done(local); } }
 $("#mgJudge").addEventListener("click",()=>{ if(MG===RAKE) sandJudge(); });
-$("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
+$("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.resetStats(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
 const GAMES={kyudo:KYUDO,taiko:TAIKO,rake:RAKE};
 function openGame(id){ const g=GAMES[id]; if(!g) return; $("#mgJudge").style.display=id==="rake"?"":"none"; $("#mgReset").style.display=id==="rake"?"":"none"; if(!entered) enterGame(); else hideMenu(); setTimeout(()=>mgOpen(g),entered?50:400); }
 $("#miGames").addEventListener("click",()=>{ $("#gamesPanel").classList.add("show"); });
