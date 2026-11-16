@@ -1,7 +1,7 @@
 {
- "version": 3,
+ "version": 4,
  "shellApi": 2,
- "notes": "Ears fixed, classic voice is back.",
+ "notes": "Smoother swimming, and you can click me again.",
  "files": [
   "brain-client.js",
   "core.js",

@@ -15,7 +15,7 @@ const sensei = buildSensei(THREE); scene.add(sensei.root); sensei.root.scale.set
 let settings = (await S.invoke("settings")) || {};
 let mode = settings.overlay || "swim";
 S.on("settings", s => { if (s) { settings = s; } });
-let L = { rects: [{ x: 0, y: 0, w: screen.availWidth, h: screen.availHeight }], primary: { x: 0, y: 0, w: screen.availWidth, h: screen.availHeight } };
+let L = { origin: { x: 0, y: 0 }, rects: [{ x: 0, y: 0, w: screen.availWidth, h: screen.availHeight }], primary: { x: 0, y: 0, w: screen.availWidth, h: screen.availHeight } };
 let placed = false;
 const pos = { x: screen.availWidth - 220, y: screen.availHeight - 150 }, target = { ...pos };
 let facing = -1, nextWander = 0, clock = 0, last = performance.now(), talking = false, boop = 0, listening = false;
@@ -34,16 +34,14 @@ S.on("mode", m => { mode = m; modeLbl(); pickTarget(); }); modeLbl();
 function summon(){ target.x = L.primary.x + L.primary.w / 2; target.y = L.primary.y + L.primary.h / 2 + 60; nextWander = clock + 45; if (mode === "rest") mode = "swim"; }
 S.on("summon", () => { summon(); say(pick(["You called, my student?", "Hm. I am here.", "Yes, yes. I came as fast as a ghost fish can."]), 4000, true); });
 
-/* ---------- hover & menu (window is click-through except on Sensei) ---------- */
-let interactive = false, menuOpen = false; const mouse = { x: -999, y: -999 };
-const setInteractive = on => { if (on !== interactive) { interactive = on; S.send("overlay:interactive", on); } };
-const onSensei = () => Math.hypot(mouse.x - CX, mouse.y - CY) < 80;
-const onMenu = () => menuOpen && Math.hypot(mouse.x - CX, mouse.y - CY) < 150;
-const checkHover = () => setInteractive(onSensei() || onMenu());
-addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; checkHover(); });
-addEventListener("mouseleave", () => { mouse.x = mouse.y = -999; checkHover(); });
-addEventListener("mousedown", e => { if (onSensei()) { boop = 1; toggleMenu(); } else if (menuOpen && !e.target.closest(".mbtn")) toggleMenu(false); });
-function toggleMenu(f){ menuOpen = f ?? !menuOpen; $("#menu").classList.toggle("open", menuOpen); if (menuOpen) layoutMenu(); checkHover(); }
+/* ---------- hover & menu: the app tells us when the cursor is over Sensei ---------- */
+let menuOpen = false; const mouse = { x: -999, y: -999 }; let hovering = false;
+const local = () => ({ x: pos.x - L.origin.x, y: pos.y - L.origin.y });
+S.on("hover", h => { hovering = h; document.body.style.cursor = h ? "pointer" : ""; });
+addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+const onSensei = () => { const p = local(); return Math.hypot(mouse.x - p.x, mouse.y - (p.y + bobY)) < 85; };
+addEventListener("mousedown", e => { if (e.target.closest(".mbtn")) return; if (onSensei() || (hovering && !menuOpen)) { boop = 1; toggleMenu(); } else if (menuOpen) toggleMenu(false); });
+function toggleMenu(f){ menuOpen = f ?? !menuOpen; $("#menu").classList.toggle("open", menuOpen); if (menuOpen) { layoutMenu(); $("#bubble").classList.remove("show"); bubbleT = 0; } sendHit(true); }
 function layoutMenu(){ const bs = [...document.querySelectorAll(".mbtn")]; const n = bs.length, R = 108;
   bs.forEach((b, i) => { const a = -Math.PI / 2 + (i - (n - 1) / 2) * .62; b.style.left = Math.cos(a) * R + "px"; b.style.top = Math.sin(a) * R + "px"; }); }
 document.querySelectorAll(".mbtn").forEach(b => b.addEventListener("click", () => {
@@ -153,18 +151,22 @@ async function ask(q){
   } catch (e) { say(e && e.code === "mind_asleep" ? "My mind is asleep. Open Settings → Sensei's mind and sign in to claude.ai once." : "…the wind took my thoughts. Ask once more.", 9000, true); }
 }
 
-/* ---------- loop: 30 fps while moving or talking, 15 fps at rest ---------- */
-let lastPos = "", acc = 0;
+/* ---------- loop: full frame rate while moving/talking, 30 fps when idle; only a 460px square is drawn ---------- */
+let acc = 0, bobY = 0, lastHit = "";
+const stage = $("#stage");
+function sendHit(force){ const p = local(); const h = { x: Math.round(p.x), y: Math.round(p.y + bobY), r: menuOpen ? 150 : 82 }; const k = h.x + "," + h.y + "," + h.r; if (force || k !== lastHit) { lastHit = k; S.send("overlay:hit", h); } }
 function frame(now){
   requestAnimationFrame(frame);
-  const busy = talking || listening || boop > 0 || menuOpen || Math.hypot(target.x - pos.x, target.y - pos.y) > 2;
-  acc += (now - last) / 1000; last = now; if (acc < (busy ? 1 / 30 : 1 / 15)) return;
+  const moving = Math.hypot(target.x - pos.x, target.y - pos.y) > 2;
+  const busy = moving || talking || listening || boop > 0 || menuOpen;
+  acc += (now - last) / 1000; last = now; if (!busy && acc < 1 / 30) return;
   const dt = Math.min(.1, acc); acc = 0; clock += dt; boop = Math.max(0, boop - dt * 1.5);
   if (clock > nextWander && !menuOpen) pickTarget();
   const dx = target.x - pos.x, dy = target.y - pos.y, d = Math.hypot(dx, dy), speed = mode === "rest" ? 160 : 46;
   if (d > 2 && !menuOpen) { const st = Math.min(d, speed * dt); pos.x += dx / d * st; pos.y += dy / d * st; if (Math.abs(dx) > 6) facing = dx > 0 ? 1 : -1; }
-  const wx = Math.round(pos.x - CX), wy = Math.round(pos.y - CY + Math.sin(clock * 1.1) * 6), k = wx + "," + wy;
-  if (k !== lastPos) { lastPos = k; S.send("overlay:pos", wx, wy); }
+  bobY = Math.sin(clock * 1.1) * 6;
+  const p = local(); stage.style.transform = `translate3d(${(p.x - CX).toFixed(1)}px,${(p.y - CY + bobY).toFixed(1)}px,0)`;
+  sendHit(false);
   const want = facing > 0 ? -.45 : Math.PI + .45; sensei.root.rotation.y += (want - sensei.root.rotation.y) * Math.min(1, dt * 2.5);
   sensei.update(clock, dt, { talking, boop });
   if (bubbleT && clock > bubbleT) { $("#bubble").classList.remove("show"); bubbleT = 0; }

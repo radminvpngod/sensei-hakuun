@@ -186,26 +186,39 @@ module.exports = function core(ctx) {
 
   /* ================= windows ================= */
   let overlay = null, palette = null, pairWin = null, garden = null, setWin = null, tray = null, gardenUnloadT = null;
-  const OW = 460, OH = 460;                     // Sensei's own small window; it travels with him
+  // Sensei lives in a transparent, click-through layer over the chosen monitor(s); only the small square around him is drawn.
+  function overlayBounds() {
+    const ds = settings.monitors === 'all' ? screen.getAllDisplays() : [screen.getPrimaryDisplay()];
+    let l = Infinity, t = Infinity, r = -Infinity, b = -Infinity;
+    ds.forEach(d => { l = Math.min(l, d.bounds.x); t = Math.min(t, d.bounds.y); r = Math.max(r, d.bounds.x + d.bounds.width); b = Math.max(b, d.bounds.y + d.bounds.height); });
+    return { x: l, y: t, width: r - l, height: b - t };
+  }
   function layout() {
     const ds = settings.monitors === 'all' ? screen.getAllDisplays() : [screen.getPrimaryDisplay()];
-    const pd = screen.getPrimaryDisplay();
-    return { rects: ds.map(d => ({ x: d.workArea.x, y: d.workArea.y, w: d.workArea.width, h: d.workArea.height })), primary: { x: pd.workArea.x, y: pd.workArea.y, w: pd.workArea.width, h: pd.workArea.height }, win: { w: OW, h: OH } };
+    const pd = screen.getPrimaryDisplay(), o = overlay && !overlay.isDestroyed() ? overlay.getBounds() : overlayBounds();
+    return { origin: { x: o.x, y: o.y }, rects: ds.map(d => ({ x: d.workArea.x, y: d.workArea.y, w: d.workArea.width, h: d.workArea.height })), primary: { x: pd.workArea.x, y: pd.workArea.y, w: pd.workArea.width, h: pd.workArea.height } };
   }
   function pushLayout() { if (overlay && !overlay.isDestroyed()) overlay.webContents.send('layout', layout()); }
   function createOverlay() {
-    const pd = screen.getPrimaryDisplay().workArea;
-    overlay = new BrowserWindow({ x: pd.x + pd.width - OW - 40, y: pd.y + pd.height - OH, width: OW, height: OH, transparent: true, frame: false, resizable: false, movable: false,
-      minimizable: false, maximizable: false, fullscreenable: false, alwaysOnTop: !!settings.alwaysOnTop, skipTaskbar: true, focusable: false, hasShadow: false,
+    overlay = new BrowserWindow({ ...overlayBounds(), transparent: true, frame: false, resizable: false, movable: false, minimizable: false, maximizable: false, fullscreenable: false,
+      alwaysOnTop: !!settings.alwaysOnTop, skipTaskbar: true, focusable: false, hasShadow: false, enableLargerThanScreen: true,
       backgroundColor: '#00000000', show: false, webPreferences: { preload: PRELOAD, backgroundThrottling: false } });
     applyOnTop(); overlay.setIgnoreMouseEvents(true, { forward: true });
     overlay.loadFile(webPath('overlay.html'));
     overlay.webContents.on('did-finish-load', pushLayout);
     overlay.once('ready-to-show', () => { if (settings.overlay !== 'hidden') overlay.showInactive(); });
   }
-  ipcMain.on('overlay:pos', (e, x, y) => { if (overlay && !overlay.isDestroyed()) try { overlay.setPosition(Math.round(x), Math.round(y)); } catch (err) {} });
+  // clicking Sensei: the app watches the cursor itself and makes the layer clickable only while it is over him or his menu
+  let hit = null, clickable = false;
+  ipcMain.on('overlay:hit', (e, h) => { hit = h; });
+  setInterval(() => {
+    if (!overlay || overlay.isDestroyed() || !overlay.isVisible() || !hit) return;
+    const c = screen.getCursorScreenPoint(), o = overlay.getBounds();
+    const inside = Math.hypot(c.x - (o.x + hit.x), c.y - (o.y + hit.y)) < hit.r;
+    if (inside !== clickable) { clickable = inside; overlay.setIgnoreMouseEvents(!inside, { forward: true }); overlay.webContents.send('hover', inside); }
+  }, 60);
   function applyOnTop() { if (!overlay || overlay.isDestroyed()) return; if (settings.alwaysOnTop) { overlay.setAlwaysOnTop(true, 'screen-saver'); overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } else overlay.setAlwaysOnTop(false); }
-  function applyMonitors() { setTimeout(pushLayout, 200); }
+  function applyMonitors() { if (overlay && !overlay.isDestroyed()) overlay.setBounds(overlayBounds()); setTimeout(pushLayout, 200); }
   screen.on('display-added', applyMonitors); screen.on('display-removed', applyMonitors); screen.on('display-metrics-changed', applyMonitors);
 
   // full-screen pointer layer: exists only while the phone pointer or calibration is in use
@@ -379,7 +392,6 @@ module.exports = function core(ctx) {
   }
 
   /* ================= IPC ================= */
-  ipcMain.on('overlay:interactive', (e, on) => { if (overlay && !overlay.isDestroyed()) overlay.setIgnoreMouseEvents(!on, { forward: true }); });
   ipcMain.on('open', (e, what) => { ({ garden: openGarden, palette: () => togglePalette(true), pair: openPair, settings: openSettings, mind: () => ensureBrain(true) })[what]?.(); });
   ipcMain.on('palette:hide', () => togglePalette(false));
   ipcMain.handle('catalog', async (e, fresh) => (fresh || !catalog.length) ? await rescan() : catalog);
