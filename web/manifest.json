@@ -1,7 +1,7 @@
 {
- "version": 7,
+ "version": 8,
  "shellApi": 2,
- "notes": "The valley is open: shrine, village, lake, onsen, maze, orchard, castle hall. New trees everywhere.",
+ "notes": "A smaller, richer low-poly valley. Mini golf, 3D games, sky islands, new remote.",
  "files": [
   "brain-client.js",
   "core.js",
@@ -28,7 +28,7 @@
   "vendor/three.module.min.js",
   "vendor/addons/loaders/GLTFLoader.js",
   "vendor/addons/utils/BufferGeometryUtils.js",
-  "assets/nature.glb"
+  "assets/lowpoly.glb"
  ],
  "minShell": "0.2.0"
 }

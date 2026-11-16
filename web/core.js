@@ -256,9 +256,10 @@ module.exports = function core(ctx) {
   function openGarden() {
     clearTimeout(gardenUnloadT);
     if (garden && !garden.isDestroyed()) { garden.show(); garden.focus(); return; }
-    garden = new BrowserWindow({ width: 1360, height: 860, title: 'Sensei Hakuun — The Garden', autoHideMenuBar: true, backgroundColor: '#0b1026', show: false,
+    garden = new BrowserWindow({ width: 1360, height: 860, fullscreen: true, title: 'Sensei Hakuun — The Garden', autoHideMenuBar: true, backgroundColor: '#0b1026', show: false,
       webPreferences: { preload: PRELOAD, backgroundThrottling: true } });
     garden.loadFile(webPath('garden.html'));
+    garden.webContents.on('before-input-event', (e, inp) => { if (inp.type === 'keyDown' && inp.key === 'F11') { garden.setFullScreen(!garden.isFullScreen()); e.preventDefault(); } });
     garden.once('ready-to-show', () => { garden.show(); garden.focus(); });
     garden.on('close', e => {
       if (quitting) return; e.preventDefault(); garden.hide();          // hidden = frozen: rendering and sound stop
