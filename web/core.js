@@ -394,6 +394,7 @@ module.exports = function core(ctx) {
   /* ================= IPC ================= */
   ipcMain.on('open', (e, what) => { ({ garden: openGarden, palette: () => togglePalette(true), pair: openPair, settings: openSettings, mind: () => ensureBrain(true) })[what]?.(); });
   ipcMain.on('palette:hide', () => togglePalette(false));
+  ipcMain.handle('asset', async (e, rel) => { rel = String(rel || '').replace(/\\/g, '/'); if (!/^assets\/[\w.-]+$/.test(rel)) return null; try { return fs.readFileSync(webPath(rel)); } catch (err) { log('asset', rel, err.message); return null; } });
   ipcMain.handle('catalog', async (e, fresh) => (fresh || !catalog.length) ? await rescan() : catalog);
   ipcMain.on('launch', (e, item) => { launchItem(item); togglePalette(false); });
   ipcMain.on('openExternal', (e, url) => { if (/^(https?|steam|spotify):/i.test(url)) shell.openExternal(url); togglePalette(false); });

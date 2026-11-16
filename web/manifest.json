@@ -1,7 +1,7 @@
 {
- "version": 5,
+ "version": 6,
  "shellApi": 2,
- "notes": "Sand garden: clearer instructions, and Sensei always gives a verdict now.",
+ "notes": "The valley is open: shrine, village, lake, onsen, maze, orchard, castle hall. New trees everywhere.",
  "files": [
   "brain-client.js",
   "core.js",
@@ -25,7 +25,10 @@
   "vendor/addons/shaders/CopyShader.js",
   "vendor/addons/shaders/LuminosityHighPassShader.js",
   "vendor/addons/shaders/OutputShader.js",
-  "vendor/three.module.min.js"
+  "vendor/three.module.min.js",
+  "vendor/addons/loaders/GLTFLoader.js",
+  "vendor/addons/utils/BufferGeometryUtils.js",
+  "assets/nature.glb"
  ],
  "minShell": "0.2.0"
 }
