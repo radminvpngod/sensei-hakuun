@@ -1,7 +1,7 @@
 {
- "version": 9,
+ "version": 10,
  "shellApi": 2,
- "notes": "2 players, fresh daily dialogue, quicker grading, haptics, 9-point remote calibration.",
+ "notes": "Bonsai, tea ceremony, ikebana, colored sand, honest calligraphy grading, steadier chat and voice commands.",
  "files": [
   "brain-client.js",
   "core.js",

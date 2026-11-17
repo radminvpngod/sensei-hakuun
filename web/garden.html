@@ -84,6 +84,15 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 .panel h2{font-family:"Shippori Mincho",serif;margin:0 0 4px;font-size:22px}
 .panel p{font-size:14px;line-height:1.55;color:#5a4a3a;margin:8px 0}
 .panel .code{font-family:"Shippori Mincho",serif;font-size:56px;letter-spacing:.25em;text-align:center;margin:10px 0;color:#c8452f}
+.panel.wide{width:min(94vw,760px);max-height:88vh;overflow:auto}
+.gcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:12px 0 6px}
+.gcard{position:relative;overflow:hidden;border-radius:16px;padding:14px 14px 12px;min-height:118px;cursor:pointer;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;
+ background:radial-gradient(circle at 80% 15%,rgba(255,255,255,.25),transparent 45%),linear-gradient(160deg,var(--c1),var(--c2));box-shadow:0 8px 20px rgba(40,25,10,.25),inset 0 1px 0 rgba(255,255,255,.35);transition:transform .18s,box-shadow .18s}
+.gcard:hover{transform:translateY(-3px) rotate(-.4deg);box-shadow:0 14px 28px rgba(40,25,10,.32),inset 0 1px 0 rgba(255,255,255,.35)}
+.gcard .gk{position:absolute;right:8px;top:-6px;font-family:"Shippori Mincho",serif;font-size:74px;line-height:1;opacity:.28;text-shadow:0 2px 0 rgba(0,0,0,.15)}
+.gcard .gt{font-family:"Shippori Mincho",serif;font-size:19px;text-shadow:0 1px 3px rgba(0,0,0,.35)}
+.gcard .gs{font-size:12px;opacity:.9;margin-top:3px;line-height:1.3}
+.gcard:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.6),transparent)}
 .pbtn{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-radius:12px;background:rgba(43,36,32,.06);margin-top:8px;cursor:pointer;font-size:15px}
 .pbtn:hover,.pbtn.rc-hover{background:rgba(200,69,47,.15)}
 .pbtn b{font-weight:500;color:#c8452f}
@@ -110,6 +119,11 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 .shGuide{position:absolute;inset:0;display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:min(70vw,44vh,400px);color:rgba(140,47,47,.09);pointer-events:none;line-height:1}
 #shC{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:crosshair}
 .shBtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+#rakeTools{display:none;align-items:center;gap:6px;flex-wrap:wrap;pointer-events:auto}#mg.rake #rakeTools{display:flex}
+#rakeTools .rt{padding:8px 12px;border-radius:99px;background:rgba(244,236,216,.12);border:1px solid rgba(244,236,216,.3);font-family:"Shippori Mincho",serif;font-size:14px;cursor:pointer;color:#f4ecd8}
+#rakeTools .rt.on{background:#f4ecd8;color:#2b2420}#swatches{display:flex;gap:5px;margin-left:4px}#swatches i{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.5);box-shadow:0 2px 6px rgba(0,0,0,.35)}#swatches i.on{border-color:#fff;transform:scale(1.18)}
+.mgTop .t,.mgTop .s{text-shadow:0 1px 6px rgba(0,0,0,.65),0 0 2px rgba(0,0,0,.5)}
+.shB.tool.on{background:rgba(244,236,216,.92);color:#2b2420}
 .shB{padding:11px 16px;border-radius:12px;background:rgba(244,236,216,.12);border:1px solid rgba(244,236,216,.3);font-family:"Shippori Mincho",serif;font-size:15px;cursor:pointer;color:#f4ecd8}
 .shB:hover,.shB.rc-hover{background:rgba(244,236,216,.9);color:#2b2420}
 .shB.main{background:#c8452f;border:0}
@@ -223,10 +237,10 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
   <div class="shTop"><div><div class="shK" id="shK">永</div><div class="shM" id="shM">EI · ETERNITY</div></div><div class="shScore" id="shScore"></div></div>
   <div class="shWrap" id="shWrap"><div class="shGuide" id="shGuide">永</div><canvas id="shC" width="800" height="800"></canvas></div>
   <div id="shFb">Write the character with your finger, mouse or phone remote. Confident strokes.</div>
-  <div class="shBtns"><div class="shB" id="shClear">消 Clear</div><div class="shB" id="shNext">次 New kanji</div><div class="shB" id="shGuideT">影 Guide</div><div class="shB main" id="shSubmit">見 Show Sensei</div><div class="shB" id="shClose">Close</div></div>
+  <div class="shBtns"><div class="shB tool on" id="shBrush">筆 Brush</div><div class="shB tool" id="shErase">◌ Eraser</div><div class="shB" id="shUndo">↶ Undo</div><div class="shB" id="shClear">消 Clear</div><div class="shB" id="shNext">次 New kanji</div><div class="shB" id="shGuideT">影 Guide</div><div class="shB main" id="shSubmit">見 Show Sensei</div><div class="shB" id="shClose">Close</div></div>
 </div>
 <div id="mg"><canvas id="mg3"></canvas><canvas id="mgC"></canvas>
-  <div class="mgTop"><div><div class="t" id="mgTitle"></div><div class="s" id="mgSub"></div></div><div class="sp"></div><div class="shB" id="mgReset">消 Fresh sand</div><div class="shB main" id="mgJudge">見 Show Sensei</div><div class="shB" id="mgClose">Leave</div></div>
+  <div class="mgTop"><div><div class="t" id="mgTitle"></div><div class="s" id="mgSub"></div></div><div class="sp"></div><div id="rakeTools"><div class="rt on" data-rt="rake">耙 Rake</div><div class="rt" data-rt="smooth">平 Smooth</div><div class="rt" data-rt="pour">砂 Color sand</div><div class="sw" id="swatches"></div></div><div class="shB" id="mgReset">消 Fresh sand</div><div class="shB main" id="mgJudge">見 Show Sensei</div><div class="shB" id="mgClose">Leave</div></div>
   <div id="mgRes"><div id="mgResT"></div><div id="mgResL"></div><div id="mgResS"></div><div class="shB main" id="mgAgain">Again</div><div class="shB" id="mgLeave">Leave</div></div>
 </div>
 <div class="panel tall" id="travelPanel">
@@ -239,14 +253,19 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 <div id="golfHud"></div>
 <div id="p2chip">2P</div>
 <div id="fade"></div>
-<div class="panel" id="gamesPanel">
-  <h2>Games</h2><p>Each works with mouse, touch, or your phone remote.</p>
-  <div class="pbtn" data-game="kyudo">弓道 Kyūdō archery <b>hold · aim · release</b></div>
-  <div class="pbtn" data-game="taiko">太鼓 Taiko drums <b>rhythm</b></div>
-  <div class="pbtn" data-game="rake">砂紋 Rake the Dry Garden <b>Sensei judges</b></div>
-  <div class="pbtn" data-game="shodo">書 Calligraphy <b>Sensei grades</b></div>
-  <div class="pbtn" data-game="koi">鯉 Koi feeding <b>at the pond</b></div>
-  <div class="pbtn" data-game="golf">球 Mini golf <b>Kaeru's 3 holes</b></div>
+<div class="panel wide" id="gamesPanel">
+  <h2>遊 Games</h2><p>Mouse, touch, or your phone remote. Press P for a second player.</p>
+  <div class="gcards">
+    <div class="gcard" data-game="kyudo" style="--c1:#c8452f;--c2:#7a2a1e"><span class="gk">弓</span><span class="gt">Kyūdō</span><span class="gs">Archery on a bamboo range</span></div>
+    <div class="gcard" data-game="taiko" style="--c1:#e2763a;--c2:#7a3a1e"><span class="gk">太</span><span class="gt">Taiko</span><span class="gs">Drum to the festival rhythm</span></div>
+    <div class="gcard" data-game="rake" style="--c1:#c9b892;--c2:#7a6a4a"><span class="gk">砂</span><span class="gt">Dry Garden</span><span class="gs">Rake patterns, pour colored sand</span></div>
+    <div class="gcard" data-game="shodo" style="--c1:#3a3a40;--c2:#151518"><span class="gk">書</span><span class="gt">Calligraphy</span><span class="gs">Brush a kanji for Sensei</span></div>
+    <div class="gcard" data-game="bonsai" style="--c1:#4f8a3c;--c2:#24402a"><span class="gk">盆</span><span class="gt">Bonsai</span><span class="gs">Shape a tree that grows by the day</span></div>
+    <div class="gcard" data-game="tea" style="--c1:#6f9a48;--c2:#2f4a24"><span class="gk">茶</span><span class="gt">Tea Ceremony</span><span class="gs">Scoop, pour, whisk, present</span></div>
+    <div class="gcard" data-game="ikebana" style="--c1:#e85a6a;--c2:#7a2a3a"><span class="gk">花</span><span class="gt">Ikebana</span><span class="gs">Arrange heaven, human, earth</span></div>
+    <div class="gcard" data-game="golf" style="--c1:#5fae6a;--c2:#2a5a34"><span class="gk">球</span><span class="gt">Mini Golf</span><span class="gs">Kaeru's three holes · 2P</span></div>
+    <div class="gcard" data-game="koi" style="--c1:#f2a03a;--c2:#a0501e"><span class="gk">鯉</span><span class="gt">Koi Feeding</span><span class="gs">At the pond, with the golden koi</span></div>
+  </div>
   <div class="pbtn" data-close="gamesPanel">Close</div>
 </div>
 <div id="pointer"></div>
@@ -1779,10 +1798,15 @@ $("#form").addEventListener("submit",async e=>{
   const bubble=addMsg("s","…","thinking"); await sampleReady; let reply="";
   if(!sample){ reply=PROVERBS[Math.floor(Math.random()*PROVERBS.length)]+"\n\n(Sensei's voice is faint here. Open this page on claude.ai to wake him fully.)"; bubble.textContent=reply; bubble.classList.remove("thinking"); }
   else { const prompt=`${PERSONA}\n\n${context()}\n\nRecent conversation:\n${transcript()}\n\nWrite Sensei's next reply to Gabriel's last message. Output only Sensei's words.`;
-    try{ const res=await sample(prompt,{cache:false,onText:({text})=>{ bubble.classList.remove("thinking"); bubble.textContent=text; log.scrollTop=log.scrollHeight; }});
+    try{ if(window.sensei&&window.sensei.invoke){ const st=await window.sensei.invoke("brain:status").catch(()=>null); if(st&&!st.awake) $("#status").textContent="waking Sensei's mind…"; }
+      const t0=Date.now(); const tick=setInterval(()=>{ const s2=Math.round((Date.now()-t0)/1000); if(bubble.classList.contains("thinking")) $("#status").textContent=`thinking… ${s2}s`; },1000);
+      let res; try{ res=await Promise.race([sample(prompt,{cache:false,onText:({text})=>{ bubble.classList.remove("thinking"); bubble.textContent=text; log.scrollTop=log.scrollHeight; }}),
+        new Promise((_,rj)=>setTimeout(()=>rj({code:bubble.classList.contains("thinking")?"slow":"cut",text:bubble.classList.contains("thinking")?"":bubble.textContent}),60000))]); } finally{ clearInterval(tick); }
       reply=((res&&res.text)||bubble.textContent||"").trim().replace(/^Sensei:\s*/,""); bubble.textContent=reply; bubble.classList.remove("thinking");
     }catch(err){ bubble.classList.remove("thinking");
       if(err&&err.text) reply=err.text; else if(err&&err.code==="rate_limited") reply="The water is muddied for a moment. Breathe. Then speak again.";
+      else if(err&&err.code==="slow") reply="Hm… my mind is slow to wake. "+(window.sensei?"If this keeps happening, open the tray menu → Sensei's mind and make sure you are signed in to claude.ai.":"Say that once more.");
+      else if(err&&err.code==="mind_asleep") reply="My mind is asleep. Open the tray menu → Sensei's mind and sign in to claude.ai once. Then speak to me again.";
       else if(err&&err.code==="not_granted"){ sample=null; reply=PROVERBS[0]+"\n\n(Sensei can't speak freely without permission to ask Claude.)"; } else reply="…the wind took my words. Say that once more.";
       bubble.textContent=reply; } }
   store.history.push({r:"s",c:reply}); save(); lastReply=reply; hostPush(); busy=false; thinking=false; $("#send").disabled=false; $("#status").textContent="present"; speak(reply);
@@ -1867,8 +1891,8 @@ Today: ${S}, ${new Date().toLocaleDateString("en-US",{weekday:"long",month:"long
 Recent talk:\n${recent}\n${facts}
 Write FRESH lines. Every line different in topic and rhythm: observations about the garden, his own little projects and opinions, gentle teasing, small philosophy, memories, questions for Gabriel, references to things Gabriel did. 1-2 short sentences each, no emoji, no quotation marks.
 Also write lines for the valley's spirits: ${Object.entries(NPC_VOICE).map(([k,v])=>k+" = "+v).join("; ")}. They have opinions about each other and about Sensei.
-Return JSON exactly: {"greet":[8 lines Sensei says when Gabriel arrives, any time of day],"idle":[12 lines Sensei says while wandering near Gabriel],"acts":{${ACTS.map(a=>`"${a.id}":[2 lines]`).join(",")}},"npc":{"okitsune":[6],"tanuki":[6],"kaeru":[6],"taro":[6]}}. Activity ids: ${acts}.`;
-  const v=await Promise.race([sample.json(prompt,{cache:false}),new Promise((_,r)=>setTimeout(()=>r(new Error("slow")),90000))]);
+Return JSON exactly: {"greet":[8 lines Sensei says when Gabriel arrives, any time of day],"idle":[10 lines Sensei says while wandering near Gabriel],"acts":{${ACTS.map(a=>`"${a.id}":[2 lines]`).join(",")}},"npc":{"okitsune":[5],"tanuki":[5],"kaeru":[5],"taro":[5]}}. Activity ids: ${acts}.`;
+  const v=await Promise.race([sample.json(prompt,{cache:false,modelTier:"quick"}),new Promise((_,r)=>setTimeout(()=>r(new Error("slow")),90000))]);
   if(v&&Array.isArray(v.greet)&&v.greet.length){ store.bank={day:todayKey(),greet:v.greet,idle:v.idle||[],acts:v.acts||{},npc:v.npc||{}}; save(); }
  }catch(e){ console.warn("[bank]",e); } finally{ bankBusy=false; } }
 const NPC_FALLBACK={okitsune:["The tea is hot, the gossip hotter. Sensei sneezed in the onsen yesterday and blamed a frog.","Sit, sit. Even ghosts need a cup between worries.","He pretends he never plays the console. The controller is always warm."],
@@ -1912,8 +1936,25 @@ addEventListener("keydown",e=>{ if(document.activeElement===$("#inp")) return; i
 function inkStats(cv){ const S2=96, t=document.createElement("canvas"); t.width=t.height=S2; const g=t.getContext("2d"); g.drawImage(cv,0,0,S2,S2); const d=g.getImageData(0,0,S2,S2).data;
   let n=0,sx=0,sy=0,x0=S2,x1=0,y0=S2,y1=0; for(let y=0;y<S2;y++) for(let x=0;x<S2;x++){ const i=(y*S2+x)*4; const dark=d[i+3]>40&&(d[i]+d[i+1]+d[i+2])<300; if(dark){ n++; sx+=x; sy+=y; x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); } }
   const r=n/(S2*S2); if(!n) return {r:0,c:1,fill:0}; const cx=sx/n/S2-.5, cy=sy/n/S2-.5; return {r,c:Math.hypot(cx,cy),fill:((x1-x0)*(y1-y0))/(S2*S2)}; }
-function localShodo(cv){ const s=inkStats(cv); let sc=3; if(s.r>.05&&s.r<.34) sc+=2; if(s.r>.09&&s.r<.26) sc+=1; if(s.c<.12) sc+=2; else if(s.c<.2) sc+=1; if(s.fill>.25&&s.fill<.8) sc+=2;
-  sc=clamp(sc,1,9); const w=s.r>.34?"Heavy ink. The brush should dance, not stomp.":s.r<.05?"Too shy. Let the brush commit to the paper.":s.c>.2?"The character wanders off the center. Give it a home in the middle.":s.fill<.25?"Small and careful. Be braver with the size.":pick(["Balanced. The strokes sit together like old friends.","Steady hand. Now let the last stroke breathe a little more.","Good proportion. The spaces between strokes matter as much as the strokes."]); return {score:sc,words:w}; }
+function glyphMask(ch,N){ const c=document.createElement("canvas"); c.width=c.height=N; const g=c.getContext("2d"); g.fillStyle="#000"; g.textAlign="center"; g.textBaseline="middle"; g.font=`600 ${Math.round(N*.86)}px "Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif`; g.fillText(ch,N/2,N/2+N*.04); return g.getImageData(0,0,N,N).data; }
+function maskOf(data,N,ink){ const m=new Uint8Array(N*N); for(let i=0;i<N*N;i++){ const a=data[i*4+3]; m[i]=ink?(a>60&&data[i*4]+data[i*4+1]+data[i*4+2]<330?1:0):(a>80?1:0); } return m; }
+function fitMask(m,N,M){ let x0=N,x1=-1,y0=N,y1=-1; for(let y=0;y<N;y++) for(let x=0;x<N;x++) if(m[y*N+x]){ x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); } const out=new Uint8Array(M*M); if(x1<0) return out;
+  const w=x1-x0+1,h=y1-y0+1,s=(M*.86)/Math.max(w,h),ox=(M-w*s)/2,oy=(M-h*s)/2; for(let y=0;y<M;y++) for(let x=0;x<M;x++){ const sx=Math.floor((x-ox)/s+x0), sy=Math.floor((y-oy)/s+y0); if(sx>=x0&&sx<=x1&&sy>=y0&&sy<=y1&&m[sy*N+sx]) out[y*M+x]=1; } return out; }
+function dilate(m,M,r){ const o=new Uint8Array(M*M); for(let y=0;y<M;y++) for(let x=0;x<M;x++){ if(!m[y*M+x]) continue; for(let dy=-r;dy<=r;dy++) for(let dx=-r;dx<=r;dx++){ const X=x+dx,Y=y+dy; if(X>=0&&Y>=0&&X<M&&Y<M&&dx*dx+dy*dy<=r*r) o[Y*M+X]=1; } } return o; }
+function distMap(m,M){ const I=1e6, d=new Float32Array(M*M); for(let i=0;i<M*M;i++) d[i]=m[i]?0:I;
+  for(let y=0;y<M;y++) for(let x=0;x<M;x++){ const i=y*M+x; if(x>0) d[i]=Math.min(d[i],d[i-1]+1); if(y>0) d[i]=Math.min(d[i],d[i-M]+1); if(x>0&&y>0) d[i]=Math.min(d[i],d[i-M-1]+1.414); if(x<M-1&&y>0) d[i]=Math.min(d[i],d[i-M+1]+1.414); }
+  for(let y=M-1;y>=0;y--) for(let x=M-1;x>=0;x--){ const i=y*M+x; if(x<M-1) d[i]=Math.min(d[i],d[i+1]+1); if(y<M-1) d[i]=Math.min(d[i],d[i+M]+1); if(x<M-1&&y<M-1) d[i]=Math.min(d[i],d[i+M+1]+1.414); if(x>0&&y<M-1) d[i]=Math.min(d[i],d[i+M-1]+1.414); } return d; }
+function shodoMatch(cv,ch){ const N=160, M=80; const t=document.createElement("canvas"); t.width=t.height=N; t.getContext("2d").drawImage(cv,0,0,N,N);
+  const D=fitMask(maskOf(t.getContext("2d").getImageData(0,0,N,N).data,N,true),N,M), R=fitMask(maskOf(glyphMask(ch,N),N,false),N,M);
+  const dD=distMap(D,M), dR=distMap(R,M); let a=0,na=0,b=0,nb=0, cov=0; for(let i=0;i<M*M;i++){ if(D[i]){ a+=dR[i]; na++; } if(R[i]){ b+=dD[i]; nb++; if(dD[i]<=1.5) cov++; } }
+  const inkToRef=na?a/na:99, refToInk=nb?b/nb:99, recall=nb?cov/nb:0; const d=(inkToRef+refToInk)/2;
+  const G=8, gd=new Float32Array(G*G), gr=new Float32Array(G*G), cs=M/G; for(let y=0;y<M;y++) for(let x=0;x<M;x++){ const k=Math.floor(y/cs)*G+Math.floor(x/cs); gd[k]+=D[y*M+x]; gr[k]+=R[y*M+x]; }
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length, md=mean(gd), mr=mean(gr); let sxy=0,sxx=0,syy=0; for(let k=0;k<G*G;k++){ const u=gd[k]-md, v=gr[k]-mr; sxy+=u*v; sxx+=u*u; syy+=v*v; } const corr=sxx&&syy?sxy/Math.sqrt(sxx*syy):0;
+  const fd=clamp(1-(d-.9)/2.2,0,1), fc=clamp((corr-.35)/.55,0,1);
+  return {d,inkToRef,refToInk,recall,corr,F:Math.min(fd,fc)*.6+fd*.2+fc*.2}; }
+function localShodo(cv,ch){ const m=shodoMatch(cv,ch||KANJI[shIdx][0]); const sc=clamp(Math.round(1+m.F*9-(m.recall<.6?2:0)),1,10);
+  const w=m.F<.3?pick(["Hm. That is a brave shape, but it is not this character. Look at the guide, then try again, stroke by stroke.","I see ink, and I see courage. I do not see the character yet. Slow down and follow its bones."]):m.recall<.55?"Parts of the character are missing. Every stroke has a job. Find the ones you skipped.":m.inkToRef>2.5?"Too much ink wandering outside the character. Fewer, cleaner strokes.":sc>=9?"Clean. The character stands up on its own. Hm. I am pleased.":sc>=7?"Good. The structure is there. Now give each stroke a clear start and a clean finish.":"It reads, barely. Tighten the spacing and keep the strokes where they belong.";
+  return {score:sc,words:w,F:m.F}; }
 
 /* ===================== main loop ===================== */
 let clock=0,last=performance.now(),boop=0,blink=0,nextBlink=2,yaw=0,walkPh=0,speedNow=0;
@@ -2039,7 +2080,7 @@ function frame(now){
 
 /* ===================== boot ===================== */
 applyTime(); initAi(); setInterval(applyTime,30000); requestAnimationFrame(frame); buildFluffyGrass(); loadNature();
-if(location.search.includes("dbg")) window.__dbg={p2Set:v=>p2Set(v),openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
+if(location.search.includes("dbg")) window.__dbg={get GAMES(){return GAMES;},get RAKE(){return RAKE;},gradeTest:(ch)=>{ const c=document.createElement('canvas'); c.width=c.height=800; const g=c.getContext('2d'); const out={}; g.fillStyle='#120e0c'; g.font='600 640px "Shippori Mincho",serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(ch,400,430); out.good=localShodo(c,ch); out.good.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.lineWidth=40; g.strokeStyle='#120e0c'; g.beginPath(); g.ellipse(450,350,250,110,-.4,0,6.28); g.moveTo(200,600); g.lineTo(550,420); g.stroke(); out.scribble=localShodo(c,ch); out.scribble.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.font='600 640px "Shippori Mincho",serif'; g.fillText('水',400,430); out.wrongChar=localShodo(c,ch); out.wrongChar.m=shodoMatch(c,ch); return JSON.stringify(out); },p2Set:v=>p2Set(v),openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
 
 const memReady=loadMemory().then(()=>{ subscribeScrolls(); loadSandArt(); });
 /* ===================== shodō: calligraphy ===================== */
@@ -2052,9 +2093,14 @@ function openShodo(){ shodoOpen=true; $("#shodo").classList.add("show"); closeCh
 function closeShodo(){ shodoOpen=false; $("#shodo").classList.remove("show"); hostPush(); }
 // brush: stamped ellipses whose width follows speed and pressure, with a dry-brush edge
 let shLast=null;
+let shTool="brush"; const shUndoStack=[];
+function shPush(){ try{ shUndoStack.push(shX.getImageData(0,0,800,800)); if(shUndoStack.length>20) shUndoStack.shift(); }catch(e){} }
+function shTools(t){ shTool=t; $("#shBrush").classList.toggle("on",t==="brush"); $("#shErase").classList.toggle("on",t==="erase"); shC.style.cursor=t==="erase"?"cell":"crosshair"; }
+function shEraseAt(x,y,px,py){ shX.save(); shX.globalCompositeOperation="destination-out"; shX.lineCap="round"; shX.lineWidth=56; shX.beginPath(); shX.moveTo(px??x,py??y); shX.lineTo(x,y); shX.stroke(); shX.restore(); }
 function shStroke(x,y,down){ x*=800; y*=800;
+  if(shTool==="erase"){ if(!down){ shLast=null; return; } if(!shLast){ shPush(); shLast={x,y,w:0,n:0}; shEraseAt(x,y); return; } shEraseAt(x,y,shLast.x,shLast.y); shLast={x,y,w:0,n:shLast.n+1}; return; }
   if(!down){ if(shLast&&shLast.n>1){ const a=Math.atan2(y-shLast.y,x-shLast.x); } shLast=null; return; }
-  if(!shLast){ shLast={x,y,w:18,n:0}; shDot(x,y,18); return; }
+  if(!shLast){ shPush(); shLast={x,y,w:18,n:0}; shDot(x,y,18); return; }
   const dx=x-shLast.x, dy=y-shLast.y, dist=Math.hypot(dx,dy); if(dist<1.2) return;
   const target=clamp(36-dist*.45,11,36); const steps=Math.ceil(dist/2);
   for(let i=1;i<=steps;i++){ const t=i/steps; const w=lerp(shLast.w,target,t*.35+.0); shDot(shLast.x+dx*t,shLast.y+dy*t,w); }
@@ -2065,7 +2111,7 @@ function shDot(x,y,w){ shX.fillStyle=`rgba(18,14,12,${.82+Math.random()*.12})`; 
   shC.addEventListener("pointerdown",e=>{ pid=e.pointerId; shC.setPointerCapture(pid); const [x,y]=pos(e); shStroke(x,y,true); });
   shC.addEventListener("pointermove",e=>{ if(e.pointerId!==pid) return; const [x,y]=pos(e); shStroke(x,y,true); });
   const up=e=>{ if(e.pointerId!==pid) return; pid=null; shStroke(0,0,false); }; shC.addEventListener("pointerup",up); shC.addEventListener("pointercancel",up); }
-$("#shClear").addEventListener("click",shClear); $("#shNext").addEventListener("click",()=>shSet(shIdx+1)); $("#shClose").addEventListener("click",closeShodo);
+$("#shClear").addEventListener("click",()=>{ shPush(); shClear(); }); $("#shBrush").addEventListener("click",()=>shTools("brush")); $("#shErase").addEventListener("click",()=>shTools(shTool==="erase"?"brush":"erase")); $("#shUndo").addEventListener("click",()=>{ const im=shUndoStack.pop(); if(im){ shX.putImageData(im,0,0); shInk=Math.max(shInk,200); } }); $("#shNext").addEventListener("click",()=>shSet(shIdx+1)); $("#shClose").addEventListener("click",closeShodo);
 $("#shGuideT").addEventListener("click",()=>{ shGuide=!shGuide; $("#shGuide").style.opacity=shGuide?1:0; });
 $("#shSubmit").addEventListener("click",async()=>{
   if(shInk<120){ $("#shFb").textContent="Hm. The paper is still mostly paper. Write first, then show me."; return; }
@@ -2073,12 +2119,13 @@ $("#shSubmit").addEventListener("click",async()=>{
   const out=document.createElement("canvas"); out.width=out.height=512; const o=out.getContext("2d"); o.fillStyle="#f3ead6"; o.fillRect(0,0,512,512); o.drawImage(shC,0,0,512,512);
   const show=(v,tag="")=>{ const sc=clamp(Math.round(+v.score||0),1,10), words=String(v.words||"").slice(0,400); store.shodo=store.shodo||{}; const prev=store.shodo[k]||0; if(sc>prev){ store.shodo[k]=sc; save(); }
     $("#shFb").textContent=`${sc}/10 — ${words}${tag}`; $("#shScore").textContent=`Best: ${Math.max(sc,prev)}/10`; speak(words); if(sc>=8){ chime(); hostBuzz(); } };
-  const quick=localShodo(shC); $("#shFb").textContent="Hm…";
+  const quick=localShodo(shC,k); $("#shFb").textContent="Hm…";
   await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
   if(!sample||!lim||!lim.images){ show(quick); return; }
-  const ver=++shVer; const prompt=`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi calligraphy master. The image is your student Gabriel's brush attempt at the kanji ${k} (${m}). Judge honestly but kindly: does it read as ${k}? stroke balance, proportion, confidence. Return JSON {"score": integer 1-10, "words": "one short sentence in your voice"}.`;
-  try{ show(await senseiSees(prompt,out,4500)); }
-  catch(e){ show(quick); if(e&&e.late) e.late.then(v=>{ if(ver===shVer) show(v," (Sensei looked closer)"); }).catch(()=>{}); } });
+  const ver=++shVer; const prompt=`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi calligraphy master. The image is your student Gabriel's brush attempt at the kanji ${k} (${m}). Be STRICT and honest like a real teacher: if it does not clearly read as ${k}, score 1-3 no matter how confident the strokes look; scribbles score 1. Only a clearly correct, well-balanced character earns 8+. Return JSON {"score": integer 1-10, "words": "one short sentence in your voice"}.`;
+  const cap=v=>({score:Math.min(+v.score||0,quick.F<.3?3:quick.F<.45?6:10),words:v.words});
+  try{ show(cap(await senseiSees(prompt,out,4500))); }
+  catch(e){ show(quick); if(e&&e.late) e.late.then(v=>{ if(ver===shVer) show(cap(v)," (Sensei looked closer)"); }).catch(()=>{}); } });
 let shVer=0;
 
 /* ===================== minigames: kyūdō, taiko, sand raking ===================== */
@@ -2202,7 +2249,7 @@ const RK3={ build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc;
   },
   fit(W,H){ const asp=W/H; this.cam.aspect=asp; const dist=asp<1.2?17:12.5; this.cam.position.set(0,dist,dist*.62); this.cam.lookAt(0,0,.4); this.cam.updateProjectionMatrix(); },
   toSand(x,y){ const r=ndcRay(this.cam,x,y); const t=(.06-r.origin.y)/r.direction.y; const p=r.origin.clone().addScaledVector(r.direction,t); this.rk.tx=p.x; this.rk.tz=p.z; return [(p.x+8)/16,(p.z+5)/10]; },
-  update(dt){ this.bump.needsUpdate=true; const rk=this.rk; if(rk.tx!=null){ const dx=rk.tx-rk.x, dz=rk.tz-rk.z; if(Math.hypot(dx,dz)>.05) rk.a=angLerp(rk.a,Math.atan2(dx,dz),Math.min(1,dt*10)); rk.x+=dx*Math.min(1,dt*18); rk.z+=dz*Math.min(1,dt*18); }
+  update(dt){ if(RAKE.live){ RAKE.live=false; if(sandTex) sandTex.needsUpdate=true; this.bump.needsUpdate=true; } const rk=this.rk; if(rk.tx!=null){ const dx=rk.tx-rk.x, dz=rk.tz-rk.z; if(Math.hypot(dx,dz)>.05) rk.a=angLerp(rk.a,Math.atan2(dx,dz),Math.min(1,dt*10)); rk.x+=dx*Math.min(1,dt*18); rk.z+=dz*Math.min(1,dt*18); }
     this.rake.position.set(rk.x,.06,rk.z); this.rake.rotation.y=rk.a+Math.PI; }
 };
 
@@ -2275,19 +2322,32 @@ const TAIKO={ title:"太鼓 · Taiko", sub:"Red DON: F / J / left side · Blue K
 const sandCv=document.createElement("canvas"); sandCv.width=1024; sandCv.height=640; const sandX=sandCv.getContext("2d");
 const SAND_ROCKS=[[-4,-1,1.3],[3.2,1.6,1],[4.6,-2.4,.7]];
 const rockPx=([rx,ry,r])=>[(rx+8)/16*1024,(ry+5)/10*640,r/16*1024];
-function sandBase(){ const g=sandX; g.fillStyle="#d9d1bf"; g.fillRect(0,0,1024,640);
-  for(let y=6;y<640;y+=11){ g.strokeStyle="rgba(140,128,104,.55)"; g.lineWidth=2.4; g.beginPath(); g.moveTo(0,y); g.lineTo(1024,y); g.stroke(); g.strokeStyle="rgba(250,246,236,.8)"; g.lineWidth=1.6; g.beginPath(); g.moveTo(0,y+3); g.lineTo(1024,y+3); g.stroke(); }
-  SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); for(let k=1;k<5;k++){ const rr=r*1.15+k*12; g.fillStyle="#d9d1bf"; g.beginPath(); g.arc(x,y,rr+6,0,TAU); g.fill(); } for(let k=4;k>=1;k--){ const rr=r*1.15+k*12; g.strokeStyle="rgba(140,128,104,.6)"; g.lineWidth=2.4; g.beginPath(); g.arc(x,y,rr,0,TAU); g.stroke(); g.strokeStyle="rgba(250,246,236,.8)"; g.lineWidth=1.6; g.beginPath(); g.arc(x,y,rr+3,0,TAU); g.stroke(); } }); }
+const sandCol=document.createElement("canvas"); sandCol.width=1024; sandCol.height=640; const sandColX=sandCol.getContext("2d");
+const sandGr=document.createElement("canvas"); sandGr.width=1024; sandGr.height=640; const sandGrX=sandGr.getContext("2d");
+function sandCompose(){ sandX.clearRect(0,0,1024,640); sandX.drawImage(sandCol,0,0); sandX.drawImage(sandGr,0,0); }
+function grooveLine(g,x0,y0,x1,y1){ g.strokeStyle="rgba(70,58,40,.42)"; g.lineWidth=2.6; g.beginPath(); g.moveTo(x0,y0); g.lineTo(x1,y1); g.stroke(); g.strokeStyle="rgba(255,252,244,.6)"; g.lineWidth=1.8; g.beginPath(); g.moveTo(x0+0,y0+3); g.lineTo(x1,y1+3); g.stroke(); }
+function sandBase(){ sandColX.fillStyle="#d9d1bf"; sandColX.fillRect(0,0,1024,640); const g=sandGrX; g.clearRect(0,0,1024,640);
+  for(let y=6;y<640;y+=11) grooveLine(g,0,y,1024,y);
+  SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); g.save(); g.globalCompositeOperation="destination-out"; g.beginPath(); g.arc(x,y,r*1.15+4*12+8,0,TAU); g.fill(); g.restore();
+    for(let k=4;k>=1;k--){ const rr=r*1.15+k*12; g.strokeStyle="rgba(70,58,40,.45)"; g.lineWidth=2.4; g.beginPath(); g.arc(x,y,rr,0,TAU); g.stroke(); g.strokeStyle="rgba(255,252,244,.6)"; g.lineWidth=1.6; g.beginPath(); g.arc(x,y,rr+3,0,TAU); g.stroke(); } });
+  sandCompose(); }
 let sandTex=null;
 function applySand(){ if(!SAND) return; if(!sandTex){ sandTex=new THREE.CanvasTexture(sandCv); sandTex.colorSpace=THREE.SRGBColorSpace; SAND.material=new THREE.MeshToonMaterial({map:sandTex,gradientMap:gm}); } sandTex.needsUpdate=true; }
-function loadSandArt(){ if(!store.sandArt) return; const im=new Image(); im.onload=()=>{ sandX.drawImage(im,0,0,1024,640); applySand(); }; im.src=store.sandArt; }
+function loadSandArt(){ if(!store.sandArt) return; const im=new Image(); im.onload=()=>{ sandColX.drawImage(im,0,0,1024,640); sandGrX.clearRect(0,0,1024,640); sandCompose(); applySand(); }; im.src=store.sandArt; }
 const RAKE={ title:"砂紋 · Raking the Dry Garden", sub:"Drag to rake · ring the stones · press Show Sensei when done",
   start(){ RK3.build(); if(!store.sandArt&&!this.started) sandBase(); this.started=true; this.last=null; this.verdict=""; },
-  rake(x,y,down){ const px=x*1024, py=y*640; if(!down){ this.last=null; return; } if(!this.last){ this.last=[px,py]; return; }
-    const [lx,ly]=this.last, dx=px-lx, dy=py-ly, d=Math.hypot(dx,dy); if(d<3) return; const nx=-dy/d, ny=dx/d; const g=sandX;
-    g.lineCap="round"; g.strokeStyle="#d9d1bf"; g.lineWidth=58; g.beginPath(); g.moveTo(lx,ly); g.lineTo(px,py); g.stroke();
-    for(let k=-2;k<=2;k++){ const o=k*11; g.strokeStyle="rgba(140,128,104,.6)"; g.lineWidth=2.6; g.beginPath(); g.moveTo(lx+nx*o,ly+ny*o); g.lineTo(px+nx*o,py+ny*o); g.stroke(); g.strokeStyle="rgba(250,246,236,.85)"; g.lineWidth=1.8; g.beginPath(); g.moveTo(lx+nx*(o+3),ly+ny*(o+3)); g.lineTo(px+nx*(o+3),py+ny*(o+3)); g.stroke(); }
+  tool:"rake", color:"#e8a3a8",
+  rake(x,y,down){ const px=x*1024, py=y*640; if(!down){ this.last=null; return; } if(!this.last){ this.last=[px,py]; if(this.tool==="pour") this.pourAt(px,py,px,py); return; }
+    const [lx,ly]=this.last, dx=px-lx, dy=py-ly, d=Math.hypot(dx,dy); if(d<3) return; const nx=-dy/d, ny=dx/d; const g=sandGrX;
+    if(this.tool==="pour"){ this.pourAt(lx,ly,px,py); this.last=[px,py]; this.dirty=true; this.live=true; sandCompose(); return; }
+    g.save(); g.globalCompositeOperation="destination-out"; g.lineCap="round"; g.lineWidth=58; g.beginPath(); g.moveTo(lx,ly); g.lineTo(px,py); g.stroke(); g.restore();
+    if(this.tool==="rake"){ g.lineCap="round"; for(let k=-2;k<=2;k++){ const o=k*11; grooveLine(g,lx+nx*o,ly+ny*o,px+nx*o,py+ny*o); } }
+    sandCompose(); this.live=true;
     this.last=[px,py]; this.dirty=true; this.track(px,py,dx/d,dy/d,d); },
+  pourAt(x0,y0,x1,y1){ const g=sandColX, L=Math.max(1,Math.hypot(x1-x0,y1-y0)), n=Math.ceil(L/6);
+    for(let i=0;i<=n;i++){ const t=i/n, x=lerp(x0,x1,t), y=lerp(y0,y1,t); g.globalAlpha=.32; g.fillStyle=this.color; g.beginPath(); g.arc(x,y,24,0,TAU); g.fill(); g.globalAlpha=1;
+      for(let k=0;k<10;k++){ const a=rand(0,TAU), r=rand(0,26); g.fillStyle=k%3?this.color:"rgba(255,255,255,.35)"; g.fillRect(x+Math.cos(a)*r,y+Math.sin(a)*r,1.6,1.6); } }
+    const gg=sandGrX; gg.save(); gg.globalCompositeOperation="destination-out"; gg.globalAlpha=.25; gg.lineCap="round"; gg.lineWidth=46; gg.beginPath(); gg.moveTo(x0,y0); gg.lineTo(x1,y1); gg.stroke(); gg.restore(); },
   stats:null,
   resetStats(){ this.stats={len:0,turns:0,segs:0,bins:SAND_ROCKS.map(()=>new Array(24).fill(0)),pd:null}; },
   track(px,py,ux,uy,d){ const S=this.stats||(this.resetStats(),this.stats); S.len+=d; S.segs++;
@@ -2316,9 +2376,149 @@ async function sandJudge(){ if(RAKE.judging) return; const local=RAKE.localJudge
   try{ done(await senseiSees(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi zen master. The image is a top-down view of the dry garden (karesansui) your student Gabriel just raked; the grey circles are the stones. Judge it like a zen gardener: flow, evenness of lines, how the patterns respond to the stones, sense of calm. Return JSON {"score": integer 1-10, "words": "one short sentence in your voice"}.`,c,4500)); }
   catch(e){ console.warn("[rake judge] quick eye",e); done(local); } }
 $("#mgJudge").addEventListener("click",()=>{ if(MG===RAKE) sandJudge(); });
-$("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.resetStats(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
-const GAMES={kyudo:KYUDO,taiko:TAIKO,rake:RAKE};
-function openGame(id){ const g=GAMES[id]; if(!g) return; $("#mgJudge").style.display=id==="rake"?"":"none"; $("#mgReset").style.display=id==="rake"?"":"none"; if(!entered) enterGame(); else hideMenu(); setTimeout(()=>mgOpen(g),entered?50:400); }
+{ const SW=["#f1ece0","#e8a3a8","#f4c0cf","#d9a24a","#6fae8a","#8fc6e8","#4a5a9a","#2b2b30"]; const box=$("#swatches"); SW.forEach((c,i)=>{ const e=document.createElement("i"); e.style.background=c; if(i===1) e.classList.add("on"); e.onclick=()=>{ RAKE.color=c; RAKE.tool="pour"; document.querySelectorAll("#swatches i").forEach(x=>x.classList.toggle("on",x===e)); document.querySelectorAll("#rakeTools .rt").forEach(x=>x.classList.toggle("on",x.dataset.rt==="pour")); }; box.appendChild(e); });
+  document.querySelectorAll("#rakeTools .rt").forEach(b=>b.onclick=()=>{ RAKE.tool=b.dataset.rt; document.querySelectorAll("#rakeTools .rt").forEach(x=>x.classList.toggle("on",x===b)); }); }
+$("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.live=true; RAKE.resetStats(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
+/* ---------- shared painted HUD helpers ---------- */
+function hudCard(g,x,y,w,h){ g.save(); g.fillStyle="rgba(250,244,230,.92)"; g.strokeStyle="rgba(120,90,50,.35)"; g.lineWidth=1.5; g.beginPath(); g.roundRect(x,y,w,h,14); g.fill(); g.stroke(); g.restore(); }
+function hudText(g,t,x,y,size=16,col="#2b2420",al="center"){ g.fillStyle=col; g.font=`${size}px "Shippori Mincho",serif`; g.textAlign=al; g.fillText(t,x,y); g.textAlign="left"; }
+function hudBtn(g,label,x,y,w,h,on){ g.save(); const gr=g.createLinearGradient(0,y,0,y+h); gr.addColorStop(0,on?"#e2553a":"#fbf6ea"); gr.addColorStop(1,on?"#b83c26":"#e9dcc2"); g.fillStyle=gr; g.beginPath(); g.roundRect(x,y,w,h,h/2); g.fill(); g.strokeStyle="rgba(90,60,30,.35)"; g.stroke(); g.fillStyle=on?"#fff":"#3a2c1e"; g.font=`15px "Shippori Mincho",serif`; g.textAlign="center"; g.fillText(label,x+w/2,y+h/2+5); g.restore(); return {x,y,w,h}; }
+const inBtn=(b,x,y)=>b&&x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h;
+
+/* ---------- 盆栽 Bonsai: a tree that grows over real days; you shape it ---------- */
+function rngSeed(s){ return ()=>{ s|=0; s=s+0x6D2B79F5|0; let t=Math.imul(s^s>>>15,1|s); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+const BONSAI={ title:"盆栽 · Bonsai", sub:"Drag to turn the tree · click a branch to prune · water it each day",
+  data(){ if(!store.bonsai) { store.bonsai={seed:Math.floor(Math.random()*1e9),born:Date.now(),cuts:[],water:0,streak:0}; save(); } return store.bonsai; },
+  days(){ return Math.max(0,(Date.now()-this.data().born)/864e5); },
+  level(){ const b=this.data(); return Math.min(6,2+Math.floor(this.days()/1.5)+Math.min(1,Math.floor((b.streak||0)/4))); },
+  build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc; sc.background=C("#efe6d2"); sc.fog=new THREE.Fog(C("#efe6d2"),14,30);
+    const cam=new THREE.PerspectiveCamera(36,1,.1,100); this.cam=cam; this.yaw=.6; this.pitch=.28; this.dist=9.5;
+    stageLights(sc,{sky:"#fff6e6",ground:"#a08a6a",sun:"#fff2dc",si:1.8,dir:[5,9,6]});
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(30,14),F3("#e9dcc0")); wall.position.set(0,5,-6); sc.add(wall);
+    const scroll=new THREE.Mesh(new THREE.PlaneGeometry(1.6,4.2),F3("#f7f0de")); scroll.position.set(-3.6,3.6,-5.9); sc.add(scroll);
+    const ink=new THREE.Mesh(new THREE.PlaneGeometry(.12,2.6),F3("#2b2420")); ink.position.set(-3.6,3.6,-5.88); sc.add(ink);
+    const stand=new THREE.Mesh(new THREE.BoxGeometry(5.2,.35,2.8),F3("#4a2c1e")); stand.position.y=-.18; stand.receiveShadow=true; sc.add(stand);
+    [[-2.3,-1.1],[2.3,-1.1],[-2.3,1.1],[2.3,1.1]].forEach(([x,z])=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(.25,.9,.25),F3("#3a2216")); l.position.set(x,-.75,z); sc.add(l); });
+    const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),F3("#b9b07a")); floor.rotation.x=-Math.PI/2; floor.position.y=-1.2; floor.receiveShadow=true; sc.add(floor);
+    const pot=new THREE.Mesh(new THREE.CylinderGeometry(1.9,1.6,.75,6),F3("#3d5a7a")); pot.scale.z=.62; pot.position.y=.38; pot.castShadow=true; sc.add(pot);
+    const rim=new THREE.Mesh(new THREE.CylinderGeometry(1.98,1.98,.12,6),F3("#2f4660")); rim.scale.z=.62; rim.position.y=.78; sc.add(rim);
+    const soil=new THREE.Mesh(new THREE.CylinderGeometry(1.8,1.8,.08,6),F3("#4f6a34")); soil.scale.z=.62; soil.position.y=.8; sc.add(soil);
+    for(let i=0;i<9;i++){ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(rand(.1,.22),0),F3(pick(["#5f8a3c","#6f9a48","#8a8278"]))); m.position.set(rand(-1.4,1.4),.86,rand(-.8,.8)); m.scale.y=.5; sc.add(m); }
+    this.tree=new THREE.Group(); this.tree.position.y=.82; sc.add(this.tree); this.drops=[]; this.btns={}; this.msg="";
+  },
+  leafCol(){ return {spring:"#7fb35a",summer:"#4f8a3c",autumn:pick(["#d2512e","#e2763a","#c43c28"]),winter:"#5d7a4a"}[S]; },
+  grow(){ const b=this.data(), R=rngSeed(b.seed), L=this.level(); const cuts=new Set(b.cuts||[]); while(this.tree.children.length) this.tree.remove(this.tree.children[0]);
+    this.hit=[]; this.tips=[]; const bark=F3("#5a3b26"), leafM=F3(this.leafCol()), leafM2=F3(new THREE.Color(this.leafCol()).offsetHSL(0,0,.08).getStyle());
+    const up=new THREE.Vector3(0,1,0);
+    const branch=(id,from,dir,len,rad,depth)=>{ if(cuts.has(id)) return; const to=from.clone().addScaledVector(dir,len);
+      const g=new THREE.CylinderGeometry(rad*.68,rad,len,7); g.translate(0,len/2,0); const m=new THREE.Mesh(g,bark); m.position.copy(from); m.quaternion.setFromUnitVectors(up,dir.clone().normalize()); m.castShadow=true; m.userData.id=id; this.tree.add(m); this.hit.push(m);
+      if(depth>=L||len<.25){ const pad=new THREE.Group(); pad.position.copy(to); pad.userData.id=id; for(let k=0;k<5;k++){ const p=new THREE.Mesh(new THREE.IcosahedronGeometry(rand(.28,.45),0),k%2?leafM:leafM2); p.position.set(rand(-.35,.35),rand(-.05,.2),rand(-.35,.35)); p.scale.y=.55; p.castShadow=true; p.userData.id=id; pad.add(p); this.hit.push(p); } this.tree.add(pad); this.tips.push(to.clone()); return; }
+      const n=depth<1?2:R()<.55?2:3; for(let i=0;i<n;i++){ const a=R()*TAU, tilt=.45+R()*.55; const nd=dir.clone().multiplyScalar(.6).add(new THREE.Vector3(Math.cos(a)*tilt,.35+R()*.25,Math.sin(a)*tilt*.8)).normalize(); branch(id+"."+i,to,nd,len*(.62+R()*.18),rad*.66,depth+1); } };
+    const trunkDir=new THREE.Vector3(.18,1,.08).normalize(); const base=new THREE.Vector3(0,0,0);
+    // a gently curving trunk in three pieces
+    let p=base.clone(), d=trunkDir.clone(), rad=.32; for(let k=0;k<3;k++){ const len=.62; const g=new THREE.CylinderGeometry(rad*.82,rad,len,8); g.translate(0,len/2,0); const m=new THREE.Mesh(g,bark); m.position.copy(p); m.quaternion.setFromUnitVectors(up,d); m.castShadow=true; m.userData.id="t"; this.tree.add(m); p=p.clone().addScaledVector(d,len); d=d.clone().add(new THREE.Vector3((k%2?.35:-.4),0,.1)).normalize(); rad*=.82; }
+    branch("0",p,new THREE.Vector3(-.5,.75,.1).normalize(),1.2,rad*.9,1); branch("1",p,new THREE.Vector3(.55,.7,-.15).normalize(),1.05,rad*.85,1); branch("2",p,new THREE.Vector3(.05,1,.2).normalize(),.9,rad*.8,1);
+    const roots=new THREE.Mesh(new THREE.ConeGeometry(.55,.3,7),bark); roots.position.y=.1; this.tree.add(roots); },
+  judge(){ const t=this.tips; if(t.length<3) return {score:2,words:"Too few branches remain. A bonsai is patience, not punishment. Let it grow a few days."};
+    let cx=0, top=-1e9, minX=1e9, maxX=-1e9; t.forEach(v=>{ cx+=v.x; top=Math.max(top,v.y); minX=Math.min(minX,v.x); maxX=Math.max(maxX,v.x); }); cx/=t.length;
+    const width=maxX-minX, height=top, ratio=width/Math.max(.1,height); const tri=t.filter(v=>Math.abs(v.x-cx)<(top-v.y)*.9+.35).length/t.length;
+    let crowd=0; for(let i=0;i<t.length;i++) for(let j=i+1;j<t.length;j++) if(t[i].distanceTo(t[j])<.45) crowd++;
+    const asym=Math.abs(cx)>.08&&Math.abs(cx)<.7; let sc=3+tri*3+(ratio>.8&&ratio<2?2:0)+(asym?1:0)-Math.min(3,crowd*.5)+(t.length>=5&&t.length<=14?1:0); sc=clamp(Math.round(sc),1,10);
+    const w=crowd>3?"The pads crowd each other. Open some space, so the wind can walk through.":tri<.6?"The outline wanders. A bonsai rests inside a triangle; trim what reaches outside it.":!asym?"Very symmetrical. Nature rarely is. Let one side lean, like an old pine on a cliff.":sc>=8?"Hm. That is a tree that has lived through storms. Well shaped.":"Good bones. Prune with intention, not with worry.";
+    return {score:sc,words:w}; },
+  start(){ this.build(); this.grow(); this.drag=null; const d=Math.floor(this.days()); this.msg=d<1?"A young tree, planted today. Shape it slowly, over many days.":`Planted ${d} day${d===1?"":"s"} ago · growth ${this.level()-1}/5`; },
+  down(x,y){ const W=innerWidth,H=innerHeight; const px=x*W, py=y*H; for(const [k,b] of Object.entries(this.btns)) if(inBtn(b,px,py)) return this.press(k);
+    this.drag={x,y,moved:0}; },
+  move(x,y){ if(!this.drag) return; const dx=x-this.drag.x, dy=y-this.drag.y; this.drag.moved+=Math.abs(dx)+Math.abs(dy); this.yaw-=dx*4; this.pitch=clamp(this.pitch+dy*2,.05,.9); this.drag.x=x; this.drag.y=y; },
+  up(x,y){ const d=this.drag; this.drag=null; if(d&&d.moved<.01) this.pick(x,y); },
+  pick(x,y){ const r=new THREE.Raycaster(); r.setFromCamera(new THREE.Vector2(x*2-1,-(y*2-1)),this.cam); const h=r.intersectObjects(this.hit,false)[0]; if(!h) return; const id=h.object.userData.id; if(!id||id==="t"){ this.msg="Never cut the trunk. That is the tree's whole story."; return; }
+    const b=this.data(); if(id.split(".").length<2&&(b.cuts||[]).filter(c=>c.split(".").length<2).length>=1){ this.msg="Careful. Removing two main branches would leave it bare. Trim smaller ones."; return; }
+    b.cuts=[...new Set([...(b.cuts||[]),id])]; save(); this.grow(); sfx((a,t)=>{ const n=a.createBufferSource(); n.buffer=noiseBuf; const f=a.createBiquadFilter(); f.type="highpass"; f.frequency.value=3000; const g=a.createGain(); g.gain.setValueAtTime(.25,t); g.gain.exponentialRampToValueAtTime(.001,t+.08); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(t); n.stop(t+.1); }); rumble([15]); this.msg="Snip."; },
+  press(k){ const b=this.data();
+    if(k==="water"){ const today=todayKey(); if(b.waterDay===today){ this.msg="It already drank today. Too much water drowns the roots."; return; } const y=b.waterDay; b.streak=(y&&(Date.now()-b.water)<2.2*864e5)?(b.streak||0)+1:1; b.water=Date.now(); b.waterDay=today; save();
+      for(let i=0;i<40;i++){ const d=new THREE.Mesh(new THREE.SphereGeometry(.04,5,4),new THREE.MeshBasicMaterial({color:0x9ad8ff})); d.position.set(rand(-1.2,1.2),4+rand(0,1.5),rand(-.6,.6)); d.userData.v=rand(3,5); this.sc.add(d); this.drops.push(d); } this.msg=`Watered. ${b.streak} day${b.streak>1?"s":""} in a row.`; rumble([20]); }
+    if(k==="judge"){ const v=this.judge(); this.msg=`${v.score}/10 — ${v.words}`; mgBest("bonsai",v.score); speak(v.words); }
+    if(k==="regrow"){ if(!(b.cuts||[]).length){ this.msg="Nothing to undo."; return; } b.cuts.pop(); save(); this.grow(); this.msg="The branch grows back. (Only in a ghost garden.)"; } },
+  frame(dt,W,H){ const g=mgX; g.clearRect(0,0,W,H); this.yaw+=this.drag?0:dt*.06; const c=this.cam; c.position.set(Math.sin(this.yaw)*this.dist*Math.cos(this.pitch),2+Math.sin(this.pitch)*this.dist,Math.cos(this.yaw)*this.dist*Math.cos(this.pitch)); c.lookAt(0,2.1,0);
+    for(let i=this.drops.length-1;i>=0;i--){ const d=this.drops[i]; d.position.y-=d.userData.v*dt; if(d.position.y<.85){ this.sc.remove(d); this.drops.splice(i,1); } }
+    mg3Render(this,W,H);
+    const bw=150,bh=40,y=H-64, x0=W/2-(bw*3+24)/2; this.btns={water:hudBtn(g,"水 Water",x0,y,bw,bh),judge:hudBtn(g,"見 Ask Sensei",x0+bw+12,y,bw,bh,true),regrow:hudBtn(g,"↶ Undo cut",x0+2*(bw+12),y,bw,bh)};
+    if(this.msg){ hudCard(g,W/2-Math.min(W*.45,330),y-62,Math.min(W*.9,660),46); hudText(g,this.msg,W/2,y-33,15); } }
+};
+
+/* ---------- 茶道 Tea ceremony: scoop, pour, whisk, present ---------- */
+const TEA={ title:"茶道 · Tea Ceremony", sub:"Four movements. Calm hands make good tea.",
+  build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc; sc.background=C("#2a2018"); sc.fog=new THREE.Fog(C("#2a2018"),10,24);
+    const cam=new THREE.PerspectiveCamera(38,1,.1,100); cam.position.set(0,5.2,5.6); cam.lookAt(0,.4,0); this.cam=cam; stageLights(sc,{sky:"#ffe6c0",ground:"#3a2a1e",sun:"#ffe2b8",si:1.7,dir:[-4,8,5]});
+    const tcv=document.createElement("canvas"); tcv.width=256; tcv.height=128; const tg=tcv.getContext("2d"); tg.fillStyle="#b9b07a"; tg.fillRect(0,0,256,128); tg.strokeStyle="#4a3a1e"; tg.lineWidth=6; tg.strokeRect(0,0,256,128); const tt=new THREE.CanvasTexture(tcv); tt.colorSpace=THREE.SRGBColorSpace; tt.wrapS=tt.wrapT=THREE.RepeatWrapping; tt.repeat.set(4,4);
+    const mat=new THREE.Mesh(new THREE.PlaneGeometry(16,16),new THREE.MeshToonMaterial({map:tt,gradientMap:gm})); mat.rotation.x=-Math.PI/2; mat.receiveShadow=true; sc.add(mat);
+    const bowl=new THREE.Mesh(new THREE.LatheGeometry([0,.6,1.05,1.2,1.22,1.15].map((r,i)=>new THREE.Vector2(r,i*.2)),24),new THREE.MeshToonMaterial({color:C("#3a2a24"),gradientMap:gm,side:THREE.DoubleSide})); bowl.castShadow=true; sc.add(bowl); this.bowl=bowl;
+    const glaze=new THREE.Mesh(new THREE.TorusGeometry(1.18,.05,6,32),F3("#c8a46a")); glaze.rotation.x=Math.PI/2; glaze.position.y=.98; bowl.add(glaze);
+    const mark=new THREE.Mesh(new THREE.SphereGeometry(.14,8,6),F3("#d8b26a")); mark.position.set(0,.6,1.06); bowl.add(mark); this.front=mark;
+    const tea=new THREE.Mesh(new THREE.CircleGeometry(1,32),F3("#2f5a24")); tea.rotation.x=-Math.PI/2; tea.position.y=.15; tea.scale.setScalar(.6); bowl.add(tea); this.tea=tea; tea.visible=false;
+    this.foam=[]; for(let i=0;i<70;i++){ const b=new THREE.Mesh(new THREE.SphereGeometry(rand(.025,.06),5,4),F3("#d8ecb0")); const a=rand(0,TAU),r=Math.sqrt(Math.random())*.95; b.position.set(Math.cos(a)*r,0,Math.sin(a)*r); b.visible=false; tea.add(b); b.rotation.x=Math.PI/2; this.foam.push(b); }
+    const kettle=new THREE.Group(); kettle.position.set(-3.2,0,-1); sc.add(kettle); const kb=new THREE.Mesh(new THREE.SphereGeometry(1,16,12),F3("#2b2b30")); kb.scale.y=.8; kb.position.y=.9; kettle.add(kb); const lid=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.12,12),F3("#3a3a40")); lid.position.y=1.7; kettle.add(lid);
+    this.steam=[]; for(let i=0;i<10;i++){ const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:GLOW,transparent:true,opacity:0,depthWrite:false})); sp.position.set(-3.2,1.9,-1); sp.userData.ph=i/10; sc.add(sp); this.steam.push(sp); }
+    const caddy=new THREE.Mesh(new THREE.CylinderGeometry(.42,.42,.8,14),F3("#1f1d22")); caddy.position.set(2.6,.4,-.6); sc.add(caddy); const cl=new THREE.Mesh(new THREE.CylinderGeometry(.44,.44,.12,14),F3("#c8a46a")); cl.position.set(2.6,.86,-.6); sc.add(cl);
+    const whisk=new THREE.Group(); const wh=new THREE.Mesh(new THREE.CylinderGeometry(.09,.11,.9,8),F3("#d8c49a")); wh.position.y=.9; whisk.add(wh); for(let k=0;k<16;k++){ const a=k/16*TAU; const t=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,.55,3),F3("#e8d8b0")); t.position.set(Math.cos(a)*.16,.25,Math.sin(a)*.16); t.rotation.set(Math.sin(a)*.25,0,-Math.cos(a)*.25); whisk.add(t); } whisk.position.set(2.2,0,1.2); sc.add(whisk); this.whisk=whisk;
+    const scoop=new THREE.Mesh(new THREE.BoxGeometry(1.4,.04,.1),F3("#d8c49a")); scoop.position.set(1.6,.9,-.6); scoop.rotation.z=-.3; sc.add(scoop); this.scoop=scoop;
+    this.stream=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,2,6),new THREE.MeshBasicMaterial({color:0xcfe8f0,transparent:true,opacity:.7})); this.stream.position.set(-.2,1.9,0); this.stream.visible=false; sc.add(this.stream);
+    this.ladle=new THREE.Group(); const lh=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2.6,5),F3("#d8c49a")); lh.rotation.z=Math.PI/2; lh.position.x=1.3; this.ladle.add(lh); const lc=new THREE.Mesh(new THREE.CylinderGeometry(.22,.2,.3,10),F3("#d8c49a")); this.ladle.add(lc); this.ladle.position.set(-.3,2.9,0); this.ladle.visible=false; sc.add(this.ladle); },
+  start(){ this.build(); this.step=0; this.t=0; this.res=[]; this.powder=0; this.water=0; this.froth=0; this.turns=0; this.pouring=false; this.msg="1 · Scoop: tap when the scoop glows at its highest point."; this.tea.visible=false; this.foam.forEach(b=>b.visible=false); this.bowl.rotation.y=0; this.lastX=null; this.zig=0; this.whiskT=0; this.done=false; },
+  next(score,txt){ this.res.push(score); this.step++; this.t=0; rumble([20]); chime(); this.msg=txt; },
+  down(x,y){ if(this.done) return; if(this.step===0){ const ph=(Math.sin(this.t*2.4)+1)/2; const sc=Math.round(ph*10); this.powder=sc; this.tea.visible=true; this.next(sc,`${sc>=8?"A perfect scoop.":sc>=5?"A little light.":"Hm, a dusting."}  2 · Pour: hold to pour hot water, release at the gold line.`); return; }
+    if(this.step===1){ this.pouring=true; this.ladle.visible=true; return; }
+    if(this.step===3){ this.turns++; this.bowl.rotation.y-=Math.PI/2*.5; this.t=0; if(this.turns>=2){ const facing=this.turns===2; this.next(facing?10:5,""); this.finish(); } else this.msg="Turn once more, so the front faces away from you, toward your guest."; } },
+  up(){ if(this.step===1&&this.pouring){ this.pouring=false; this.ladle.visible=false; this.stream.visible=false; const sc=clamp(Math.round(10-Math.abs(this.water-.7)*28),1,10); this.next(sc,`${sc>=8?"Exactly enough.":this.water>.7?"Too much water. Thin tea.":"Not quite enough water."}  3 · Whisk: move quickly side to side (a W shape) for a fine foam.`); } },
+  move(x,y){ if(this.step!==2) return; if(this.lastX!=null){ const dx=x-this.lastX; if(Math.sign(dx)!==Math.sign(this.lastDx||0)&&Math.abs(dx)>.002){ this.zig++; } this.froth=clamp(this.froth+Math.abs(dx)*.55,0,1.2); this.lastDx=dx; } this.lastX=x; this.whisk.position.set((x-.5)*2.2,.3,(y-.5)*1.2); },
+  key(c,dn){ if(c==="Space"){ if(dn) this.down(.5,.5); else this.up(); } },
+  pen(x,y,dn){ if(dn&&this.step===2) this.move(x,y); else if(dn&&!this._pd){ this._pd=true; this.down(x,y); } else if(!dn){ this._pd=false; this.up(); } },
+  finish(){ this.done=true; const tot=this.res.reduce((a,b)=>a+b,0), sc=Math.round(tot/this.res.length); mgBest("tea",sc);
+    setTimeout(()=>mgResult(`${sc}/10`,`Scoop ${this.res[0]} · Pour ${this.res[1]} · Whisk ${this.res[2]} · Present ${this.res[3]}`, sc>=9?"A bowl worth crossing the valley for. Thank you.":sc>=7?"Good tea. Your hands are learning patience.":sc>=5?"Drinkable. The second bowl is always better.":"Hm. The tea forgives you. Again."),700); },
+  frame(dt,W,H){ const g=mgX; g.clearRect(0,0,W,H); this.t+=dt;
+    this.steam.forEach(sp=>{ const u=(this.t*.25+sp.userData.ph)%1; sp.position.y=1.9+u*2.2; sp.position.x=-3.2+Math.sin(u*6+sp.userData.ph*9)*.2; sp.scale.setScalar(.6+u*1.4); sp.material.opacity=.35*Math.sin(u*Math.PI); });
+    if(this.step===0){ const ph=(Math.sin(this.t*2.4)+1)/2; this.scoop.position.y=.9+ph*.9; this.scoop.material.emissive=C("#ffd890"); this.scoop.material.emissiveIntensity=ph>.85?.8:0; }
+    if(this.step===1&&this.pouring){ this.water=Math.min(1.1,this.water+dt*.32); this.stream.visible=true; this.ladle.rotation.z=-.5; }
+    this.tea.position.y=.15+this.water*.55; this.tea.scale.setScalar(.6+this.water*.45);
+    if(this.step===2){ this.whiskT+=dt; this.froth=Math.max(0,this.froth-dt*.06); const fine=clamp(this.froth,0,1); this.foam.forEach((b,i)=>b.visible=i<fine*this.foam.length); this.tea.material.color.set(new THREE.Color("#2f5a24").lerp(new THREE.Color("#8fbf5a"),fine));
+      if(this.whiskT>9){ const sc=clamp(Math.round(fine*8+(this.zig>40?2:this.zig/20)),1,10); this.whisk.position.set(2.2,0,1.2); this.next(sc,`${sc>=8?"Fine, pale foam, like spring moss.":sc>=5?"Some foam. Faster, and from the wrist.":"Hm. More whisk, less stir."}  4 · Present: click twice to turn the bowl so its front faces your guest.`); } }
+    mg3Render(this,W,H);
+    const lineY=H*.2; hudCard(g,W/2-Math.min(W*.45,320),lineY-34,Math.min(W*.9,640),46); hudText(g,this.msg,W/2,lineY-5,15);
+    const steps=["掬 Scoop","注 Pour","点 Whisk","献 Present"]; steps.forEach((s2,i)=>{ const x=W/2+(i-1.5)*120; g.fillStyle=i<this.step?"#d8b26a":i===this.step?"#f4ecd8":"rgba(244,236,216,.35)"; g.font=`15px "Shippori Mincho",serif`; g.textAlign="center"; g.fillText(s2,x,H-30); }); g.textAlign="left";
+    if(this.step===1){ const bx=W*.82, by=H*.35, bh=H*.4; g.fillStyle="rgba(250,244,230,.25)"; g.fillRect(bx,by,22,bh); g.fillStyle="#9ad8ff"; g.fillRect(bx,by+bh*(1-this.water/1.1),22,bh*this.water/1.1); g.fillStyle="#d8b26a"; g.fillRect(bx-6,by+bh*(1-.7/1.1),34,3); }
+    if(this.step===2){ const bx=W*.82, by=H*.35, bh=H*.4; g.fillStyle="rgba(250,244,230,.25)"; g.fillRect(bx,by,22,bh); g.fillStyle="#b8e08a"; const f=clamp(this.froth,0,1); g.fillRect(bx,by+bh*(1-f),22,bh*f); g.fillStyle="#f4ecd8"; g.font="13px sans-serif"; g.fillText(`${Math.max(0,Math.ceil(9-this.whiskT))}s`,bx-2,by-8); } }
+};
+
+/* ---------- 生花 Ikebana: three stems, heaven · human · earth ---------- */
+const IKEBANA={ title:"生花 · Ikebana", sub:"Pick a stem · drag up/down to tilt, left/right to turn · then ask Sensei",
+  TARGET:[{tilt:12,dir:-35,n:"Shin 真 · heaven"},{tilt:45,dir:-75,n:"Soe 副 · human"},{tilt:75,dir:40,n:"Hikae 控 · earth"}],
+  build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc; sc.background=C("#efe8d8"); const cam=new THREE.PerspectiveCamera(36,1,.1,100); cam.position.set(0,4.6,9.5); cam.lookAt(0,2.4,0); this.cam=cam; stageLights(sc,{sky:"#fffaf0",ground:"#c8b89a",sun:"#fff",si:1.6,dir:[3,9,7]});
+    const wall=new THREE.Mesh(new THREE.PlaneGeometry(30,16),F3("#efe2c8")); wall.position.set(0,6,-4); sc.add(wall); const toko=new THREE.Mesh(new THREE.BoxGeometry(9,.3,4),F3("#5a3b26")); toko.position.y=-.15; sc.add(toko);
+    const vase=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.4,.4,24),F3("#2b3a4a")); vase.position.y=.2; vase.castShadow=true; sc.add(vase); const water=new THREE.Mesh(new THREE.CircleGeometry(1.5,24),F3("#7fb0c0")); water.rotation.x=-Math.PI/2; water.position.y=.36; sc.add(water);
+    const kz=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,.1,12),F3("#555")); kz.position.y=.38; sc.add(kz);
+    const mk=(len,flower,col)=>{ const g=new THREE.Group(); const st=new THREE.Mesh(new THREE.CylinderGeometry(.035,.05,len,6),F3("#4f7a3c")); st.position.y=len/2; g.add(st);
+      if(flower==="pine"){ for(let i=0;i<5;i++){ const p=new THREE.Mesh(new THREE.ConeGeometry(.3,.5,6),F3("#2f5a34")); p.position.set(rand(-.2,.2),len*(.6+i*.09),rand(-.2,.2)); p.rotation.z=rand(-.5,.5); g.add(p); } }
+      else { const head=new THREE.Group(); head.position.y=len; for(let i=0;i<6;i++){ const pt=new THREE.Mesh(new THREE.SphereGeometry(.2,6,4),F3(col)); const a=i/6*TAU; pt.position.set(Math.cos(a)*.18,0,Math.sin(a)*.18); pt.scale.set(1,.45,1.4); pt.rotation.y=-a; head.add(pt); } const c=new THREE.Mesh(new THREE.SphereGeometry(.09,6,4),F3("#f2c23a")); c.position.y=.05; head.add(c); g.add(head);
+        for(let i=0;i<2;i++){ const lf=new THREE.Mesh(new THREE.SphereGeometry(.18,5,4),F3("#5f8a3c")); lf.scale.set(.4,1.6,.2); lf.position.set(i?.1:-.1,len*(.35+i*.15),0); lf.rotation.z=i?-.6:.6; g.add(lf); } }
+      g.traverse(o=>{ if(o.isMesh) o.castShadow=true; }); g.position.y=.38; sc.add(g); return g; };
+    this.stems=[mk(5.2,"pine"),mk(3.6,"flower","#e85a6a"),mk(2.2,"flower","#f4f0f8")]; this.btns={}; },
+  start(){ this.build(); this.sel=0; this.st=[{tilt:0,dir:0},{tilt:0,dir:0},{tilt:0,dir:0}]; this.msg="Start with Shin, the tallest: tilt it gently, about the angle of a clock hand at 11."; this.apply(); },
+  apply(){ this.stems.forEach((g,i)=>{ const s=this.st[i]; g.rotation.set(0,0,0); g.rotateY(THREE.MathUtils.degToRad(s.dir)); g.rotateZ(THREE.MathUtils.degToRad(s.tilt)); }); },
+  down(x,y){ const W=innerWidth,H=innerHeight, px=x*W, py=y*H; for(const [k,b] of Object.entries(this.btns)) if(inBtn(b,px,py)){ if(k==="judge") return this.judge(); this.sel=+k; this.msg=`${this.TARGET[this.sel].n}.`; return; } this.drag={x,y}; },
+  move(x,y){ if(!this.drag) return; const s=this.st[this.sel]; s.tilt=clamp(s.tilt-(y-this.drag.y)*160,0,85); s.dir=((s.dir+(x-this.drag.x)*260)+540)%360-180; this.drag={x,y}; this.apply(); },
+  up(){ this.drag=null; },
+  key(c,dn){ if(!dn) return; if(c==="Digit1"||c==="Digit2"||c==="Digit3") this.sel=+c.slice(-1)-1; const s=this.st[this.sel]; if(c==="ArrowUp") s.tilt=clamp(s.tilt+3,0,85); if(c==="ArrowDown") s.tilt=clamp(s.tilt-3,0,85); if(c==="ArrowLeft") s.dir-=6; if(c==="ArrowRight") s.dir+=6; this.apply(); },
+  judge(){ let err=0; this.st.forEach((s,i)=>{ const T=this.TARGET[i]; const dd=Math.abs(((s.dir-T.dir)+540)%360-180); err+=Math.abs(s.tilt-T.tilt)/90*1.4+dd/180*.6; }); const spread=Math.abs(((this.st[0].dir-this.st[2].dir)+540)%360-180);
+    const sc=clamp(Math.round(10-err*4.2-(spread<40?2:0)),1,10); mgBest("ikebana",sc);
+    const worst=this.st.map((s,i)=>Math.abs(s.tilt-this.TARGET[i].tilt)).reduce((m,v,i,a)=>v>a[m]?i:m,0);
+    mgResult(`${sc}/10`,`Shin ${Math.round(this.st[0].tilt)}° · Soe ${Math.round(this.st[1].tilt)}° · Hikae ${Math.round(this.st[2].tilt)}°`, sc>=9?"Heaven, human, earth. In conversation. Beautiful.":sc>=7?"A graceful arrangement. The space between the stems is speaking.":`Look again at ${this.TARGET[worst].n.split(" ·")[0]}. ${["Heaven stands almost straight.","Human leans halfway, toward the viewer.","Earth bows low, to the other side."][worst]}`); },
+  frame(dt,W,H){ const g=mgX; g.clearRect(0,0,W,H); this.stems.forEach((s2,i)=>s2.scale.setScalar(i===this.sel?1.02+Math.sin(performance.now()/300)*.01:1)); mg3Render(this,W,H);
+    const names=["真 Shin","副 Soe","控 Hikae"], bw=120,bh=38,y=H-60,x0=W/2-(bw*4+36)/2; this.btns={}; names.forEach((n,i)=>{ this.btns[i]=hudBtn(g,n,x0+i*(bw+12),y,bw,bh,i===this.sel); }); this.btns.judge=hudBtn(g,"見 Ask Sensei",x0+3*(bw+12),y,bw,bh,false);
+    hudCard(g,W/2-Math.min(W*.45,320),y-60,Math.min(W*.9,640),44); hudText(g,this.msg,W/2,y-32,15); }
+};
+
+const GAMES={kyudo:KYUDO,taiko:TAIKO,rake:RAKE,bonsai:BONSAI,tea:TEA,ikebana:IKEBANA};
+function openGame(id){ const g=GAMES[id]; if(!g) return; mgEl.classList.toggle("rake",id==="rake"); $("#mgJudge").style.display=id==="rake"?"":"none"; $("#mgReset").style.display=id==="rake"?"":"none"; if(!entered) enterGame(); else hideMenu(); setTimeout(()=>mgOpen(g),entered?50:400); }
 $("#miGames").addEventListener("click",()=>{ $("#gamesPanel").classList.add("show"); });
 document.querySelectorAll("[data-game]").forEach(b=>b.addEventListener("click",()=>{ $("#gamesPanel").classList.remove("show"); const id=b.dataset.game; if(id==="shodo"){ if(!entered) enterGame(); else hideMenu(); setTimeout(openShodo,300); } else if(id==="golf"){ if(!entered) enterGame(); else hideMenu(); setTimeout(()=>{ travelTo(TRAVEL.find(t=>t.id==="golf")); setTimeout(golfStart,700); },300); } else if(id==="koi"){ if(!entered) enterGame(); else hideMenu(); toast("Walk to the pond, then tap the water, press F, or flick up on your phone."); } else openGame(id); }));
 
@@ -2327,7 +2527,7 @@ let menuOpen=true, lastReply="", firstEnter=true;
 function showMenu(){ menuOpen=true; $("#hint").style.opacity=0; $("#title").classList.remove("gone"); $("#miEnterT").textContent=entered?"Return to the Garden":"Enter the Garden"; closeChat(); hostPush(); }
 function hideMenu(){ menuOpen=false; $("#hint").style.opacity=chatOpen?0:1; $("#title").classList.add("gone"); ["pairPanel","setPanel"].forEach(id=>$("#"+id).classList.remove("show")); hostPush(); }
 async function enterGame(){
-  setTimeout(()=>refreshBank(),4000);
+  setTimeout(function tryBank(){ if(busy||chatOpen||MG){ setTimeout(tryBank,60000); return; } refreshBank(); },150000);
   hideMenu(); controls.autoRotate=false; if(!window.sensei){ try{ const el=document.documentElement; if(!document.fullscreenElement&&el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }catch(e){} }
   if(firstEnter){ firstEnter=false; if(musicPref) startSound();
     controls.target.set(player.position.x,player.position.y+1.7,player.position.z); camera.position.set(player.position.x,player.position.y+5,player.position.z+9.5);

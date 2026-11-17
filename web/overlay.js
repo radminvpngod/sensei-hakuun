@@ -80,12 +80,15 @@ async function listen(){
   if (!(await S.invoke("ears:ready"))) { say("Let me open my ears first. This happens only once…", 15000); const r = await S.invoke("voice:setup"); if (!r || !r.ears) { say("My ears would not open" + (r && r.error ? ": " + r.error : ".") + " Settings → Voice commands → Show log has the details.", 12000); return; } }
   listening = true; $("#ring").classList.add("on"); say("…I am listening.", 20000);
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
-    const ac = new AudioContext(); const src = ac.createMediaStreamSource(stream); const proc = ac.createScriptProcessor(4096, 1, 1); const chunks = [];
-    let spoke = false, quietFor = 0; const t0 = performance.now();
-    proc.onaudioprocess = e => { if (!rec) return; const d = e.inputBuffer.getChannelData(0); chunks.push(new Float32Array(d)); let sum = 0; for (let i = 0; i < d.length; i += 4) sum += d[i] * d[i];
-      const rms = Math.sqrt(sum / (d.length / 4)); if (rms > .022) { spoke = true; quietFor = 0; } else quietFor += d.length / ac.sampleRate;
-      const el = (performance.now() - t0) / 1000; if ((spoke && quietFor > 1.1) || el > 9 || (!spoke && el > 5)) stopListening(); };
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } });
+    const ac = new AudioContext(); const src = ac.createMediaStreamSource(stream); const proc = ac.createScriptProcessor(2048, 1, 1); const chunks = [];
+    let spoke = false, quietFor = 0, speechT = 0, floor = .006, n = 0; const t0 = performance.now();
+    proc.onaudioprocess = e => { if (!rec) return; const d = e.inputBuffer.getChannelData(0); chunks.push(new Float32Array(d)); let sum = 0; for (let i = 0; i < d.length; i += 2) sum += d[i] * d[i];
+      const rms = Math.sqrt(sum / (d.length / 2)), dt = d.length / ac.sampleRate; n++;
+      if (n < 6) floor = Math.max(floor, rms * .9); else if (!spoke) floor = floor * .97 + rms * .03;
+      const thr = Math.max(.012, floor * 2.8);
+      if (rms > thr) { speechT += dt; if (speechT > .12) spoke = true; quietFor = 0; } else { quietFor += dt; }
+      const el = (performance.now() - t0) / 1000; if ((spoke && quietFor > .95) || el > 12 || (!spoke && el > 6)) stopListening(); };
     src.connect(proc); proc.connect(ac.destination);
     rec = { stream, ac, proc, chunks, rate: ac.sampleRate, spoke: () => spoke };
   } catch (e) { listening = false; $("#ring").classList.remove("on"); say("I cannot hear you. Is a microphone connected?", 6000); }
@@ -98,11 +101,26 @@ async function stopListening(){
   const len = r.chunks.reduce((n, c) => n + c.length, 0), all = new Float32Array(len); let o = 0; r.chunks.forEach(c => { all.set(c, o); o += c.length; });
   await hear(all, r.rate);
 }
+// trim silence, normalise loudness, then resample cleanly to 16 kHz for whisper
+function prep(data, rate){ let peak = 0; for (let i = 0; i < data.length; i++) peak = Math.max(peak, Math.abs(data[i]));
+  const thr = peak * .08, win = Math.round(rate * .02); let a = 0, b = data.length - 1;
+  while (a < data.length - win) { let m = 0; for (let i = a; i < a + win; i++) m = Math.max(m, Math.abs(data[i])); if (m > thr) break; a += win; }
+  while (b > a + win) { let m = 0; for (let i = b - win; i < b; i++) m = Math.max(m, Math.abs(data[i])); if (m > thr) break; b -= win; }
+  a = Math.max(0, a - Math.round(rate * .25)); b = Math.min(data.length, b + Math.round(rate * .3));
+  const g = peak > 0 ? Math.min(8, .85 / peak) : 1; const ratio = rate / 16000, n = Math.floor((b - a) / ratio), out = new Float32Array(n + Math.round(16000 * .3));
+  for (let i = 0; i < n; i++) { const s0 = a + i * ratio, i0 = Math.floor(s0); let acc = 0, c = 0; for (let k = i0; k < Math.min(b, i0 + Math.ceil(ratio)); k++) { acc += data[k]; c++; } out[i] = c ? acc / c * g : 0; }
+  return out; }
+let vocab = "";
+async function buildVocab(){ try { catalog = catalog || await S.invoke("catalog"); } catch (e) {} const names = (catalog || []).filter(g => g.type !== "app").slice(0, 60).map(g => g.name);
+  vocab = "Sensei, open, launch, play, YouTube, Steam, garden, settings, volume up, volume down, pause, next song, come here, " + names.join(", "); }
 async function hear(samples, rate){
   say("Hm…", 20000);
-  const text = await S.invoke("ears:transcribe", toWav16k(samples, rate));
-  if (!text) { say("The wind took your words. Say it once more.", 5000); return; }
-  await act(text);
+  if (!vocab) await buildVocab();
+  const pcm = prep(samples, rate); const text = await S.invoke("ears:transcribe", toWav16k(pcm, 16000), vocab);
+  const clean = String(text || "").replace(/\s+/g, " ").trim();
+  if (!clean || /^\W*$/.test(clean)) { say("The wind took your words. Say it once more.", 5000); return; }
+  $("#btxt") && ($("#btxt").textContent = "“" + clean + "”");
+  await act(clean);
 }
 function toWav16k(data, rate){ const ratio = rate / 16000, n = Math.floor(data.length / ratio), out = new DataView(new ArrayBuffer(44 + n * 2));
   const w = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
@@ -115,32 +133,51 @@ S.on("phone-audio", async d => { try { const bin = atob(d.data.split(",").pop())
 
 /* ---------- commands ---------- */
 let catalog = null;
-function score(name, q){ name = name.toLowerCase(); if (name === q) return 5; if (name.startsWith(q)) return 4; if (name.includes(q)) return 3; const qw = q.split(" ").filter(Boolean); const hit = qw.filter(w => name.includes(w)).length; return hit ? 1 + hit / qw.length : 0; }
-async function findApp(q){ catalog = catalog || await S.invoke("catalog"); let best = null, bs = 0; for (const g of catalog) { const s = score(g.name, q) + (g.type !== "app" ? .3 : 0); if (s > bs) { bs = s; best = g; } } return bs >= 1.8 ? best : null; }
+const norm = x => String(x).toLowerCase().replace(/[™®©:'’.\-_]/g, " ").replace(/\s+/g, " ").trim();
+function lev(a, b){ const m = a.length, n = b.length; if (!m) return n; if (!n) return m; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
+function score(name, q){ name = norm(name); q = norm(q); if (!q) return 0; if (name === q) return 6; if (name.startsWith(q)) return 4.5; if (name.includes(q)) return 3.6;
+  const nw = name.split(" "), qw = q.split(" "); let hit = 0; for (const w of qw) { let best = 0; for (const v of nw) { const d = lev(w, v), L = Math.max(w.length, v.length); best = Math.max(best, 1 - d / L, v.startsWith(w) && w.length > 2 ? .9 : 0); } hit += best; }
+  const whole = 1 - lev(q.replace(/ /g, ""), name.replace(/ /g, "")) / Math.max(q.length, name.length);
+  return Math.max(hit / qw.length * 3.2, whole * 3.4); }
+async function findApp(q){ catalog = catalog || await S.invoke("catalog"); let best = null, bs = 0; for (const g of catalog) { const s = score(g.name, q) + (g.type !== "app" ? .25 : 0); if (s > bs) { bs = s; best = g; } } return bs >= 2.4 ? best : null; }
+const FILL = /\b(please|for me|can you|could you|would you|i want to|i wanna|let's|lets|go ahead and|the game|game|app|application|real quick|now)\b/g;
 async function act(raw){
-  const t = raw.toLowerCase().replace(/[.,!?]/g, "").replace(/^(hey|okay|ok|hi)\s+/, "").replace(/^(sensei|sense a|sensay)\s*,?\s*/, "").trim();
-  let m;
-  if ((m = t.match(/^(?:can you |please )?(?:open|launch|start|run)\s+(?:up\s+)?(.+)$/))) {
-    const q = m[1].replace(/^(the|my)\s+/, "");
-    if (/^garden$/.test(q)) { say("Come. The pond is waiting.", 4000, true); return S.send("open", "garden"); }
+  const t = norm(raw).replace(/^(hey|okay|ok|hi|yo)\s+/, "").replace(/^(sensei|sense a|sensay|sense eye|sen say)\s*/, "").trim();
+  const q0 = t.replace(FILL, " ").replace(/\s+/g, " ").trim(); let m;
+  if ((m = q0.match(/^(?:open|launch|start|run|boot|fire up|load)\s+(?:up\s+)?(.+)$/)) || (m = q0.match(/^(?:play)\s+(.+)$/))) {
+    const q = m[1].replace(/^(the|my|some)\s+/, "").replace(/\s+on (steam|my pc|the computer)$/, "");
+    if (/^(the )?garden$/.test(q)) { say("Come. The pond is waiting.", 4000, true); return S.send("open", "garden"); }
     if (/^settings?$/.test(q)) return S.send("open", "settings");
     if (/^youtube$/.test(q)) { say("YouTube. Do not fall in too deep.", 4000, true); return S.send("openExternal", "https://www.youtube.com"); }
-    const g = await findApp(q); if (g) { S.send("launch", g); return; }
-    say(`I could not find "${m[1]}". Add its folder in the launcher and I will remember.`, 7000, true); return;
+    if ((m = q.match(/^(.+?)\s+on youtube$/))) { say(`Searching YouTube for ${m[1]}.`, 4000, true); return S.send("openExternal", "https://www.youtube.com/results?search_query=" + encodeURIComponent(m[1])); }
+    const g = await findApp(q); if (g) { say(`Opening ${g.name}.`, 3500, true); S.send("launch", g); return; }
+    if (/^play/.test(q0)) { say(`Playing ${q}.`, 4000, true); return S.send("openExternal", "https://music.youtube.com/search?q=" + encodeURIComponent(q)); }
   }
-  if ((m = t.match(/^(?:search\s+)?youtube\s+(?:for\s+)?(.+)$/)) || (m = t.match(/^(?:play|watch)\s+(.+?)\s+on youtube$/))) { say(`Searching YouTube for ${m[1]}.`, 4000, true); return S.send("openExternal", "https://www.youtube.com/results?search_query=" + encodeURIComponent(m[1])); }
-  if ((m = t.match(/^play\s+(.+)$/))) { const g = await findApp(m[1]); if (g && g.type !== "app") { S.send("launch", g); return; } say(`Playing ${m[1]}.`, 4000, true); return S.send("openExternal", "https://music.youtube.com/search?q=" + encodeURIComponent(m[1])); }
-  if (/^(volume up|louder|turn it up)/.test(t)) { for (let i = 0; i < 5; i++) S.send("key", "plus"); return say("Louder.", 2000); }
-  if (/^(volume down|quieter|turn it down)/.test(t)) { for (let i = 0; i < 5; i++) S.send("key", "minus"); return say("Softer.", 2000); }
-  if (/^(pause|resume|stop the music|play pause)/.test(t)) { S.send("key", "one"); return say("Hm.", 1500); }
-  if (/^(next|skip)( song| track)?$/.test(t)) { S.send("key", "next"); return; }
+  if ((m = q0.match(/^(?:search\s+)?youtube\s+(?:for\s+)?(.+)$/)) || (m = q0.match(/^(?:watch|search for|look up)\s+(.+?)(?:\s+on youtube)?$/))) { say(`Searching YouTube for ${m[1]}.`, 4000, true); return S.send("openExternal", "https://www.youtube.com/results?search_query=" + encodeURIComponent(m[1])); }
+  if (/\b(volume up|louder|turn it up|turn up)\b/.test(t)) { for (let i = 0; i < 5; i++) S.send("key", "plus"); return say("Louder.", 2000); }
+  if (/\b(volume down|quieter|turn it down|turn down|lower)\b/.test(t)) { for (let i = 0; i < 5; i++) S.send("key", "minus"); return say("Softer.", 2000); }
+  if (/^(pause|resume|stop the music|play pause|stop)( the)?( music| song)?$/.test(t)) { S.send("key", "one"); return say("Hm.", 1500); }
+  if (/^(next|skip)( song| track| one)?$/.test(t)) { S.send("key", "next"); return; }
+  if (/^(previous|go back|last)( song| track)?$/.test(t)) { S.send("key", "prev"); return; }
   if (/^(hide|go away|disappear|leave me)/.test(t)) { say("I will be in the tray. Call me with your hotkey.", 3000, true); setTimeout(() => S.invoke("setSetting", "overlay", "hidden"), 3000); return; }
   if (/^(rest|sit down|go to (the )?corner)/.test(t)) { mode = "rest"; modeLbl(); S.invoke("setSetting", "overlay", "rest"); pickTarget(); return say("Resting.", 2500, true); }
   if (/^(come here|come back|swim|follow)/.test(t)) { summon(); return say("Here I am.", 2500, true); }
-  if (/what time is it|what's the time/.test(t)) { const d = new Date(); return say(`It is ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. Time flows like the stream. Do not chase it.`, 6000, true); }
+  if (/what time is it|what's the time|whats the time/.test(t)) { const d = new Date(); return say(`It is ${d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}. Time flows like the stream. Do not chase it.`, 6000, true); }
   if (/^(connect (my )?phone|remote)$/.test(t)) return S.send("open", "pair");
+  // not a known phrase: let the mind decide whether it was a command or a question
+  if (/\b(open|launch|start|play|run|put on|youtube|music|song|volume|skip)\b/.test(t)) { if (await route(raw)) return; }
   return ask(raw);
 }
+async function route(raw){ try { say("Hm…", 15000); const sample = await window.claude.use("sample"); catalog = catalog || await S.invoke("catalog");
+    const names = catalog.filter(g => g.type !== "app").slice(0, 80).map(g => g.name).join(" | ");
+    const v = await Promise.race([sample.json(`A voice command was transcribed (it may contain mishearings): "${raw}". Installed games: ${names}. Decide what the user wants. Return JSON {"action":"launch"|"youtube"|"music"|"volume_up"|"volume_down"|"pause"|"next"|"garden"|"none","query":"game name exactly as listed, or search words"}.`, { modelTier: "quick", cache: false }), new Promise((_, r) => setTimeout(() => r(new Error("slow")), 9000))]);
+    if (!v || v.action === "none") return false;
+    if (v.action === "launch") { const g = await findApp(v.query || ""); if (g) { say(`Opening ${g.name}.`, 3500, true); S.send("launch", g); return true; } return false; }
+    if (v.action === "youtube") { S.send("openExternal", "https://www.youtube.com/results?search_query=" + encodeURIComponent(v.query || "")); say(`Searching YouTube for ${v.query}.`, 4000, true); return true; }
+    if (v.action === "music") { S.send("openExternal", "https://music.youtube.com/search?q=" + encodeURIComponent(v.query || "")); say(`Playing ${v.query}.`, 4000, true); return true; }
+    if (v.action === "volume_up") { for (let i = 0; i < 5; i++) S.send("key", "plus"); return true; } if (v.action === "volume_down") { for (let i = 0; i < 5; i++) S.send("key", "minus"); return true; }
+    if (v.action === "pause") { S.send("key", "one"); return true; } if (v.action === "next") { S.send("key", "next"); return true; } if (v.action === "garden") { S.send("open", "garden"); return true; }
+  } catch (e) {} return false; }
 async function ask(q){
   say("…", 30000);
   try {

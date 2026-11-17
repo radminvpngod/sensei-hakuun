@@ -131,10 +131,10 @@ module.exports = function core(ctx) {
     })();
     return earsSetup;
   }
-  async function transcribe(wav) {
+  async function transcribe(wav, hint) {
     if (!(await ensureEars())) return '';
     const f = path.join(os.tmpdir(), 'sensei-hear-' + Date.now() + '.wav'); fs.writeFileSync(f, Buffer.from(wav));
-    const text = await new Promise(res => execFile(whisperExe(), ['-m', EARS_MODEL, '-f', f, '-nt', '-np', '-l', 'en', '-t', String(Math.max(2, Math.min(8, os.cpus().length - 1)))], { windowsHide: true, timeout: 90000, maxBuffer: 1 << 20 },
+    const text = await new Promise(res => execFile(whisperExe(), ['-m', EARS_MODEL, '-f', f, '-nt', '-np', '-l', 'en', '-bs', '5', '-t', String(Math.max(2, Math.min(8, os.cpus().length - 1))), ...(hint ? ['--prompt', String(hint).slice(0, 600)] : [])], { windowsHide: true, timeout: 90000, maxBuffer: 1 << 20 },
       (e, out, err) => { if (e) log('whisper error', e, String(err || '').slice(-600)); res(String(out || '').replace(/\[[^\]]*\]|\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim()); }));
     fs.rmSync(f, { force: true }); return text;
   }
@@ -168,7 +168,7 @@ module.exports = function core(ctx) {
     try { await brainJS(`window.__sb.start(${JSON.stringify(id)},${JSON.stringify(kind)},${JSON.stringify(input)},${JSON.stringify(opts || {})})`); }
     catch (err) { wc.send('brain:stream', { id, done: true, error: { code: err.code || 'unavailable', message: err.message } }); return false; }
     (async () => { const t0 = Date.now(); let last = '';
-      while (Date.now() - t0 < 180000) { await sleep(220); let r; try { r = await brainJS(`window.__sb.peek(${JSON.stringify(id)})`); } catch (err) { r = { done: true, error: { code: 'unavailable', message: err.message } }; }
+      while (Date.now() - t0 < (kind === 'json' ? 120000 : 100000)) { await sleep(220); let r; try { r = await brainJS(`window.__sb.peek(${JSON.stringify(id)})`); } catch (err) { r = { done: true, error: { code: 'unavailable', message: err.message } }; }
         if (!r) continue; if (wc.isDestroyed()) return;
         if (r.text && r.text !== last) { last = r.text; wc.send('brain:stream', { id, text: r.text }); }
         if (r.done) { wc.send('brain:stream', { id, done: true, result: r.result, error: r.error }); return; } }
@@ -423,7 +423,7 @@ module.exports = function core(ctx) {
   ipcMain.handle('newToken', async () => { settings.token = crypto.randomBytes(8).toString('hex'); saveSettings(); remotes.forEach(w => w.close()); return true; });
   ipcMain.handle('voice:synth', async (e, text) => { if (settings.voiceEngine !== 'ghost') return null; try { const b = await synth(text); return b ? new Uint8Array(b) : null; } catch (err) { log('synth failed', err); return null; } });
   ipcMain.handle('voice:setup', async () => ({ ears: await ensureEars(), voice: settings.voiceEngine === 'ghost' ? await ensureVoice() : true, error: earsError }));
-  ipcMain.handle('ears:transcribe', async (e, wav) => { try { return await transcribe(wav); } catch (err) { return ''; } });
+  ipcMain.handle('ears:transcribe', async (e, wav, hint) => { try { return await transcribe(wav, hint); } catch (err) { return ''; } });
   ipcMain.handle('ears:ready', async () => earsReady());
   ipcMain.handle('ears:error', async () => earsError);
   ipcMain.on('quit', () => app.quit());
