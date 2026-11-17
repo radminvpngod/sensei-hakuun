@@ -149,10 +149,22 @@ module.exports = function core(ctx) {
       stripUA(brain.webContents);
       brain.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\/([a-z0-9-]+\.)*(claude\.ai|anthropic\.com|google\.com|apple\.com)\//.test(url)) return { action: 'allow' }; shell.openExternal(url); return { action: 'deny' }; });
       brain.on('close', e => { if (!quitting) { e.preventDefault(); brain.hide(); } });
-      brain.loadURL(GARDEN_URL + '#brain');
-    } else if (show) { brain.show(); brain.focus(); }
+      // after a sign-in finishes anywhere on claude.ai, come back to Sensei's mind page
+      const back = (ev, url) => { try { const u = new URL(url); if (u.hostname.endsWith('claude.ai') && !/^\/(login|magic-link|logout|onboarding|verify)/.test(u.pathname) && !url.startsWith(GARDEN_URL) && brain.__wantMind) { signedIn().then(ok => { if (ok) { brain.__wantMind = false; log('mind: signed in, loading brain page'); brain.loadURL(GARDEN_URL + '#brain'); } }); } } catch (e) {} };
+      brain.webContents.on('did-navigate', back); brain.webContents.on('did-navigate-in-page', back);
+      brain.webContents.on('did-finish-load', () => { autoWake(); });
+      signedIn().then(ok => { if (ok) brain.loadURL(GARDEN_URL + '#brain'); else { brain.__wantMind = true; brain.loadURL('https://claude.ai/login'); if (!show) { /* nothing to wait for until he signs in */ } } });
+      if (show) brain.once('ready-to-show', () => { brain.show(); brain.focus(); });
+    } else if (show) {
+      signedIn().then(ok => { if (!ok) { brain.__wantMind = true; brain.loadURL('https://claude.ai/login'); } });
+      brain.show(); brain.focus();
+    }
     return brain;
   }
+  async function signedIn() { try { const c = await session.fromPartition('persist:sensei').cookies.get({ url: 'https://claude.ai', name: 'sessionKey' }); return c.length > 0; } catch (e) { return false; } }
+  // the mind page needs one click the first time; press it for him once he is signed in
+  async function autoWake() { for (let i = 0; i < 10; i++) { await sleep(1500); if (!brain || brain.isDestroyed()) return; if (await brainFrame()) return;
+      for (const f of brain.webContents.mainFrame.framesInSubtree) { try { await f.executeJavaScript('(()=>{ const b=document.getElementById("sbGo"); if(b&&!window.__clicked){ window.__clicked=1; b.click(); } })()', true); } catch (e) {} } } }
   async function brainFrame() {
     if (!brain || brain.isDestroyed()) return null;
     for (const f of brain.webContents.mainFrame.framesInSubtree) { try { if (await f.executeJavaScript('!!(window.__sb && window.__sb.ready)')) return f; } catch (e) {} }
@@ -182,7 +194,7 @@ module.exports = function core(ctx) {
       if (q.op === 'list') return await brainJS(`window.__sb.dbList(${JSON.stringify(q.coll)},${JSON.stringify(q.orderBy || null)},${JSON.stringify(q.dir || 'asc')},${+q.limit || 60})`);
     } catch (err) { return { error: err.message }; }
   });
-  ipcMain.handle('brain:status', async () => { const f = await brainFrame().catch(() => null); return { awake: !!f }; });
+  ipcMain.handle('brain:status', async () => { const si = await signedIn(); if (!si) return { awake: false, signedIn: false }; ensureBrain(false); let f = null; const t0 = Date.now(); while (!(f = await brainFrame().catch(() => null)) && Date.now() - t0 < 9000) await sleep(700); return { awake: !!f, signedIn: true }; });
 
   /* ================= windows ================= */
   let overlay = null, palette = null, pairWin = null, garden = null, setWin = null, tray = null, gardenUnloadT = null;

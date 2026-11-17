@@ -140,6 +140,9 @@ function score(name, q){ name = norm(name); q = norm(q); if (!q) return 0; if (n
   const whole = 1 - lev(q.replace(/ /g, ""), name.replace(/ /g, "")) / Math.max(q.length, name.length);
   return Math.max(hit / qw.length * 3.2, whole * 3.4); }
 async function findApp(q){ catalog = catalog || await S.invoke("catalog"); let best = null, bs = 0; for (const g of catalog) { const s = score(g.name, q) + (g.type !== "app" ? .25 : 0); if (s > bs) { bs = s; best = g; } } return bs >= 2.4 ? best : null; }
+const SITES = { soundcloud: "https://soundcloud.com", spotify: "https://open.spotify.com", "youtube music": "https://music.youtube.com", netflix: "https://www.netflix.com", twitch: "https://www.twitch.tv", discord: "https://discord.com/app", twitter: "https://x.com", x: "https://x.com", reddit: "https://www.reddit.com", gmail: "https://mail.google.com", email: "https://mail.google.com", google: "https://www.google.com", "google drive": "https://drive.google.com", drive: "https://drive.google.com", github: "https://github.com", claude: "https://claude.ai", chatgpt: "https://chatgpt.com", tradingview: "https://www.tradingview.com", "trading view": "https://www.tradingview.com", instagram: "https://www.instagram.com", tiktok: "https://www.tiktok.com", amazon: "https://www.amazon.com", maps: "https://maps.google.com", "google maps": "https://maps.google.com", weather: "https://weather.com", notion: "https://www.notion.so", crunchyroll: "https://www.crunchyroll.com", hulu: "https://www.hulu.com", "disney plus": "https://www.disneyplus.com", "prime video": "https://www.primevideo.com", wikipedia: "https://www.wikipedia.org", pinterest: "https://www.pinterest.com", facebook: "https://www.facebook.com", linkedin: "https://www.linkedin.com", "apple music": "https://music.apple.com" };
+function siteFor(q){ q = norm(q).replace(/^(the|my)\s+/, "").replace(/\s+(website|site|dot com|\.com)$/, ""); if (SITES[q]) return SITES[q]; let best = null, bs = 0; for (const k of Object.keys(SITES)) { const sc = score(k, q); if (sc > bs) { bs = sc; best = k; } } if (bs >= 3) return SITES[best];
+  if (/^[a-z0-9-]+(\.[a-z]{2,})+$/.test(q.replace(/ dot /g, ".").replace(/\s/g, ""))) return "https://" + q.replace(/ dot /g, ".").replace(/\s/g, ""); return null; }
 const FILL = /\b(please|for me|can you|could you|would you|i want to|i wanna|let's|lets|go ahead and|the game|game|app|application|real quick|now)\b/g;
 async function act(raw){
   const t = norm(raw).replace(/^(hey|okay|ok|hi|yo)\s+/, "").replace(/^(sensei|sense a|sensay|sense eye|sen say)\s*/, "").trim();
@@ -151,7 +154,10 @@ async function act(raw){
     if (/^youtube$/.test(q)) { say("YouTube. Do not fall in too deep.", 4000, true); return S.send("openExternal", "https://www.youtube.com"); }
     if ((m = q.match(/^(.+?)\s+on youtube$/))) { say(`Searching YouTube for ${m[1]}.`, 4000, true); return S.send("openExternal", "https://www.youtube.com/results?search_query=" + encodeURIComponent(m[1])); }
     const g = await findApp(q); if (g) { say(`Opening ${g.name}.`, 3500, true); S.send("launch", g); return; }
+    const site = siteFor(q); if (site) { say(`Opening ${q.replace(/\b\w/g, c => c.toUpperCase())}.`, 3500, true); return S.send("openExternal", site); }
     if (/^play/.test(q0)) { say(`Playing ${q}.`, 4000, true); return S.send("openExternal", "https://music.youtube.com/search?q=" + encodeURIComponent(q)); }
+    // not a game and not a site I know: take him to the best match on the web
+    say(`I could not find ${q} on your PC, so I will find it on the web.`, 4500, true); return S.send("openExternal", "https://duckduckgo.com/?q=" + encodeURIComponent("! " + q));
   }
   if ((m = q0.match(/^(?:search\s+)?youtube\s+(?:for\s+)?(.+)$/)) || (m = q0.match(/^(?:watch|search for|look up)\s+(.+?)(?:\s+on youtube)?$/))) { say(`Searching YouTube for ${m[1]}.`, 4000, true); return S.send("openExternal", "https://www.youtube.com/results?search_query=" + encodeURIComponent(m[1])); }
   if (/\b(volume up|louder|turn it up|turn up)\b/.test(t)) { for (let i = 0; i < 5; i++) S.send("key", "plus"); return say("Louder.", 2000); }
@@ -183,9 +189,9 @@ async function ask(q){
   try {
     const sample = await window.claude.use("sample");
     const prompt = `You are Sensei Hakuun (白雲), a ghost-koi sensei: a calm, warm, gently mischievous old master who speaks like a temple monk, in short measured sentences with images of water, stone and wind. You float on Gabriel's Windows desktop as his companion. He just said aloud to you: "${q}". It is ${new Date().toLocaleString()}. Answer in 1–3 short sentences meant to be spoken aloud. Be accurate and honest; if you do not know, say so. Plain text only.`;
-    const r = await sample(prompt, { onText: ({ text }) => { $("#btxt").textContent = text; } });
+    const r = await Promise.race([sample(prompt, { onText: ({ text }) => { $("#btxt").textContent = text; } }), new Promise((_, rj) => setTimeout(() => rj({ code: "slow" }), 40000))]);
     say(r.text.trim(), 14000, true);
-  } catch (e) { say(e && e.code === "mind_asleep" ? "My mind is asleep. Open Settings → Sensei's mind and sign in to claude.ai once." : "…the wind took my thoughts. Ask once more.", 9000, true); }
+  } catch (e) { say(e && (e.code === "mind_asleep" || e.code === "slow" || e.code === "unavailable") ? "My mind is asleep. Open Settings → Sensei's mind and press Sign in, once. Commands like “open YouTube” still work without it." : "…the wind took my thoughts. Ask once more.", 10000, true); }
 }
 
 /* ---------- loop: full frame rate while moving/talking, 30 fps when idle; only a 460px square is drawn ---------- */
@@ -210,3 +216,8 @@ function frame(now){
   renderer.render(scene, cam);
 }
 requestAnimationFrame(frame);
+
+/* ---------- now and then, an old monk's hum ---------- */
+{ const HUMS = ["Hmm…", "Hmmm…", "Hmm… the wind is early today.", "Hmm. Interesting.", "Hmmm… something stirs beneath the water.", "Hm… patience.", "Hmmm… I have seen this before. In another century.", "Hm… do you hear that? …No? Good."];
+  const next = () => setTimeout(() => { try { if (!menuOpen && !listening && mode !== "hidden") say(HUMS[Math.floor(Math.random() * HUMS.length)], 4500); } catch (e) {} next(); }, (9 + Math.random() * 9) * 60000);
+  next(); }

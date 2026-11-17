@@ -1261,7 +1261,7 @@ const GOLFY=.26; const HOLES=[]; const golf={hole:0,strokes:0,total:[],ball:null
       h.obs.push({x:GOLF.x+3.2,z:lz-1.43,r:.16},{x:GOLF.x+3.2,z:lz+1.43,r:.16}); h.walls.push({x:GOLF.x-2.5,z:lz-.6,hw:.13,hd:1.4}); const w=new THREE.Mesh(new THREE.BoxGeometry(.25,.3,2.8),rail); w.position.set(GOLF.x-2.5,GOLFY+.05,lz-.6); scene.add(w); }
     HOLES.push(h); });
   const ball=new THREE.Mesh(new THREE.SphereGeometry(.13,12,8),toon("#ffffff")); ball.castShadow=true; ball.visible=false; scene.add(ball); golf.ball=ball;
-  const aimG=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(1,0,0)]); golf.line=new THREE.Line(aimG,new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.85})); golf.line.visible=false; scene.add(golf.line);
+  const aimG=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(1,0,0)]); golf.line=new THREE.Line(aimG,new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.85})); golf.line.frustumCulled=false; golf.line.visible=false; scene.add(golf.line);
   addInteract({x:GOLF.x-GOLF.w/2+1,z:GOLF.z,r:4,k:"球",label:"Play mini golf",fn:()=>golfStart()});
   addInteract({x:golfFrog.g.position.x,z:golfFrog.g.position.z,r:2.6,k:"蛙",label:"Talk to Kaeru",fn:()=>npcSay(golfFrog,"kaeru")});
   discoveries.push({id:"golf",x:GOLF.x-GOLF.w/2,z:GOLF.z,r:6,k:"球場",n:"Kaeru's Mini Golf",line:"A frog built this. He takes it more seriously than I take anything. Play a round. Do not let him see you cheat."});
@@ -1777,7 +1777,7 @@ function greeting(){ const p=partOfDay(nowHour()).toLowerCase();
   if(store.visits<=1) return `Hm. So… you are Gabriel. Three hundred years, and one morning, I have waited for a student. ${sea[0]} Walk with me. The garden is yours to wander.`;
   const L={"deep night":["Awake at this hour, my student?","The lanterns and I keep strange company tonight.","Shh. The koi are dreaming."],"dawn":["You rise with the mist. Good.","Dawn. The clearest hour for the mind."],"morning":["Good morning, Gabriel-san.","Morning. The tea is not ready, and neither am I.","Ah, you are up."],"midday":["The sun is high. Have you eaten?","Midday. Even the shadows are resting."],"afternoon":["The afternoon is long, and quiet.","Ah, an afternoon visitor."],"golden hour":["The light turns gold on the water.","Golden hour. A good hour to reflect."],"dusk":["Dusk. The castle lights itself.","The lanterns are waking up."],"night":["Night has come.","Evening, my student. I was only… reading."]};
   const open=freshPick(L[p]||["Welcome back."]); const b=lineBank(); const more=(b&&freshPick(b.greet))||freshPick(sea);
-  return `${open} ${more}`; }
+  return `${Math.random()<.25?pick(["Hmm… ","Hmmm… "]):""}${open} ${more}`; }
 
 /* ===================== chat ===================== */
 const log=$("#log");
@@ -1808,6 +1808,7 @@ $("#form").addEventListener("submit",async e=>{
       else if(err&&err.code==="mind_asleep") reply="My mind is asleep. Open the tray menu → Sensei's mind and sign in to claude.ai once. Then speak to me again.";
       else if(err&&err.code==="not_granted"){ sample=null; reply=PROVERBS[0]+"\n\n(Sensei can't speak freely without permission to ask Claude.)"; } else reply="…the wind took my words. Say that once more.";
       bubble.textContent=reply; } }
+  if(!/^h+m/i.test(reply)&&!/^\W/.test(reply)) reply=hum()+reply; bubble.textContent=reply;
   store.history.push({r:"s",c:reply}); save(); lastReply=reply; hostPush(); busy=false; thinking=false; $("#send").disabled=false; $("#status").textContent="present"; speak(reply);
   if(sample&&store.history.filter(m=>m.r==="u").length%3===0) updateNotes(); });
 async function updateNotes(){ try{
@@ -1899,10 +1900,12 @@ const NPC_FALLBACK={okitsune:["The tea is hot, the gossip hotter. Sensei sneezed
   kaeru:["Three holes. The third one has a spinning gate. I built it to humble a crane.","Par is a suggestion. Like most rules in this valley.","Pull back, then let go. Gently. Gentler than that."],
   taro:["Don! Don! Ka-don! Feel that? That is the valley's heartbeat.","Festivals are just reasons to hit things joyfully.","When the drum is loud, worries get quiet. Try it."]};
 function npcSay(n,key){ npcBow(n); const l=freshPick(lineBank()?.npc?.[key])||freshPick(NPC_FALLBACK[key]); toast(`${n.name}: ${l}`); }
+const MYST=["Hmm…","Hmmm…","Hmm… the pond remembers what the river forgets.","Hmm. Interesting. Very interesting.","Hmmm… I have seen this before. In another century.","Hmm… do you hear that? …No? Good.","Hmm… the wind is early today.","Hmm… patience, little one. Patience.","Hmmm… a cloud just told me something. I will not repeat it.","Hm… the koi are whispering about you again.","Hmmm… three hundred years, and the moon still surprises me.","Hm. The stone does not hurry. Neither shall I.","Hmmm… something stirs beneath the water.","Hm… you smell of adventure. And a little of ramen."];
+const hum=()=>Math.random()<.18?pick(["Hmm… ","Hmmm… ","Hm… "]):"";
 let idleChatT=rand(120,200);
 function idleChat(dt){ if(!entered||chatOpen||MG||pmode!=="walk"||zone!=="world") return; idleChatT-=dt; if(idleChatT>0) return;
   const pd=sensei.position.distanceTo(player.position); if(pd>14){ idleChatT=20; return; } idleChatT=rand(160,280);
-  const l=freshPick(lineBank()?.idle)||freshPick(PROVERBS); if(l){ whisper(l,8000); speak(l); } }
+  const l=Math.random()<.3?freshPick(MYST):(freshPick(lineBank()?.idle)||freshPick(PROVERBS)); if(l){ whisper(l,8000); speak(l); } }
 
 /* ===================== haptics to the phone(s) ===================== */
 function rumble(pat=[20],pl=0){ try{ if(window.sensei&&window.sensei.send) window.sensei.send("remote:buzz",{player:pl,pat}); else if(hRoom) hRoom.emit("buzz",{pat}).catch(()=>{}); }catch(e){} }
@@ -2236,10 +2239,10 @@ const TK3={ build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc;
 const RK3={ build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc; sc.background=C("#2f3a2a");
     const cam=new THREE.PerspectiveCamera(38,1,.1,200); this.cam=cam; stageLights(sc,{sky:"#fff3e0",ground:"#5a4a3a",sun:"#fff0d8",si:2,dir:[-6,14,8]});
     const frame=new THREE.Mesh(new THREE.BoxGeometry(16.8,.5,10.8),F3("#5a3b26")); frame.position.y=-.2; frame.receiveShadow=true; sc.add(frame);
-    const geo=new THREE.PlaneGeometry(16,10,1,1); geo.rotateX(-Math.PI/2);
+    const geo=new THREE.PlaneGeometry(16,10,SW-1,SH-1); geo.rotateX(-Math.PI/2); this.geo=geo;
     if(!sandTex){ sandTex=new THREE.CanvasTexture(sandCv); sandTex.colorSpace=THREE.SRGBColorSpace; }
     const bump=new THREE.CanvasTexture(sandCv); this.bump=bump;
-    const sand=new THREE.Mesh(geo,new THREE.MeshToonMaterial({map:sandTex,bumpMap:bump,bumpScale:3,gradientMap:gm})); sand.position.y=.06; sand.receiveShadow=true; sc.add(sand); this.sand=sand;
+    const sand=new THREE.Mesh(geo,new THREE.MeshToonMaterial({map:sandTex,gradientMap:gm})); sand.position.y=.13; sand.receiveShadow=true; sc.add(sand); this.sand=sand;
     SAND_ROCKS.forEach(([x,z,r])=>{ const g=new THREE.Group(); g.position.set(x,.05,z); const m=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),F3("#6e6b63")); m.scale.set(1,.55,.85); m.position.y=r*.25; m.castShadow=true; g.add(m); const ms=new THREE.Mesh(new THREE.SphereGeometry(r*.6,8,6),F3("#5d7a3a")); ms.scale.set(1,.3,.7); ms.position.set(-r*.15,r*.65,-r*.1); g.add(ms); sc.add(g); });
     for(let i=0;i<10;i++){ const t=new THREE.Mesh(new THREE.IcosahedronGeometry(rand(.8,1.5),0),F3(pick(["#3f6a34","#4f7a3c","#c43c28"]))); const a=rand(0,TAU); t.position.set(Math.cos(a)*12,rand(0,1),Math.sin(a)*8); t.scale.y=.7; sc.add(t); }
     const rake=new THREE.Group(); const handle=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,3,6),F3("#8a6242")); handle.position.set(0,1.3,1.3); handle.rotation.x=-.85; rake.add(handle);
@@ -2248,7 +2251,7 @@ const RK3={ build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc;
   },
   fit(W,H){ const asp=W/H; this.cam.aspect=asp; const dist=asp<1.2?17:12.5; this.cam.position.set(0,dist,dist*.62); this.cam.lookAt(0,0,.4); this.cam.updateProjectionMatrix(); },
   toSand(x,y){ const r=ndcRay(this.cam,x,y); const t=(.06-r.origin.y)/r.direction.y; const p=r.origin.clone().addScaledVector(r.direction,t); this.rk.tx=p.x; this.rk.tz=p.z; return [(p.x+8)/16,(p.z+5)/10]; },
-  update(dt){ if(RAKE.live){ RAKE.live=false; if(sandTex) sandTex.needsUpdate=true; this.bump.needsUpdate=true; } const rk=this.rk; if(rk.tx!=null){ const dx=rk.tx-rk.x, dz=rk.tz-rk.z; if(Math.hypot(dx,dz)>.05) rk.a=angLerp(rk.a,Math.atan2(dx,dz),Math.min(1,dt*10)); rk.x+=dx*Math.min(1,dt*18); rk.z+=dz*Math.min(1,dt*18); }
+  update(dt){ if(RAKE.live){ RAKE.live=false; if(sandTex) sandTex.needsUpdate=true; const p=this.geo.attributes.position; for(let k=0;k<SN;k++) p.setY(k,sBlk[k]?-.02:(sH[k]-1)*.3); p.needsUpdate=true; } const rk=this.rk; if(rk.tx!=null){ const dx=rk.tx-rk.x, dz=rk.tz-rk.z; if(Math.hypot(dx,dz)>.05) rk.a=angLerp(rk.a,Math.atan2(dx,dz),Math.min(1,dt*10)); rk.x+=dx*Math.min(1,dt*18); rk.z+=dz*Math.min(1,dt*18); }
     this.rake.position.set(rk.x,.06,rk.z); this.rake.rotation.y=rk.a+Math.PI; }
 };
 
@@ -2321,32 +2324,49 @@ const TAIKO={ title:"太鼓 · Taiko", sub:"Red DON: F / J / left side · Blue K
 const sandCv=document.createElement("canvas"); sandCv.width=1024; sandCv.height=640; const sandX=sandCv.getContext("2d");
 const SAND_ROCKS=[[-4,-1,1.3],[3.2,1.6,1],[4.6,-2.4,.7]];
 const rockPx=([rx,ry,r])=>[(rx+8)/16*1024,(ry+5)/10*640,r/16*1024];
-const sandCol=document.createElement("canvas"); sandCol.width=1024; sandCol.height=640; const sandColX=sandCol.getContext("2d");
-const sandGr=document.createElement("canvas"); sandGr.width=1024; sandGr.height=640; const sandGrX=sandGr.getContext("2d");
-function sandCompose(){ sandX.clearRect(0,0,1024,640); sandX.drawImage(sandCol,0,0); sandX.drawImage(sandGr,0,0); }
-function grooveLine(g,x0,y0,x1,y1){ g.strokeStyle="rgba(70,58,40,.42)"; g.lineWidth=2.6; g.beginPath(); g.moveTo(x0,y0); g.lineTo(x1,y1); g.stroke(); g.strokeStyle="rgba(255,252,244,.6)"; g.lineWidth=1.8; g.beginPath(); g.moveTo(x0+0,y0+3); g.lineTo(x1,y1+3); g.stroke(); }
-function sandBase(){ sandColX.fillStyle="#d9d1bf"; sandColX.fillRect(0,0,1024,640); const g=sandGrX; g.clearRect(0,0,1024,640);
-  for(let y=6;y<640;y+=11) grooveLine(g,0,y,1024,y);
-  SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); g.save(); g.globalCompositeOperation="destination-out"; g.beginPath(); g.arc(x,y,r*1.15+4*12+8,0,TAU); g.fill(); g.restore();
-    for(let k=4;k>=1;k--){ const rr=r*1.15+k*12; g.strokeStyle="rgba(70,58,40,.45)"; g.lineWidth=2.4; g.beginPath(); g.arc(x,y,rr,0,TAU); g.stroke(); g.strokeStyle="rgba(255,252,244,.6)"; g.lineWidth=1.6; g.beginPath(); g.arc(x,y,rr+3,0,TAU); g.stroke(); } });
-  sandCompose(); }
+/* ---- real sand: a height field + colour field; grains slide past their angle of repose and colours mix as they move ---- */
+const SW=256, SH=160, SN=SW*SH; const sH=new Float32Array(SN), sR=new Float32Array(SN), sG=new Float32Array(SN), sB=new Float32Array(SN), sBlk=new Uint8Array(SN), sNz=new Float32Array(SN);
+for(let i=0;i<SN;i++) sNz[i]=Math.random()*.09-.045;
+const sImg=document.createElement("canvas"); sImg.width=SW; sImg.height=SH; const sImgX=sImg.getContext("2d"); const sID=sImgX.createImageData(SW,SH);
+const SBASE=[.85,.82,.75]; let sandActive=0;
+SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); const cx=x/4, cy=y/4, rr=r/4*1.02; for(let j=Math.floor(cy-rr);j<=cy+rr;j++) for(let i=Math.floor(cx-rr);i<=cx+rr;i++){ if(i<0||j<0||i>=SW||j>=SH) continue; if(Math.hypot(i-cx,j-cy)<rr) sBlk[j*SW+i]=1; } });
+function sandBase(){ for(let j=0;j<SH;j++) for(let i=0;i<SW;i++){ const k=j*SW+i; sR[k]=SBASE[0]; sG[k]=SBASE[1]; sB[k]=SBASE[2]; let h=1+.07*Math.cos(j/2.75*TAU);
+    for(const rk of SAND_ROCKS){ const [x,y,r]=rockPx(rk); const d=Math.hypot(i-x/4,j-y/4)-r/4*1.15; if(d<14){ h=1+(d>0?.07*Math.cos(d/3*TAU):0); break; } } sH[k]=sBlk[k]?0:h; }
+  sandActive=0; sandRender(); }
+function sandRender(){ const d=sID.data; for(let j=0;j<SH;j++) for(let i=0;i<SW;i++){ const k=j*SW+i, o=k*4; if(sBlk[k]){ d[o]=96; d[o+1]=92; d[o+2]=84; d[o+3]=255; continue; }
+    const hl=sH[i>0&&!sBlk[k-1]?k-1:k], hr=sH[i<SW-1&&!sBlk[k+1]?k+1:k], hu=sH[j>0&&!sBlk[k-SW]?k-SW:k], hd=sH[j<SH-1&&!sBlk[k+SW]?k+SW:k]; const L=clamp(.9+((hl-hr)*.7+(hu-hd)*1.1)*3.2+sNz[k],.5,1.25)*clamp(.85+sH[k]*.15,.8,1.08);
+    d[o]=clamp(sR[k]*L*255,0,255); d[o+1]=clamp(sG[k]*L*255,0,255); d[o+2]=clamp(sB[k]*L*255,0,255); d[o+3]=255; }
+  sImgX.putImageData(sID,0,0); sandX.imageSmoothingEnabled=true; sandX.drawImage(sImg,0,0,1024,640); }
+function sandMix(k,r,g,b,w){ sR[k]+=(r-sR[k])*w; sG[k]+=(g-sG[k])*w; sB[k]+=(b-sB[k])*w; }
+function sandRelax(){ const rep=.085; let moved=0; const flip=(sandActive&1);
+  for(let jj=0;jj<SH;jj++){ const j=flip?SH-1-jj:jj; for(let ii=0;ii<SW;ii++){ const i=flip?SW-1-ii:ii, k=j*SW+i; if(sBlk[k]) continue;
+    for(let q=0;q<2;q++){ const n=q===0?(i<SW-1?k+1:-1):(j<SH-1?k+SW:-1); if(n<0||sBlk[n]) continue; const df=sH[k]-sH[n]; if(Math.abs(df)<=rep) continue; const m=(Math.abs(df)-rep)*.24; const a=df>0?k:n, b=df>0?n:k;
+      const w=m/(sH[b]*.35+m); sandMix(b,sR[a],sG[a],sB[a],w); sH[a]-=m; sH[b]+=m; moved+=m; } } }
+  return moved; }
+function sandPour(gx,gy,col,amt){ const c=new THREE.Color(col); const R=6; for(let j=Math.floor(gy-R);j<=gy+R;j++) for(let i=Math.floor(gx-R);i<=gx+R;i++){ if(i<0||j<0||i>=SW||j>=SH) continue; const k=j*SW+i; if(sBlk[k]) continue; const d2=(i-gx)**2+(j-gy)**2; if(d2>R*R) continue;
+    const a=amt*Math.exp(-d2/(2*2.6*2.6)); sandMix(k,c.r+rand(-.03,.03),c.g+rand(-.03,.03),c.b+rand(-.03,.03),a/(a+.06)); sH[k]+=a; } sandActive=Math.max(sandActive,90); }
+function sandRakeSeg(x0,y0,x1,y1,mode){ const L=Math.hypot(x1-x0,y1-y0); if(L<.01) return; const ux=(x1-x0)/L, uy=(y1-y0)/L, nx=-uy, ny=ux; const steps=Math.ceil(L/.5);
+  const cell=(x,y)=>{ const i=Math.round(x), j=Math.round(y); return (i<0||j<0||i>=SW||j>=SH)?-1:j*SW+i; };
+  for(let s2=1;s2<=steps;s2++){ const px=x0+ux*L*s2/steps, py=y0+uy*L*s2/steps;
+    if(mode==="smooth"){ for(let o=-7;o<=7;o++){ const k=cell(px+nx*o,py+ny*o); if(k<0||sBlk[k]) continue; let hs=0,r=0,g=0,b=0,c=0; for(const q of [k-1,k+1,k-SW,k+SW,k]){ if(q<0||q>=SN||sBlk[q]) continue; hs+=sH[q]; r+=sR[q]; g+=sG[q]; b+=sB[q]; c++; } sH[k]+=(hs/c-sH[k])*.6; sandMix(k,r/c,g/c,b/c,.25); } continue; }
+    for(let o=-7;o<=7;o++){ const k=cell(px+nx*o,py+ny*o); if(k<0||sBlk[k]) continue; sH[k]+=(1-sH[k])*.25; }
+    for(let t=-2;t<=2;t++){ const o=t*2.75; const k=cell(px+nx*o,py+ny*o); if(k<0||sBlk[k]) continue; const take=Math.min(.16,Math.max(0,sH[k]-.82)*.6);
+      sH[k]-=take; for(const sd of [-1.3,1.3]){ const q=cell(px+nx*(o+sd),py+ny*(o+sd)); if(q>=0&&!sBlk[q]){ sH[q]+=take/2; sandMix(q,sR[k],sG[k],sB[k],.12); } }
+      const ah=cell(px+nx*o+ux*1.2,py+ny*o+uy*1.2); if(ah>=0&&!sBlk[ah]) sandMix(ah,sR[k],sG[k],sB[k],.3); } }
+  sandActive=Math.max(sandActive,40); }
+function sandStep(){ if(sandActive>0){ sandRelax(); sandRelax(); sandActive--; return true; } return false; }
 let sandTex=null;
 function applySand(){ if(!SAND) return; if(!sandTex){ sandTex=new THREE.CanvasTexture(sandCv); sandTex.colorSpace=THREE.SRGBColorSpace; SAND.material=new THREE.MeshToonMaterial({map:sandTex,gradientMap:gm}); } sandTex.needsUpdate=true; }
-function loadSandArt(){ if(!store.sandArt) return; const im=new Image(); im.onload=()=>{ sandColX.drawImage(im,0,0,1024,640); sandGrX.clearRect(0,0,1024,640); sandCompose(); applySand(); }; im.src=store.sandArt; }
+function loadSandArt(){ if(!store.sandArt){ sandBase(); applySand(); return; } const im=new Image(); im.onload=()=>{ sandBase(); const c=document.createElement("canvas"); c.width=SW; c.height=SH; const g=c.getContext("2d"); g.drawImage(im,0,0,SW,SH); const d=g.getImageData(0,0,SW,SH).data; for(let k=0;k<SN;k++){ if(sBlk[k]) continue; sR[k]=d[k*4]/255/.9; sG[k]=d[k*4+1]/255/.9; sB[k]=d[k*4+2]/255/.9; } sandRender(); applySand(); }; im.src=store.sandArt; }
 const RAKE={ title:"砂紋 · Raking the Dry Garden", sub:"Drag to rake · ring the stones · press Show Sensei when done",
   start(){ RK3.build(); if(!store.sandArt&&!this.started) sandBase(); this.started=true; this.last=null; this.verdict=""; },
   tool:"rake", color:"#e8a3a8",
-  rake(x,y,down){ const px=x*1024, py=y*640; if(!down){ this.last=null; return; } if(!this.last){ this.last=[px,py]; if(this.tool==="pour") this.pourAt(px,py,px,py); return; }
-    const [lx,ly]=this.last, dx=px-lx, dy=py-ly, d=Math.hypot(dx,dy); if(d<3) return; const nx=-dy/d, ny=dx/d; const g=sandGrX;
-    if(this.tool==="pour"){ this.pourAt(lx,ly,px,py); this.last=[px,py]; this.dirty=true; this.live=true; sandCompose(); return; }
-    g.save(); g.globalCompositeOperation="destination-out"; g.lineCap="round"; g.lineWidth=58; g.beginPath(); g.moveTo(lx,ly); g.lineTo(px,py); g.stroke(); g.restore();
-    if(this.tool==="rake"){ g.lineCap="round"; for(let k=-2;k<=2;k++){ const o=k*11; grooveLine(g,lx+nx*o,ly+ny*o,px+nx*o,py+ny*o); } }
-    sandCompose(); this.live=true;
-    this.last=[px,py]; this.dirty=true; this.track(px,py,dx/d,dy/d,d); },
-  pourAt(x0,y0,x1,y1){ const g=sandColX, L=Math.max(1,Math.hypot(x1-x0,y1-y0)), n=Math.ceil(L/6);
-    for(let i=0;i<=n;i++){ const t=i/n, x=lerp(x0,x1,t), y=lerp(y0,y1,t); g.globalAlpha=.32; g.fillStyle=this.color; g.beginPath(); g.arc(x,y,24,0,TAU); g.fill(); g.globalAlpha=1;
-      for(let k=0;k<10;k++){ const a=rand(0,TAU), r=rand(0,26); g.fillStyle=k%3?this.color:"rgba(255,255,255,.35)"; g.fillRect(x+Math.cos(a)*r,y+Math.sin(a)*r,1.6,1.6); } }
-    const gg=sandGrX; gg.save(); gg.globalCompositeOperation="destination-out"; gg.globalAlpha=.25; gg.lineCap="round"; gg.lineWidth=46; gg.beginPath(); gg.moveTo(x0,y0); gg.lineTo(x1,y1); gg.stroke(); gg.restore(); },
+  rake(x,y,down){ const px=x*1024, py=y*640, gx=x*SW, gy=y*SH; if(!down){ this.last=null; this.holding=false; return; }
+    if(!this.last){ this.last=[px,py]; this.holding=this.tool==="pour"; this.hp=[gx,gy]; if(this.tool==="pour") sandPour(gx,gy,this.color,.05); return; }
+    const [lx,ly]=this.last, dx=px-lx, dy=py-ly, d=Math.hypot(dx,dy); if(d<3) return; this.hp=[gx,gy];
+    if(this.tool==="pour"){ const n=Math.ceil(d/10); for(let i=1;i<=n;i++) sandPour(lerp(lx/4,gx,i/n),lerp(ly/4,gy,i/n),this.color,.035); }
+    else sandRakeSeg(lx/4,ly/4,gx,gy,this.tool==="smooth"?"smooth":"rake");
+    this.live=true; this.last=[px,py]; this.dirty=true; if(this.tool!=="pour") this.track(px,py,dx/d,dy/d,d); },
   stats:null,
   resetStats(){ this.stats={len:0,turns:0,segs:0,bins:SAND_ROCKS.map(()=>new Array(24).fill(0)),pd:null}; },
   track(px,py,ux,uy,d){ const S=this.stats||(this.resetStats(),this.stats); S.len+=d; S.segs++;
@@ -2362,7 +2382,7 @@ const RAKE={ title:"砂紋 · Raking the Dry Garden", sub:"Drag to rake · ring 
   down(x,y){ this.rake(...this.toSand(x,y),true); }, move(x,y,e){ const p=this.toSand(x,y); if(e&&e.buttons) this.rake(...p,true); }, up(){ this.rake(0,0,false); this.commit(); },
   pen(x,y,dn){ RK3.rk.tx=x*16-8; RK3.rk.tz=y*10-5; this.rake(x,y,dn); if(!dn) this.commit(); },
   commit(){ if(!this.dirty) return; this.dirty=false; applySand(); clearTimeout(this._t); this._t=setTimeout(()=>{ const c=document.createElement("canvas"); c.width=512; c.height=320; c.getContext("2d").drawImage(sandCv,0,0,512,320); store.sandArt=c.toDataURL("image/jpeg",.72); save(); },800); },
-  frame(dt,W,H){ const g=mgX; g.clearRect(0,0,W,H); RK3.fit(W,H); RK3.update(dt); mg3Render(RK3,W,H); g.fillStyle="rgba(20,18,30,.55)"; g.fillRect(W/2-Math.min(W*.46,360),H-58,Math.min(W*.92,720),40); const v={oy:H-640-60,s:1};
+  frame(dt,W,H){ const g=mgX; g.clearRect(0,0,W,H); if(this.holding&&this.hp){ sandPour(this.hp[0],this.hp[1],this.color,.02); this.dirty=true; } if(sandStep()) this.live=true; if(this.live) sandRender(); RK3.fit(W,H); RK3.update(dt); mg3Render(RK3,W,H); g.fillStyle="rgba(20,18,30,.55)"; g.fillRect(W/2-Math.min(W*.46,360),H-58,Math.min(W*.92,720),40); const v={oy:H-640-60,s:1};
     g.fillStyle="#f4ecd8"; g.font="16px Shippori Mincho, serif"; g.textAlign="center"; g.fillText(this.verdict||"Click and drag on the sand to rake.  Rings around each stone, long lines everywhere else.  Then press 見 Show Sensei.",W/2,H-33); g.textAlign="left"; }
 };
 async function sandJudge(){ if(RAKE.judging) return; const local=RAKE.localJudge();
@@ -2377,7 +2397,7 @@ async function sandJudge(){ if(RAKE.judging) return; const local=RAKE.localJudge
 $("#mgJudge").addEventListener("click",()=>{ if(MG===RAKE) sandJudge(); });
 { const SW=["#f1ece0","#e8a3a8","#f4c0cf","#d9a24a","#6fae8a","#8fc6e8","#4a5a9a","#2b2b30"]; const box=$("#swatches"); SW.forEach((c,i)=>{ const e=document.createElement("i"); e.style.background=c; if(i===1) e.classList.add("on"); e.onclick=()=>{ RAKE.color=c; RAKE.tool="pour"; document.querySelectorAll("#swatches i").forEach(x=>x.classList.toggle("on",x===e)); document.querySelectorAll("#rakeTools .rt").forEach(x=>x.classList.toggle("on",x.dataset.rt==="pour")); }; box.appendChild(e); });
   document.querySelectorAll("#rakeTools .rt").forEach(b=>b.onclick=()=>{ RAKE.tool=b.dataset.rt; document.querySelectorAll("#rakeTools .rt").forEach(x=>x.classList.toggle("on",x===b)); }); }
-$("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.live=true; RAKE.resetStats(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
+$("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.live=true; sandActive=0; RAKE.resetStats(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
 /* ---------- shared painted HUD helpers ---------- */
 function hudCard(g,x,y,w,h){ g.save(); g.fillStyle="rgba(250,244,230,.92)"; g.strokeStyle="rgba(120,90,50,.35)"; g.lineWidth=1.5; g.beginPath(); g.roundRect(x,y,w,h,14); g.fill(); g.stroke(); g.restore(); }
 function hudText(g,t,x,y,size=16,col="#2b2420",al="center"){ g.fillStyle=col; g.font=`${size}px "Shippori Mincho",serif`; g.textAlign=al; g.fillText(t,x,y); g.textAlign="left"; }

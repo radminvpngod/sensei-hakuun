@@ -1,7 +1,7 @@
 {
- "version": 10,
+ "version": 11,
  "shellApi": 2,
- "notes": "Bonsai, tea ceremony, ikebana, colored sand, honest calligraphy grading, steadier chat and voice commands.",
+ "notes": "Real sand that piles, slides and mixes. Sign-in fix for Sensei's mind. Opens websites by voice. Hmm\u2026",
  "files": [
   "brain-client.js",
   "core.js",
