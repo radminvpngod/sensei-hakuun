@@ -393,8 +393,11 @@ module.exports = function core(ctx) {
   function gameRect() { if (gameOpen()) { if (garden.isFullScreen()) return screen.getDisplayMatching(garden.getBounds()).bounds; return garden.getContentBounds(); } return screen.getPrimaryDisplay().bounds; }
   function handleRemote(d, ws) {
     if (isP2(ws)) { // player two never moves your real mouse: everything goes to the garden
-      if (garden && !garden.isDestroyed() && garden.isVisible() && /^(down|up|press|aim|move)$/.test(d.t)) garden.webContents.send('p2', d);
-      if (/^(aim|move|down|up|press)$/.test(d.t)) return; }
+      if (garden && !garden.isDestroyed() && garden.isVisible() && /^(down|up|press|aim|move|joy)$/.test(d.t)) garden.webContents.send('p2', d);
+      if (/^(aim|move|down|up|press|joy)$/.test(d.t)) return; }
+    // player one's stick and d-pad go straight into the garden while it is open (no fake key presses needed)
+    if (gameOpen() && (d.t === 'joy' || ((d.t === 'down' || d.t === 'up') && /^(up|down|left|right)$/.test(d.b)))) { garden.webContents.send('p1', d); return; }
+    if (d.t === 'joy') { const gr = gameRect(), b = allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; } const sp = 18; cursor.x = Math.max(b.l, Math.min(b.r, cursor.x + (+d.x || 0) * sp)); cursor.y = Math.max(b.t, Math.min(b.b, cursor.y + (+d.y || 0) * sp)); pointerSeen = Date.now(); return; }
     switch (d.t) {
       case 'move': { const gr = gameRect(), b = gameOpen() ? { l: gr.x, r: gr.x + gr.width - 1, t: gr.y, b: gr.y + gr.height - 1 } : allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; }
         cursor.x = Math.max(b.l, Math.min(b.r, cursor.x + (+d.dx || 0))); cursor.y = Math.max(b.t, Math.min(b.b, cursor.y + (+d.dy || 0))); pointerSeen = Date.now(); break; }

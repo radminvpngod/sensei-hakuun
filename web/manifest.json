@@ -1,7 +1,7 @@
 {
- "version": 13,
+ "version": 14,
  "shellApi": 2,
- "notes": "Both remote cursors stay on the screen the garden is on.",
+ "notes": "Joystick on the phone remote, game controller support, Player 1 moves again in the garden.",
  "files": [
   "brain-client.js",
   "core.js",

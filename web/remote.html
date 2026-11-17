@@ -26,7 +26,12 @@ html,body{margin:0;height:100%;overflow:hidden;touch-action:none;overscroll-beha
 .status{font-size:11.5px;color:#5c7088;letter-spacing:.04em;text-align:center;min-height:15px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
 .gloss{position:relative;display:grid;place-items:center;border-radius:50%;flex:none;transition:transform .08s}
 .gloss:after{content:"";position:absolute;left:18%;right:18%;top:7%;height:42%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,0));pointer-events:none}
-.dpad{position:relative;width:150px;height:150px;flex:none;border-radius:50%;background:radial-gradient(circle,#eef5fb 55%,#dbe7f2);box-shadow:inset 0 2px 6px rgba(80,120,160,.25),0 1px 0 #fff}
+.sticks{display:flex;align-items:center;gap:12px;flex:none}
+.joy{position:relative;width:118px;height:118px;border-radius:50%;flex:none;background:radial-gradient(circle at 50% 40%,#f4f9ff,#d3e2ef 70%,#bccfe0);box-shadow:inset 0 3px 8px rgba(60,100,140,.3),0 1px 0 #fff;touch-action:none}
+.joy:before{content:"";position:absolute;inset:18px;border-radius:50%;border:1.5px dashed rgba(120,150,180,.35)}
+.knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#ffffff,#dfe9f3 60%,#b9cadb);box-shadow:0 5px 0 #9fb2c6,0 10px 18px rgba(40,90,140,.3);transition:transform .08s}
+.knob:after{content:"";position:absolute;inset:14px;border-radius:50%;background:radial-gradient(circle,var(--glow),transparent 70%)}
+.dpad{position:relative;width:150px;height:150px;flex:none;transform:scale(.92);border-radius:50%;background:radial-gradient(circle,#eef5fb 55%,#dbe7f2);box-shadow:inset 0 2px 6px rgba(80,120,160,.25),0 1px 0 #fff}
 .dpad .h,.dpad .v{position:absolute;background:linear-gradient(180deg,#f7fbff,#c9d6e4);box-shadow:0 3px 0 #9fb2c6,0 6px 12px rgba(40,80,120,.25),inset 0 2px 0 #fff}
 .dpad .h{left:16px;top:56px;width:118px;height:38px;border-radius:12px}.dpad .v{left:56px;top:16px;width:38px;height:118px;border-radius:12px}
 .dpad .hit{position:absolute;z-index:2;border-radius:12px}
@@ -81,9 +86,10 @@ input[type=range]{flex:1;min-width:120px;accent-color:#2fa6e0}
 <div class="remote">
   <div class="ir"><span class="led" id="led"></span></div>
   <div class="status" id="status">connecting…</div>
+  <div class="sticks"><div class="joy" id="joy"><div class="knob" id="knob"></div></div>
   <div class="dpad"><div class="h"></div><div class="v"></div>
     <div class="hit" data-k="up" style="left:56px;top:8px;width:38px;height:52px"></div><div class="hit" data-k="down" style="left:56px;top:90px;width:38px;height:52px"></div>
-    <div class="hit" data-k="left" style="left:8px;top:56px;width:52px;height:38px"></div><div class="hit" data-k="right" style="left:90px;top:56px;width:52px;height:38px"></div></div>
+    <div class="hit" data-k="left" style="left:8px;top:56px;width:52px;height:38px"></div><div class="hit" data-k="right" style="left:90px;top:56px;width:52px;height:38px"></div></div></div>
   <div class="abrow"><div style="width:60px"></div><div class="gloss btnA" id="A">A</div><div class="gloss btnB" id="B">B</div></div>
   <div class="row"><div class="gloss sm" data-k="minus">−</div><div class="gloss home" data-k="home">⌂</div><div class="gloss sm" data-k="plus">+</div></div>
   <div class="spacer"></div>
@@ -221,4 +227,12 @@ $("#txt").addEventListener("keydown", e => { if (e.key === "Enter") { const v = 
 $("#beP1").addEventListener("click", () => { send({ t: "player", want: 1 }); haptic(20); $("#sheet").classList.remove("show"); }); $("#beP2").addEventListener("click", () => { send({ t: "player", want: 2 }); haptic([20, 40, 20]); $("#sheet").classList.remove("show"); });
 document.getElementById("players").addEventListener("click", () => send({ t: "player", want: player === 1 ? 2 : 1 }));
 $("#gear").addEventListener("click", () => $("#sheet").classList.toggle("show")); $("#sheetX").addEventListener("click", () => $("#sheet").classList.remove("show"));
+/* ---- analog stick ---- */
+{ const J = $("#joy"), K = $("#knob"); let id = null, jx = 0, jy = 0, last = "";
+  const set = e => { const r = J.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, R = r.width / 2 - 10; let dx = e.clientX - cx, dy = e.clientY - cy; const L = Math.hypot(dx, dy); if (L > R) { dx *= R / L; dy *= R / L; } K.style.transform = `translate(${dx}px,${dy}px)`; jx = dx / R; jy = dy / R; if (Math.hypot(jx, jy) < .12) jx = jy = 0; };
+  J.addEventListener("pointerdown", e => { e.preventDefault(); id = e.pointerId; J.setPointerCapture(id); set(e); buzz(8); });
+  J.addEventListener("pointermove", e => { if (e.pointerId === id) set(e); });
+  const end = e => { if (e.pointerId !== id) return; id = null; jx = jy = 0; K.style.transform = ""; send({ t: "joy", x: 0, y: 0 }); last = "0,0"; };
+  J.addEventListener("pointerup", end); J.addEventListener("pointercancel", end);
+  setInterval(() => { if (id === null) return; const k = jx.toFixed(2) + "," + jy.toFixed(2); if (k !== last || jx || jy) { last = k; send({ t: "joy", x: +jx.toFixed(3), y: +jy.toFixed(3) }); } }, 33); }
 </script></body></html>
