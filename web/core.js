@@ -388,21 +388,24 @@ module.exports = function core(ctx) {
   function notifyRemote() { broadcast('remote', { connected: remotes.size, players: [...remotes].map(r => r.player) }); }
   const VK = { plus: 0xAF, minus: 0xAE, one: 0xB3, two: 0x1B, up: 0x26, down: 0x28, left: 0x25, right: 0x27, enter: 0x0D, tab: 0x09, next: 0xB0, prev: 0xB1 };
   let calibOwner = null, calibTimer = null;
+  // while the garden is open, both remotes are locked to the screen it is on
+  function gameOpen() { return garden && !garden.isDestroyed() && garden.isVisible() && !garden.isMinimized(); }
+  function gameRect() { if (gameOpen()) { if (garden.isFullScreen()) return screen.getDisplayMatching(garden.getBounds()).bounds; return garden.getContentBounds(); } return screen.getPrimaryDisplay().bounds; }
   function handleRemote(d, ws) {
     if (isP2(ws)) { // player two never moves your real mouse: everything goes to the garden
       if (garden && !garden.isDestroyed() && garden.isVisible() && /^(down|up|press|aim|move)$/.test(d.t)) garden.webContents.send('p2', d);
       if (/^(aim|move|down|up|press)$/.test(d.t)) return; }
     switch (d.t) {
-      case 'move': { const b = allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; }
+      case 'move': { const gr = gameRect(), b = gameOpen() ? { l: gr.x, r: gr.x + gr.width - 1, t: gr.y, b: gr.y + gr.height - 1 } : allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; }
         cursor.x = Math.max(b.l, Math.min(b.r, cursor.x + (+d.dx || 0))); cursor.y = Math.max(b.t, Math.min(b.b, cursor.y + (+d.dy || 0))); pointerSeen = Date.now(); break; }
       case 'aim': { // absolute: x,y in -1..1 relative to the main monitor
-        const pd = screen.getPrimaryDisplay().bounds, b = allBounds();
-        cursor = { x: Math.max(b.l, Math.min(b.r, pd.x + pd.width / 2 + (+d.x || 0) * pd.width / 2)), y: Math.max(b.t, Math.min(b.b, pd.y + pd.height / 2 + (+d.y || 0) * pd.height / 2)) };
+        const pd = gameRect(), g = gameOpen(), b = g ? { l: pd.x, r: pd.x + pd.width - 1, t: pd.y, b: pd.y + pd.height - 1 } : allBounds();
+        cursor = { x: Math.round(Math.max(b.l, Math.min(b.r, pd.x + pd.width / 2 + (+d.x || 0) * pd.width / 2))), y: Math.round(Math.max(b.t, Math.min(b.b, pd.y + pd.height / 2 + (+d.y || 0) * pd.height / 2))) };
         pointerSeen = Date.now(); break; }
-      case 'calib': { calibStep = d.step && d.step !== 'done' ? d.step : null; calibOwner = calibStep ? ws : null; clearTimeout(calibTimer); if (calibStep) calibTimer = setTimeout(() => handleRemote({ t: 'calib', step: 'done' }, null), 60000); const w = ensurePtrWin(); const pd = screen.getPrimaryDisplay().bounds;
+      case 'calib': { calibStep = d.step && d.step !== 'done' ? d.step : null; calibOwner = calibStep ? ws : null; clearTimeout(calibTimer); if (calibStep) calibTimer = setTimeout(() => handleRemote({ t: 'calib', step: 'done' }, null), 60000); const w = ensurePtrWin(); const pd = gameRect();
         const send = () => { if (w && !w.isDestroyed()) { const o = w.getBounds(); w.webContents.send('calib', { step: d.step, fx: d.fx, fy: d.fy, n: d.n, primary: { x: pd.x - o.x, y: pd.y - o.y, w: pd.width, h: pd.height } }); } };
         if (w.webContents.isLoading()) w.webContents.once('did-finish-load', send); else send(); break; }
-      case 'center': { const pd = screen.getPrimaryDisplay().bounds; cursor = { x: pd.x + pd.width / 2, y: pd.y + pd.height / 2 }; pointerSeen = Date.now(); break; }
+      case 'center': { const pd = gameRect(); cursor = { x: pd.x + pd.width / 2, y: pd.y + pd.height / 2 }; pointerSeen = Date.now(); break; }
       case 'down': if (d.b === 'a') mouse.down('left'); else if (d.b === 'b') mouse.down('right'); else if (VK[d.b]) mouse.keyDown(VK[d.b]); break;
       case 'up': if (d.b === 'a') mouse.up('left'); else if (d.b === 'b') mouse.up('right'); else if (VK[d.b]) mouse.keyUp(VK[d.b]); break;
       case 'scroll': mouse.wheel(-(+d.dy || 0) * 3); break;
