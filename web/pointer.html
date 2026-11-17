@@ -20,6 +20,6 @@ S.on("calib", c => {
   const x = P.x + P.w / 2 + fx * P.w / 2, y = P.y + P.h / 2 + fy * P.h / 2;
   tgt.style.left = x + "px"; tgt.style.top = y + "px"; tgt.style.display = "block";
   lbl.textContent = (c.n ? c.n + " / 9 · " : "") + "point the top of your phone here, then tap";
-  const lx = Math.max(P.x + 230, Math.min(P.x + P.w - 230, x)), ly = fy > .5 ? y - 120 : y + 80; lbl.style.left = lx + "px"; lbl.style.top = ly + "px"; lbl.style.display = "block";
+  const lx = Math.max(P.x + 260, Math.min(P.x + P.w - 260, x)), ly = fy > .5 ? y - 120 : y + 80; lbl.style.left = lx + "px"; lbl.style.top = ly + "px"; lbl.style.display = "block";
 });
 </script></body></html>

@@ -1,7 +1,7 @@
 {
- "version": 11,
+ "version": 12,
  "shellApi": 2,
- "notes": "Real sand that piles, slides and mixes. Sign-in fix for Sensei's mind. Opens websites by voice. Hmm\u2026",
+ "notes": "Player 2 gets a pink cursor; pick P1/P2 from the remote; calibration target no longer gets stuck.",
  "files": [
   "brain-client.js",
   "core.js",

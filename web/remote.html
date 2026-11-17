@@ -95,6 +95,7 @@ input[type=range]{flex:1;min-width:120px;accent-color:#2fa6e0}
 <div class="scroll" id="scroll">SCROLL</div>
 <div class="sheet" id="sheet"><div class="grab"></div><h3>Pointer & tools</h3>
   <div class="row"><div class="chipb" id="center">◎ Re-center</div><div class="chipb" id="calib">⌖ Calibrate (9 points)</div><div class="chipb" id="pause">❚❚ Pause</div><div class="chipb" data-k="sensei">白 Summon Sensei</div></div>
+  <div class="row"><div class="chipb" id="beP1">Be Player 1</div><div class="chipb" id="beP2" style="background:linear-gradient(180deg,#fff,#ffd6e6)">Be Player 2</div></div>
   <div class="opts"><label><input type="radio" name="pm" value="aim" checked> Aim (point)</label><label><input type="radio" name="pm" value="air"> Air mouse</label></div>
   <div class="opts">Sensitivity <input type="range" id="sensK" min="40" max="130" value="80"></div>
   <div class="opts">Steadiness <input type="range" id="smooth" min="0" max="100" value="60"></div>
@@ -108,6 +109,7 @@ input[type=range]{flex:1;min-width:120px;accent-color:#2fa6e0}
 <script>
 const $ = s => document.querySelector(s);
 const key = new URLSearchParams(location.search).get("k") || "";
+const PID = (() => { try { let v = localStorage.getItem("senseiPid"); if (!v) { v = Math.random().toString(36).slice(2, 12); localStorage.setItem("senseiPid", v); } return v; } catch (e) { return Math.random().toString(36).slice(2, 12); } })();
 const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
 let ws = null, open = false, paused = false, sens = 16, player = 1;
 // bubbles
@@ -116,10 +118,10 @@ function setPlayer(n){ player = n; document.body.classList.toggle("p2", n === 2)
 setPlayer(1);
 function connect(){
   if (!location.host) { $("#status").textContent = "open this page from the QR code on your PC"; return; }
-  ws = new WebSocket(`wss://${location.host}/?k=${encodeURIComponent(key)}`);
-  ws.onopen = () => { open = true; $("#led").classList.add("on"); $("#status").textContent = "connected to your PC"; };
+  ws = new WebSocket(`wss://${location.host}/?k=${encodeURIComponent(key)}&id=${PID}`);
+  ws.onopen = () => { open = true; $("#led").classList.add("on"); $("#status").textContent = "connected to your PC"; if (calStep < 0) send({ t: "calib", step: "done" }); };
   ws.onclose = () => { open = false; $("#led").classList.remove("on"); $("#status").textContent = "reconnecting…"; setTimeout(connect, 1500); };
-  ws.onmessage = e => { try { const d = JSON.parse(e.data); if (d.t === "hello") { if (d.sens) sens = d.sens; if (d.player) { setPlayer(d.player); $("#status").textContent = d.player === 2 ? "Player 2 · move with ✚ · A to act" : "Player 1 · connected"; } } else if (d.t === "buzz") haptic(d.p || [20]); } catch (err) {} };
+  ws.onmessage = e => { try { const d = JSON.parse(e.data); if (d.t === "hello") { if (d.sens) sens = d.sens; if (d.player) { setPlayer(d.player); $("#status").textContent = d.player === 2 ? (d.phones > 1 ? "Player 2 · pink cursor in the garden" : "Player 2 (no Player 1 yet)") : "Player 1 · you drive the mouse"; } } else if (d.t === "buzz") haptic(d.p || [20]); } catch (err) {} };
 }
 connect();
 const send = d => { if (open) ws.send(JSON.stringify(d)); };
@@ -130,6 +132,8 @@ function haptic(p){ if (!hapOn) return; const pat = Array.isArray(p) ? p : [p];
   if (navigator.vibrate) { try { if (navigator.vibrate(pat)) return; } catch (e) {} }
   let t = 0; for (let i = 0; i < pat.length; i += 2) { const on = pat[i]; const n = Math.max(1, Math.round(on / 45)); for (let k = 0; k < n; k++) setTimeout(tick, t + k * 55); t += on + (pat[i + 1] || 0); } }
 const buzz = (ms = 12) => haptic(ms);
+addEventListener("pagehide", () => { if (calStep >= 0) send({ t: "calib", step: "done" }); });
+document.addEventListener("visibilitychange", () => { if (document.hidden && calStep >= 0) { send({ t: "calib", step: "done" }); calStep = -1; $("#cal").classList.remove("show"); } });
 
 /* ---- motion ---- */
 let cal = null; try { cal = JSON.parse(LS && LS.getItem("senseiCal9") || "null"); } catch (e) {}
@@ -186,7 +190,7 @@ $("#calGo").addEventListener("click", async () => {
 });
 $("#calX").addEventListener("click", () => { calStep = -1; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); });
 $("#calib").addEventListener("click", () => { $("#sheet").classList.remove("show"); calOpen(); });
-$("#go").addEventListener("click", async () => { await askMotion(); $("#start").style.display = "none"; buzz(30); if (player === 1 && (!cal || pm === "aim") && !(cal && cal.ax)) setTimeout(calOpen, 500); });
+$("#go").addEventListener("click", async () => { await askMotion(); $("#start").style.display = "none"; buzz(30); if (!(cal && cal.ax)) setTimeout(calOpen, 500); });
 /* ---- hold to talk ---- */
 { const mic = $("#mic"); let mr = null, chunks = [];
   mic.addEventListener("pointerdown", async e => { e.preventDefault(); mic.classList.add("down"); buzz(20);
@@ -214,5 +218,7 @@ $("#pause").addEventListener("pointerdown", e => { e.preventDefault(); paused = 
   s.addEventListener("pointermove", e => { if (ly === null) return; const d = e.clientY - ly; if (Math.abs(d) > 6) { send({ t: "scroll", dy: -d * 4 }); ly = e.clientY; } });
   s.addEventListener("pointerup", () => ly = null); s.addEventListener("pointercancel", () => ly = null); }
 $("#txt").addEventListener("keydown", e => { if (e.key === "Enter") { const v = e.target.value.trim(); if (v) send({ t: "type", text: v }); e.target.value = ""; e.target.blur(); } });
+$("#beP1").addEventListener("click", () => { send({ t: "player", want: 1 }); haptic(20); $("#sheet").classList.remove("show"); }); $("#beP2").addEventListener("click", () => { send({ t: "player", want: 2 }); haptic([20, 40, 20]); $("#sheet").classList.remove("show"); });
+document.getElementById("players").addEventListener("click", () => send({ t: "player", want: player === 1 ? 2 : 1 }));
 $("#gear").addEventListener("click", () => $("#sheet").classList.toggle("show")); $("#sheetX").addEventListener("click", () => $("#sheet").classList.remove("show"));
 </script></body></html>

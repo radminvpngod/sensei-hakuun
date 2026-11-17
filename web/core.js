@@ -367,17 +367,31 @@ module.exports = function core(ctx) {
     const wss = new WebSocket.Server({ server: srv, maxPayload: 8 * 1024 * 1024 });
     wss.on('connection', (ws, req) => {
       const u = new URL(req.url, 'https://x'); if (u.searchParams.get('k') !== settings.token) { ws.close(4001, 'bad key'); return; }
-      const used = new Set([...remotes].map(r => r.player)); ws.player = used.has(1) ? 2 : 1; remotes.add(ws); notifyRemote(); ws.send(JSON.stringify({ t: 'hello', sens: settings.sens, player: ws.player }));
-      ws.on('message', m => { let d; try { d = JSON.parse(m); } catch (e) { return; } handleRemote(d, ws); });
-      ws.on('close', () => { remotes.delete(ws); notifyRemote(); });
+      ws.pid = (u.searchParams.get('id') || Math.random().toString(36).slice(2)).slice(0, 40); ws.alive = true; ws.on('pong', () => { ws.alive = true; });
+      for (const r of [...remotes]) if (r.pid === ws.pid) { remotes.delete(r); try { r.terminate(); } catch (e) {} }   // same phone reconnecting: drop the stale socket
+      remotes.add(ws); assignPlayer(ws, (settings.playerPrefs || {})[ws.pid]);
+      ws.on('message', m => { let d; try { d = JSON.parse(m); } catch (e) { return; } if (d.t === 'player') { assignPlayer(ws, d.want === 2 ? 2 : 1, true); return; } handleRemote(d, ws); });
+      ws.on('close', () => { remotes.delete(ws); notifyRemote(); if (calibOwner === ws) handleRemote({ t: 'calib', step: 'done' }, null); });
     });
     srv.on('error', e => say('The phone remote could not start: ' + e.message, 'error'));
     srv.listen(PORT, '0.0.0.0');
   }
+  setInterval(() => { for (const r of [...remotes]) { if (!r.alive) { remotes.delete(r); try { r.terminate(); } catch (e) {} notifyRemote(); continue; } r.alive = false; try { r.ping(); } catch (e) {} } }, 15000);
+  function hello(r) { try { r.send(JSON.stringify({ t: 'hello', sens: settings.sens, player: r.player, phones: remotes.size })); } catch (e) {} }
+  // one phone = player 1, a second phone = player 2. A phone can ask for a slot; the other phone swaps.
+  function assignPlayer(ws, want, explicit) { const others = [...remotes].filter(r => r !== ws); const holder = want ? others.find(r => r.player === want) : null;
+    if (want && holder) { if (explicit) { holder.player = ws.player && ws.player !== want ? ws.player : (want === 1 ? 2 : 1); hello(holder); ws.player = want; } else ws.player = want === 1 ? 2 : 1; }
+    else if (want) ws.player = want; else { const taken = new Set(others.map(r => r.player)); ws.player = taken.has(1) ? 2 : 1; }
+    if (explicit) { settings.playerPrefs = { ...(settings.playerPrefs || {}), [ws.pid]: ws.player }; saveSettings(); }
+    remotes.forEach(hello); notifyRemote(); log('remote players', [...remotes].map(r => r.pid.slice(0, 6) + ':P' + r.player).join(' ')); }
+  const isP2 = ws => ws && ws.player === 2 && [...remotes].some(r => r !== ws && r.player === 1);
   function notifyRemote() { broadcast('remote', { connected: remotes.size, players: [...remotes].map(r => r.player) }); }
   const VK = { plus: 0xAF, minus: 0xAE, one: 0xB3, two: 0x1B, up: 0x26, down: 0x28, left: 0x25, right: 0x27, enter: 0x0D, tab: 0x09, next: 0xB0, prev: 0xB1 };
+  let calibOwner = null, calibTimer = null;
   function handleRemote(d, ws) {
-    if (ws && ws.player === 2 && garden && !garden.isDestroyed() && garden.isVisible() && /^(down|up|press)$/.test(d.t) && d.b !== 'home') { garden.webContents.send('p2', d); return; }
+    if (isP2(ws)) { // player two never moves your real mouse: everything goes to the garden
+      if (garden && !garden.isDestroyed() && garden.isVisible() && /^(down|up|press|aim|move)$/.test(d.t)) garden.webContents.send('p2', d);
+      if (/^(aim|move|down|up|press)$/.test(d.t)) return; }
     switch (d.t) {
       case 'move': { const b = allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; }
         cursor.x = Math.max(b.l, Math.min(b.r, cursor.x + (+d.dx || 0))); cursor.y = Math.max(b.t, Math.min(b.b, cursor.y + (+d.dy || 0))); pointerSeen = Date.now(); break; }
@@ -385,7 +399,7 @@ module.exports = function core(ctx) {
         const pd = screen.getPrimaryDisplay().bounds, b = allBounds();
         cursor = { x: Math.max(b.l, Math.min(b.r, pd.x + pd.width / 2 + (+d.x || 0) * pd.width / 2)), y: Math.max(b.t, Math.min(b.b, pd.y + pd.height / 2 + (+d.y || 0) * pd.height / 2)) };
         pointerSeen = Date.now(); break; }
-      case 'calib': { calibStep = d.step && d.step !== 'done' ? d.step : null; const w = ensurePtrWin(); const pd = screen.getPrimaryDisplay().bounds;
+      case 'calib': { calibStep = d.step && d.step !== 'done' ? d.step : null; calibOwner = calibStep ? ws : null; clearTimeout(calibTimer); if (calibStep) calibTimer = setTimeout(() => handleRemote({ t: 'calib', step: 'done' }, null), 60000); const w = ensurePtrWin(); const pd = screen.getPrimaryDisplay().bounds;
         const send = () => { if (w && !w.isDestroyed()) { const o = w.getBounds(); w.webContents.send('calib', { step: d.step, fx: d.fx, fy: d.fy, n: d.n, primary: { x: pd.x - o.x, y: pd.y - o.y, w: pd.width, h: pd.height } }); } };
         if (w.webContents.isLoading()) w.webContents.once('did-finish-load', send); else send(); break; }
       case 'center': { const pd = screen.getPrimaryDisplay().bounds; cursor = { x: pd.x + pd.width / 2, y: pd.y + pd.height / 2 }; pointerSeen = Date.now(); break; }

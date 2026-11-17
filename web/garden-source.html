@@ -74,6 +74,7 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 .mi:hover,.mi.rc-hover{background:rgba(244,236,216,.94);color:#2b2420;transform:scale(1.045);box-shadow:0 0 34px rgba(255,240,210,.45)}
 .mi:hover .k,.mi.rc-hover .k{color:#c8452f}
 .mi.hidden{display:none}
+#p2cur{position:fixed;left:0;top:0;z-index:60;pointer-events:none;display:none;margin:-14px 0 0 -14px}#p2cur.show{display:block}#p2cur i{display:block;width:28px;height:28px;border-radius:50%;border:3px solid #ff8fb8;box-shadow:0 0 14px #ff8fb8,inset 0 0 8px rgba(255,143,184,.6);background:rgba(255,143,184,.18)}#p2cur b{position:absolute;left:30px;top:2px;font:800 11px sans-serif;color:#fff;background:#e88aa8;border-radius:6px;padding:2px 5px}
 #p2chip{position:fixed;right:14px;top:calc(env(safe-area-inset-top) + 64px);padding:5px 11px;border-radius:99px;background:linear-gradient(180deg,#ffb3cf,#e88aa8);color:#fff;font-weight:800;font-size:12px;letter-spacing:.06em;display:none;z-index:6;box-shadow:0 4px 12px rgba(200,80,120,.35)}#p2chip.show{display:block}
 #golfHud{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%);background:rgba(20,18,30,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:10px 16px;font-size:14px;text-align:center;z-index:7;display:none}#golfHud.show{display:block}#golfHud span{font-size:11.5px;opacity:.75}
 #mini{position:fixed;left:14px;top:calc(env(safe-area-inset-top) + 92px);width:120px;height:120px;z-index:5;display:none;cursor:pointer;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));opacity:.92}
@@ -252,6 +253,7 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 <canvas id="mini" width="150" height="150"></canvas>
 <div id="golfHud"></div>
 <div id="p2chip">2P</div>
+<div id="p2cur"><i></i><b>P2</b></div>
 <div id="fade"></div>
 <div class="panel wide" id="gamesPanel">
   <h2>遊 Games</h2><p>Mouse, touch, or your phone remote. Press P for a second player.</p>
@@ -1274,6 +1276,8 @@ function golfP2(b,down){ if(pmode!=="golf"||golf.turn!==1) return; if(b==="left"
 function golfEnd(){ pmode="walk"; controls.enabled=true; golf.ball.visible=false; golf.line.visible=false; $("#golfHud").classList.remove("show"); player.position.set(GOLF.x-GOLF.w/2-2.2,H(GOLF.x-GOLF.w/2-2.2,GOLF.z),GOLF.z); }
 function golfShoot(dx,dz,p){ if(golf.sunk||Math.hypot(golf.vx,golf.vz)>.05) return; const l=Math.hypot(dx,dz)||1; const sp=clamp(p,0,1)*11; golf.vx=dx/l*sp; golf.vz=dz/l*sp; golf.strokes++; golfHud(); rumble([12+Math.round(p*30)],golf.turn+1); sfx((a,t)=>{ const o=a.createOscillator(),g=a.createGain(); o.frequency.value=900; g.gain.setValueAtTime(.12,t); g.gain.exponentialRampToValueAtTime(.001,t+.12); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+.15); }); }
 let golfDrag=null;
+function golfDragMove(px,py){ if(!golfDrag) return; const dx=px-golfDrag.x, dy=py-golfDrag.y; const f=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-f.z, rz=f.x; const wx=-(rx*dx - f.x*dy), wz=-(rz*dx - f.z*dy); const l=Math.hypot(wx,wz); if(l>4){ golf.aim={x:wx/l,z:wz/l}; golf.power=clamp(l/260,0,1); } }
+function golfDragEnd(){ if(!golfDrag) return; golfDrag=null; if(golf.power>.04) golfShoot(golf.aim.x,golf.aim.z,golf.power); golf.power=0; }
 canvas.addEventListener("pointerdown",e=>{ if(pmode!=="golf") return; golfDrag={x:e.clientX,y:e.clientY}; });
 addEventListener("pointermove",e=>{ if(pmode!=="golf"||!golfDrag) return; const dx=e.clientX-golfDrag.x, dy=e.clientY-golfDrag.y; const f=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-f.z, rz=f.x;
   const wx=-(rx*dx - f.x*dy), wz=-(rz*dx - f.z*dy); const l=Math.hypot(wx,wz); if(l>4){ golf.aim={x:wx/l,z:wz/l}; golf.power=clamp(l/260,0,1); } });
@@ -1930,7 +1934,19 @@ function p2Frame(dt){ if(!P2.on||!P2.g) return; const g=P2.g;
   else P2.speed=lerp(P2.speed,0,dt*10);
   g.position.y=lerp(g.position.y,groundY(g.position.x,g.position.z),Math.min(1,dt*18));
   const mv=P2.speed>.3; P2.legs[0].rotation.x=mv?Math.sin(P2.ph)*.7:0; P2.legs[1].rotation.x=mv?-Math.sin(P2.ph)*.7:0; P2.rig.position.y=mv?Math.abs(Math.sin(P2.ph))*.08:Math.sin(clock*2+1)*.015; }
-if(window.sensei&&window.sensei.on){ window.sensei.on("p2",d=>{ if(!P2.on) p2Set(true); if(d.t==="down") p2Input(d.b,true); else if(d.t==="up") p2Input(d.b,false); else if(d.t==="press") p2Input(d.b,true); });
+function p2CursorPx(){ return P2.cur?[P2.cur.x*innerWidth,P2.cur.y*innerHeight]:null; }
+function p2Aim(x,y){ P2.cur={x:clamp(x,0,1),y:clamp(y,0,1)}; P2.curT=performance.now(); const c=$("#p2cur"); c.style.transform=`translate(${P2.cur.x*innerWidth}px,${P2.cur.y*innerHeight}px)`; c.classList.add("show");
+  if(MG){ if(MG===KYUDO&&KYUDO.duel&&KYUDO.n%2===1) KYUDO.aim=[P2.cur.x,P2.cur.y]; else if(!MG.p2&&P2.ptrDown&&MG.move) MG.move(P2.cur.x,P2.cur.y,{buttons:1}); }
+  if(pmode==="golf"&&golf.turn===1&&golfDrag) golfDragMove(...p2CursorPx()); }
+function p2Button(down){ P2.ptrDown=down; const px=p2CursorPx();
+  if(pmode==="golf"&&golf.turn===1&&px){ if(down) golfDrag={x:px[0],y:px[1]}; else golfDragEnd(); return true; }
+  if(MG&&!MG.p2&&P2.cur&&(performance.now()-(P2.curT||0))<4000){ if(down) MG.down&&MG.down(P2.cur.x,P2.cur.y,{buttons:1}); else MG.up&&MG.up(P2.cur.x,P2.cur.y,{}); return true; }
+  return false; }
+setInterval(()=>{ if(P2.curT&&performance.now()-P2.curT>3000) $("#p2cur").classList.remove("show"); },1000);
+if(window.sensei&&window.sensei.on){ window.sensei.on("p2",d=>{ if(!P2.on) p2Set(true);
+    if(d.t==="aim"){ p2Aim((d.x+1)/2,(d.y+1)/2); return; } if(d.t==="move"){ const c=P2.cur||{x:.5,y:.5}; p2Aim(c.x+(d.dx||0)/innerWidth,c.y+(d.dy||0)/innerHeight); return; }
+    if(d.b==="a"&&(d.t==="down"||d.t==="up")&&p2Button(d.t==="down")) return;
+    if(d.t==="down") p2Input(d.b,true); else if(d.t==="up") p2Input(d.b,false); else if(d.t==="press") p2Input(d.b,true); });
   window.sensei.on("remote",r=>{ if(r&&r.players&&!r.players.includes(2)&&P2.on&&P2.phone) p2Set(false); if(r&&r.players&&r.players.includes(2)) P2.phone=true; }); }
 addEventListener("keydown",e=>{ if(document.activeElement===$("#inp")) return; if(e.code==="KeyP"&&entered&&!MG&&!chatOpen) p2Set(!P2.on); if(e.code==="KeyO"&&P2.on) p2Act(); });
 
