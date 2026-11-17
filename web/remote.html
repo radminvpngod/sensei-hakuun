@@ -78,6 +78,21 @@ input[type=range]{flex:1;min-width:120px;accent-color:#2fa6e0}
 .big{border:0;border-radius:24px;padding:16px 30px;min-width:230px;color:#fff;font-size:18px;font-weight:700;background:linear-gradient(180deg,#7fdcff,#2fa6e0);box-shadow:0 4px 0 #1d7fb2,0 10px 22px rgba(30,120,180,.35)}
 .dots{display:grid;grid-template-columns:repeat(3,22px);gap:8px}.dots i{width:22px;height:14px;border-radius:4px;background:#d3e2ef}.dots i.done{background:#5fd18f}.dots i.cur{background:var(--koi);box-shadow:0 0 8px var(--koi)}
 .cal .x{background:none;border:0;color:#5a7290;font-size:14px;font-weight:600}
+.side{display:contents}
+@media (orientation:landscape) and (max-height:600px){
+  .remote{left:calc(env(safe-area-inset-left) + 10px);right:calc(env(safe-area-inset-right) + 10px);top:calc(env(safe-area-inset-top) + 8px);bottom:calc(env(safe-area-inset-bottom) + 8px);transform:none;width:auto;
+    border-radius:64px;display:grid;grid-template-columns:auto 1fr auto auto;grid-template-rows:auto 1fr auto;grid-template-areas:"ir ir ir ir" "sticks ab side side" "status mark tools tools";align-items:center;justify-items:center;padding:12px 26px;gap:6px 18px}
+  .remote:before{left:4%;right:60%;height:60%}
+  .ir{grid-area:ir;width:36%;height:16px}
+  .sticks{grid-area:sticks;gap:16px}
+  .joy{width:132px;height:132px}.knob{width:60px;height:60px;margin:-30px 0 0 -30px}
+  .abrow{grid-area:ab}.abrow>div:first-child{display:none}
+  .side{grid-area:side;display:flex;flex-direction:column;align-items:center;gap:10px}.side .spacer{display:none}
+  .status{grid-area:status;justify-self:start}.mark{grid-area:mark}
+  .tools{grid-area:tools;width:240px}
+  .scroll{top:auto;bottom:22%;height:120px}
+  .koi{top:80%}
+}
 #hap{position:fixed;left:-100px;top:-100px;opacity:0}
 </style></head>
 <body>
@@ -91,10 +106,12 @@ input[type=range]{flex:1;min-width:120px;accent-color:#2fa6e0}
     <div class="hit" data-k="up" style="left:56px;top:8px;width:38px;height:52px"></div><div class="hit" data-k="down" style="left:56px;top:90px;width:38px;height:52px"></div>
     <div class="hit" data-k="left" style="left:8px;top:56px;width:52px;height:38px"></div><div class="hit" data-k="right" style="left:90px;top:56px;width:52px;height:38px"></div></div></div>
   <div class="abrow"><div style="width:60px"></div><div class="gloss btnA" id="A">A</div><div class="gloss btnB" id="B">B</div></div>
+  <div class="side">
   <div class="row"><div class="gloss sm" data-k="minus">−</div><div class="gloss home" data-k="home">⌂</div><div class="gloss sm" data-k="plus">+</div></div>
   <div class="spacer"></div>
   <div class="row"><div class="gloss sm num" data-k="one">1</div><div class="gloss sm num" data-k="two">2</div></div>
   <div class="players" id="players"><i></i><i></i><i></i><i></i></div>
+  </div>
   <div class="mark"><b>白</b> SENSEI</div>
   <div class="tools"><div class="pill mic" id="mic">🎙 Hold to talk</div><div class="pill gear" id="gear">⚙</div></div>
 </div>
@@ -142,13 +159,19 @@ addEventListener("pagehide", () => { if (calStep >= 0) send({ t: "calib", step: 
 document.addEventListener("visibilitychange", () => { if (document.hidden && calStep >= 0) { send({ t: "calib", step: "done" }); calStep = -1; $("#cal").classList.remove("show"); } });
 
 /* ---- motion ---- */
-let cal = null; try { cal = JSON.parse(LS && LS.getItem("senseiCal9") || "null"); } catch (e) {}
+let cal = null; try { cal = JSON.parse(LS && LS.getItem((Math.abs((screen.orientation && screen.orientation.angle) || window.orientation || 0) === 90 || (screen.orientation && screen.orientation.angle) === 270) ? "senseiCal9L" : "senseiCal9") || "null"); } catch (e) {}
 let pm = (LS && LS.getItem("senseiPM")) || "aim"; document.querySelectorAll('[name=pm]').forEach(r => { r.checked = r.value === pm; r.onchange = () => { pm = r.value; LS && LS.setItem("senseiPM", pm); }; });
 let smooth = +((LS && LS.getItem("senseiSteady")) || 60); $("#smooth").value = smooth; $("#smooth").oninput = e => { smooth = +e.target.value; LS && LS.setItem("senseiSteady", smooth); };
 let sensK = +((LS && LS.getItem("senseiSensK")) || 80); $("#sensK").value = sensK; $("#sensK").oninput = e => { sensK = +e.target.value; LS && LS.setItem("senseiSensK", sensK); };
 const wrap = a => ((a + 540) % 360) - 180;
 let yaw = 0, pitch = 0, haveOri = false, lastAim = "", calStep = -1, samples = [];
-function onOri(e){ if (e.alpha == null) return; yaw = -e.alpha; pitch = e.beta; haveOri = true; }
+const oAng = () => (screen.orientation && typeof screen.orientation.angle === "number") ? screen.orientation.angle : (window.orientation || 0);
+const land = () => Math.abs(oAng()) === 90 || oAng() === 270;
+const calKey = () => land() ? "senseiCal9L" : "senseiCal9";
+function onOri(e){ if (e.alpha == null) return; yaw = -e.alpha; pitch = land() ? (oAng() === 90 ? -e.gamma : e.gamma) : e.beta; haveOri = true; }
+function loadCal(){ try { cal = JSON.parse(LS && LS.getItem(calKey()) || "null"); } catch (e) { cal = null; } fx = OneEuro(); fy = OneEuro(); }
+const onTurn = () => setTimeout(() => { loadCal(); if (!(cal && cal.ax) && pm === "aim") $("#status").textContent = (land() ? "landscape" : "portrait") + " · calibrate once here for pointing (⚙)"; }, 300);
+addEventListener("orientationchange", onTurn); if (screen.orientation) screen.orientation.addEventListener("change", onTurn);
 let ax = 0, ay = 0;
 function onMotion(e){ if (pm !== "air" || paused) return; const r = e.rotationRate; if (!r) return; let iv = e.interval || 16; if (iv < 1) iv *= 1000; const dt = Math.min(iv, 50) / 1000;
   const yw = Math.abs(r.alpha) > 1.5 ? r.alpha : 0, pt = Math.abs(r.beta) > 1.5 ? r.beta : 0; const k = sens * sensK / 100; ax += -yw * dt * k; ay += -pt * dt * k; }
@@ -191,7 +214,7 @@ $("#calGo").addEventListener("click", async () => {
   let axc = fit(rows, tx, 6), ayc = fit(rows, ty, 6);
   if (!axc || !ayc) { const r3 = rows.map(r => r.slice(0, 3)); axc = fit(r3, tx, 3); ayc = fit(r3, ty, 3); if (axc) { axc.push(0, 0, 0); ayc.push(0, 0, 0); } }
   if (!axc) { $("#calP").textContent = "Those points were too close together. Point right at each target and try again."; calStep = 0; samples = []; calShow(); return; }
-  cal = { y0, p0, ax: axc, ay: ayc }; LS && LS.setItem("senseiCal9", JSON.stringify(cal));
+  cal = { y0, p0, ax: axc, ay: ayc }; LS && LS.setItem(calKey(), JSON.stringify(cal));
   calStep = -1; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); fx = OneEuro(); fy = OneEuro(); pm = "aim"; document.querySelector('[name=pm][value=aim]').checked = true; LS && LS.setItem("senseiPM", "aim"); haptic([30, 40, 30]); $("#status").textContent = "calibrated · point and press A";
 });
 $("#calX").addEventListener("click", () => { calStep = -1; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); });
@@ -218,7 +241,7 @@ document.querySelectorAll("[data-k]").forEach(el => { const k = el.dataset.k, hd
   const up = () => { if (!el.classList.contains("down")) return; el.classList.remove("down"); if (hd) send({ t: "up", b: k }); };
   el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
 });
-$("#center").addEventListener("pointerdown", e => { e.preventDefault(); buzz(); if (pm === "aim" && cal && haveOri) { cal.y0 = yaw; cal.p0 = pitch; fx = OneEuro(); fy = OneEuro(); LS && LS.setItem("senseiCal9", JSON.stringify(cal)); } send({ t: "center" }); });
+$("#center").addEventListener("pointerdown", e => { e.preventDefault(); buzz(); if (pm === "aim" && cal && haveOri) { cal.y0 = yaw; cal.p0 = pitch; fx = OneEuro(); fy = OneEuro(); LS && LS.setItem(calKey(), JSON.stringify(cal)); } send({ t: "center" }); });
 $("#pause").addEventListener("pointerdown", e => { e.preventDefault(); paused = !paused; buzz(); $("#pause").textContent = paused ? "▶ Resume" : "❚❚ Pause"; $("#status").textContent = paused ? "pointer paused" : "pointer on"; });
 { const s = $("#scroll"); let ly = null; s.addEventListener("pointerdown", e => { ly = e.clientY; s.setPointerCapture(e.pointerId); });
   s.addEventListener("pointermove", e => { if (ly === null) return; const d = e.clientY - ly; if (Math.abs(d) > 6) { send({ t: "scroll", dy: -d * 4 }); ly = e.clientY; } });

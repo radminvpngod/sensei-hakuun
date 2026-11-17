@@ -1,7 +1,7 @@
 {
- "version": 14,
+ "version": 15,
  "shellApi": 2,
- "notes": "Joystick on the phone remote, game controller support, Player 1 moves again in the garden.",
+ "notes": "The phone remote now works sideways too.",
  "files": [
   "brain-client.js",
   "core.js",
