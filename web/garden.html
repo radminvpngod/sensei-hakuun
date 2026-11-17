@@ -74,6 +74,7 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 .mi:hover,.mi.rc-hover{background:rgba(244,236,216,.94);color:#2b2420;transform:scale(1.045);box-shadow:0 0 34px rgba(255,240,210,.45)}
 .mi:hover .k,.mi.rc-hover .k{color:#c8452f}
 .mi.hidden{display:none}
+#p2chip{position:fixed;right:14px;top:calc(env(safe-area-inset-top) + 64px);padding:5px 11px;border-radius:99px;background:linear-gradient(180deg,#ffb3cf,#e88aa8);color:#fff;font-weight:800;font-size:12px;letter-spacing:.06em;display:none;z-index:6;box-shadow:0 4px 12px rgba(200,80,120,.35)}#p2chip.show{display:block}
 #golfHud{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 20px);transform:translateX(-50%);background:rgba(20,18,30,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:10px 16px;font-size:14px;text-align:center;z-index:7;display:none}#golfHud.show{display:block}#golfHud span{font-size:11.5px;opacity:.75}
 #mini{position:fixed;left:14px;top:calc(env(safe-area-inset-top) + 92px);width:120px;height:120px;z-index:5;display:none;cursor:pointer;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));opacity:.92}
 #fade{position:fixed;inset:0;background:#0b0f1a;opacity:0;pointer-events:none;transition:opacity .4s;z-index:40}#fade.on{opacity:1}
@@ -236,6 +237,7 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 </div>
 <canvas id="mini" width="150" height="150"></canvas>
 <div id="golfHud"></div>
+<div id="p2chip">2P</div>
 <div id="fade"></div>
 <div class="panel" id="gamesPanel">
   <h2>Games</h2><p>Each works with mouse, touch, or your phone remote.</p>
@@ -338,8 +340,8 @@ function streamDist(x,z){ let d=1e9; for(let i=0;i<STREAM.length-1;i++) d=Math.m
 // ---- the valley (compact): every corner has something in it ----
 const WALK_R=84;
 const SHR={x:0,z:-66,h:12,r:9};                     // Kumo Shrine on its hill (north)
-const VIL={x0:-13,x1:13,z0:48,z1:71};               // Lantern Village street (south, past the torii)
-const SQ={x:0,z:77,r:7.5};                          // festival square
+const VIL={x0:0,x1:0,z0:0,z1:0};                     // (the old village street is gone)
+const SQ={x:20,z:72,r:7};                           // Night Market square (south-east, past the golf green)
 const LAKE={x:62,z:22,a:13,b:10};                   // Mirror Lake (east)
 const ISL={x:65,z:21,r:3};                          // island shrine
 const PIER={x0:45,x1:52,z:22,hw:1.1,y:.38};
@@ -358,7 +360,7 @@ const ROADS=[
   [[-26,4],[-42,-6],[-48,-12]],
   [[-12,30],[-30,44]],
   [[6,44],[18,50]],
-  [[0,77],[-24,62],[-30,56]],
+  [[24,60],[SQ.x,SQ.z-SQ.r+1]],
 ];
 const lakeE=(x,z)=>((x-LAKE.x)/LAKE.a)**2+((z-LAKE.z)/LAKE.b)**2;
 function roadDist(x,z){ let d=1e9; for(const r of ROADS) for(let i=0;i<r.length-1;i++){ const a=r[i],b=r[i+1]; d=Math.min(d,distSeg(x,z,a[0],a[1],b[0],b[1])); } return d; }
@@ -946,18 +948,17 @@ function chochinString(ax,az,bx,bz,y,n=7){ const g=new THREE.Group(); const mats
     const win=toon("#3a2a1a",{emissive:new THREE.Color("#ffcf80"),emissiveIntensity:0}); windowMats.push(win); const wv=new THREE.Mesh(new THREE.PlaneGeometry(1.6,.7),win); wv.position.set(-1.4,3.6,d/2-.28); g.add(wv);
     const cl=new THREE.Mesh(new THREE.SphereGeometry(.26,10,8),toon("#d94a32",{emissive:new THREE.Color("#ff8a50"),emissiveIntensity:0})); lanternPanes.push(cl.material); cl.scale.y=1.3; cl.position.set(-2.9,1.95,d/2+.75); g.add(cl);
     shadowy(g); const c=Math.cos(face), s=Math.sin(face); addBox(x,z,(Math.abs(c)>.5?w:d)/2+.1,(Math.abs(c)>.5?d:w)/2+.1,0); }
-  let i=0; for(const z of [52,60,68]){ machiya(-9.8,z,Math.PI/2,i++); machiya(9.8,z,-Math.PI/2,i++); }
-  for(const z of [56,64]) chochinString(-5.2,z,5.2,z,5.4,6);
+  machiya(SQ.x+11.5,SQ.z+2,-Math.PI/2,0); machiya(SQ.x-11.5,SQ.z+2,Math.PI/2,1);
   // tea stall with a red parasol
-  { const x=3,z=57; const g=new THREE.Group(); g.position.set(x,H(x,z),z); scene.add(g);
+  { const x=SQ.x-4.2,z=SQ.z-4.2; const g=new THREE.Group(); g.position.set(x,H(x,z),z); scene.add(g);
     const bench=new THREE.Mesh(new THREE.BoxGeometry(2.6,.5,.9),toon("#b23a2c")); bench.position.y=.45; g.add(bench);
     const pole=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,3.4,6),WOOD); pole.position.set(0,1.7,0); g.add(pole);
     const para=new THREE.Mesh(new THREE.ConeGeometry(2.1,.8,16,1,true),toon("#c8372a",{side:THREE.DoubleSide})); para.position.y=3.3; g.add(para);
     const cup=new THREE.Mesh(new THREE.CylinderGeometry(.12,.09,.18,10),toon("#5f8a4c")); cup.position.set(.6,.8,0); g.add(cup); shadowy(g); addCircle(x,z,1.3);
     const TEA=["Matcha, whisked thick. Bitter first, then sweet. Like most good lessons.","Hojicha, roasted. It smells like autumn even in summer.","Genmaicha, with toasted rice. Humble tea. Sensei's favorite, though he denies having favorites."];
-    addInteract({x,z,r:3.5,k:"茶",label:"Order tea",fn:()=>{ chime(); toast("The stall keeper bows. "+pick(TEA)); }}); }
+    addInteract({x,z,r:3.5,k:"茶",label:"Order tea",fn:()=>{ chime(); toast("Okitsune bows. "+pick(TEA)); setTimeout(()=>npcSay(teaKeeper,"okitsune"),2600); }}); }
   // ramen cart
-  { const x=-4,z=64.5; const g=new THREE.Group(); g.position.set(x,H(x,z),z); g.rotation.y=Math.PI/2; scene.add(g);
+  { const x=SQ.x+4.6,z=SQ.z-4; const g=new THREE.Group(); g.position.set(x,H(x,z),z); g.rotation.y=Math.PI/2; scene.add(g);
     const cart=new THREE.Mesh(new THREE.BoxGeometry(3,1.3,1.4),WOOD); cart.position.y=1; g.add(cart);
     const top=new THREE.Mesh(new THREE.BoxGeometry(3.4,.15,1.8),DWOOD); top.position.y=2.8; g.add(top);
     [-1.5,1.5].forEach(px=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.1,1.4,.1),DWOOD); p.position.set(px,2.1,.8); g.add(p); });
@@ -965,7 +966,7 @@ function chochinString(ax,az,bx,bz,y,n=7){ const g=new THREE.Group(); const mats
     [-1,0,1].forEach(k=>{ const st=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.6,8),DWOOD); st.position.set(k*1,.3,1.4); g.add(st); });
     const w=[new THREE.Mesh(new THREE.CylinderGeometry(.45,.45,.15,14),DWOOD)]; w[0].rotation.z=Math.PI/2; w[0].position.set(-1.6,.45,0); g.add(w[0]);
     shadowy(g); addCircle(x,z,1.9);
-    addInteract({x,z,r:3.8,k:"麺",label:"Order ramen",fn:()=>{ chime(); toast(pick(["Shoyu ramen. The broth has been simmering since before you were born, according to the cook.","Miso ramen with butter and corn. The cook winks. Sensei is not allowed seconds.","A bowl of steam and noodles. For a moment the whole world is warm."])); }}); }
+    addInteract({x,z,r:3.8,k:"麺",label:"Order ramen",fn:()=>{ chime(); toast(pick(["Shoyu ramen. The broth has been simmering since before you were born, according to the cook.","Miso ramen with butter and corn. The cook winks. Sensei is not allowed seconds.","A bowl of steam and noodles. For a moment the whole world is warm."])); setTimeout(()=>npcSay(ramenCook,"tanuki"),2600); }}); }
   // festival square: yagura tower, radial lantern strings
   { const g=new THREE.Group(); g.position.set(SQ.x,H(SQ.x,SQ.z),SQ.z); scene.add(g);
     [[-1.6,-1.6],[1.6,-1.6],[-1.6,1.6],[1.6,1.6]].forEach(([x,z])=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.3,5,.3),WOOD); p.position.set(x,2.5,z); g.add(p); });
@@ -976,10 +977,9 @@ function chochinString(ax,az,bx,bz,y,n=7){ const g=new THREE.Group(); const mats
     shadowy(g); addBox(SQ.x,SQ.z,2,2,0);
     for(let k=0;k<8;k++){ const a=k/8*TAU; chochinString(SQ.x+Math.cos(a)*1.5,SQ.z+Math.sin(a)*1.5,SQ.x+Math.cos(a)*SQ.r,SQ.z+Math.sin(a)*SQ.r,5.6,6); const px=SQ.x+Math.cos(a)*SQ.r, pz=SQ.z+Math.sin(a)*SQ.r; const p=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,6,6),WOOD); p.position.set(px,H(px,pz)+3,pz); scene.add(p); addCircle(px,pz,.3); }
     addInteract({x:SQ.x,z:SQ.z+3,r:4.5,k:"太",label:"Beat the festival drum",fn:()=>{ sfx((a,t)=>{ [0,.22,.44].forEach(dt=>{ const o=a.createOscillator(),g2=a.createGain(); o.frequency.setValueAtTime(110,t+dt); o.frequency.exponentialRampToValueAtTime(48,t+dt+.3); g2.gain.setValueAtTime(.35,t+dt); g2.gain.exponentialRampToValueAtTime(.001,t+dt+.5); o.connect(g2); g2.connect(a.destination); o.start(t+dt); o.stop(t+dt+.6); }); }); toast("Don. Don. DON. Somewhere, a dog barks back."); }}); }
-  miniTorii(0,47.6,0,1.15);
-  discoveries.push({id:"village",x:0,z:52,r:6,k:"灯籠町",n:"Lantern Village",line:"The spirits of the valley keep shops here. The ramen cook has been ghost for three hundred years, and his broth is still the best in Japan."});
-  AREAS.push({id:"village",k:"灯籠町",n:"Lantern Village",test:(x,z)=>inVillage(x,z)&&z<SQ.z-SQ.r});
-  AREAS.push({id:"square",k:"祭広場",n:"Festival Square",test:(x,z)=>Math.hypot(x-SQ.x,z-SQ.z)<SQ.r+2});
+  miniTorii(SQ.x,SQ.z-SQ.r-1.2,0,1.05);
+  discoveries.push({id:"village",x:SQ.x,z:SQ.z-SQ.r,r:6,k:"夜市",n:"The Night Market",line:"The spirits of the valley keep stalls here. The ramen cook has been ghost for three hundred years, and his broth is still the best in Japan."});
+  AREAS.push({id:"square",k:"夜市",n:"The Night Market",test:(x,z)=>Math.hypot(x-SQ.x,z-SQ.z)<SQ.r+2});
 }
 
 // ---------- Mirror Lake, the island shrine, the boat ----------
@@ -1147,7 +1147,7 @@ AREAS.push({id:"roof",k:"天守",n:"The Castle Rooftop",test:()=>zone==="balcony
 AREAS.push({id:"garden",k:"庭",n:"Sensei's Garden",test:(x,z)=>Math.hypot(x,z)<40});
 
 // ---------- fast travel: stone lanterns you light ----------
-const TRAVEL=[{id:"gate",n:"Spirit Gate",x:4.8,z:41},{id:"castle",n:"Castle Gate",x:CGATE.x-3,z:CGATE.z+3.5},{id:"village",n:"Festival Square",x:SQ.x+4.5,z:SQ.z+3.5},{id:"shrine",n:"Kumo Shrine",x:SHR.x+3.6,z:SHR.z+12},{id:"lake",n:"Mirror Lake pier",x:PIER.x0-2,z:PIER.z+3.5},{id:"onsen",n:"Yuki Onsen",x:ONS.x-7,z:ONS.z+6},{id:"maze",n:"Bamboo Maze",x:MZ.x+MZH+4,z:MZ.z+9},{id:"orchard",n:"Sakura Orchard",x:-27,z:47.5},{id:"golf",n:"Mini Golf",x:GOLF.x-GOLF.w/2-2.5,z:GOLF.z-5}];
+const TRAVEL=[{id:"gate",n:"Spirit Gate",x:4.8,z:41},{id:"castle",n:"Castle Gate",x:CGATE.x-3,z:CGATE.z+3.5},{id:"village",n:"Night Market",x:SQ.x+4.5,z:SQ.z+3.5},{id:"shrine",n:"Kumo Shrine",x:SHR.x+3.6,z:SHR.z+12},{id:"lake",n:"Mirror Lake pier",x:PIER.x0-2,z:PIER.z+3.5},{id:"onsen",n:"Yuki Onsen",x:ONS.x-7,z:ONS.z+6},{id:"maze",n:"Bamboo Maze",x:MZ.x+MZH+4,z:MZ.z+9},{id:"orchard",n:"Sakura Orchard",x:-27,z:47.5},{id:"golf",n:"Mini Golf",x:GOLF.x-GOLF.w/2-2.5,z:GOLF.z-5}];
 const isLit=id=>(store.lit||["gate"]).includes(id);
 TRAVEL.forEach(t=>{ const L=lantern(t.x,t.z,false,1.15); t.L=L;
   addInteract({x:t.x,z:t.z,r:3,k:"灯",get label(){ return isLit(t.id)?"Travel by lantern":"Light the lantern"; },fn:()=>{ if(!isLit(t.id)){ store.lit=[...new Set([...(store.lit||["gate"]),t.id])]; save(); chime(); toast(t.n+": lantern lit. You can travel here from any lit lantern."); } else openTravel(); }}); });
@@ -1171,8 +1171,8 @@ function drawMap(cv,big=false){ const g=cv.getContext("2d"), W=cv.width, R=W/2, 
   g.fillStyle="#6a5a44"; { const [a,b]=P(VIL.x0+4,VIL.z0); g.fillRect(a,b,(VIL.x1-VIL.x0-8)*sc,(SQ.z-VIL.z0)*sc); } g.beginPath(); g.arc(...P(SQ.x,SQ.z),SQ.r*sc,0,TAU); g.fill();
   const lab=(x,z,t,k)=>{ const [a,b]=P(x,z); g.fillStyle="#3a2c1e"; g.font=(big?"600 13px":"600 11px")+" Shippori Mincho, serif"; g.textAlign="center"; g.fillText(big?t:k,a,b+4); };
   g.fillStyle="#c23a2a"; for(const t of TRAVEL){ if(!isLit(t.id)) continue; const [a,b]=P(t.x,t.z); g.beginPath(); g.arc(a,b,big?3.5:2.5,0,TAU); g.fill(); }
-  if(big){ [["Sensei's Garden",0,-2,"庭"],["Kumo Shrine",SHR.x,SHR.z,"社"],["Lantern Village",0,60,"町"],["Mini Golf",GOLF.x,GOLF.z,"球"],["Mirror Lake",LAKE.x,LAKE.z-6,"湖"],["Yuki Onsen",ONS.x,ONS.z,"湯"],["Bamboo Maze",MZ.x,MZ.z,"竹"],["Sakura Orchard",ORC.x,ORC.z,"桜"],["Castle",CASTLE.x,CASTLE.z,"城"]].forEach(([t,x,z,k])=>lab(x,z,t,k)); }
-  else [["社",SHR.x,SHR.z],["町",0,60],["球",GOLF.x,GOLF.z],["湖",LAKE.x,LAKE.z],["湯",ONS.x,ONS.z],["竹",MZ.x,MZ.z],["桜",ORC.x,ORC.z],["城",CASTLE.x,CASTLE.z],["庭",0,0]].forEach(([k,x,z])=>lab(x,z,"",k));
+  if(big){ [["Sensei's Garden",0,-2,"庭"],["Kumo Shrine",SHR.x,SHR.z,"社"],["Night Market",SQ.x,SQ.z,"市"],["Mini Golf",GOLF.x,GOLF.z,"球"],["Mirror Lake",LAKE.x,LAKE.z-6,"湖"],["Yuki Onsen",ONS.x,ONS.z,"湯"],["Bamboo Maze",MZ.x,MZ.z,"竹"],["Sakura Orchard",ORC.x,ORC.z,"桜"],["Castle",CASTLE.x,CASTLE.z,"城"]].forEach(([t,x,z,k])=>lab(x,z,t,k)); }
+  else [["社",SHR.x,SHR.z],["市",SQ.x,SQ.z],["球",GOLF.x,GOLF.z],["湖",LAKE.x,LAKE.z],["湯",ONS.x,ONS.z],["竹",MZ.x,MZ.z],["桜",ORC.x,ORC.z],["城",CASTLE.x,CASTLE.z],["庭",0,0]].forEach(([k,x,z])=>lab(x,z,"",k));
   // Sensei + you
   { const [a,b]=P(sensei.position.x,sensei.position.z); g.fillStyle="#ffffff"; g.strokeStyle="#5a7aa0"; g.lineWidth=2; g.beginPath(); g.arc(a,b,big?5:4,0,TAU); g.fill(); g.stroke(); }
   if(zone==="world"){ const [a,b]=P(player.position.x,player.position.z); g.save(); g.translate(a,b); g.rotate(-player.rotation.y+Math.PI); g.fillStyle="#c8452f"; g.beginPath(); g.moveTo(0,-7); g.lineTo(5,6); g.lineTo(0,3); g.lineTo(-5,6); g.closePath(); g.fill(); g.restore(); }
@@ -1212,13 +1212,14 @@ function npcFrame(dt){ for(const n of NPCS){ const dx=player.position.x-n.g.posi
   n.bow=Math.max(0,n.bow-dt); const b=n.bow>0?Math.sin(Math.min(1,n.bow/1.6)*Math.PI)*.55:0; n.rig.rotation.x=b;
   n.head.rotation.z=Math.sin(clock*.9+n.ph)*.08; n.arms[0].rotation.x=n.bow>0?-.6:Math.sin(clock*1.2+n.ph)*.08; n.arms[1].rotation.x=n.arms[0].rotation.x; } }
 const teaKeeper=makeSpirit({name:"Okitsune",fox:true,fur:"#f4efe6",muzzle:"#ffffff",robe:"#b23a2c",sash:"#f2d27a",mask:"#d23a2a",tail:true,tip:"#d23a2a"});
-placeSpirit(teaKeeper,4.9,57.4,-Math.PI/2);
+placeSpirit(teaKeeper,SQ.x-5.9,SQ.z-5.2,Math.PI*.75);
 const ramenCook=makeSpirit({name:"Tanuki-san",fur:"#7a5a3e",muzzle:"#d8c3a2",patch:"#3a2a1e",robe:"#2f3d55",sash:"#f4ead2",apron:"#f4ead2",hat:"#f4ead2"});
-placeSpirit(ramenCook,-5.9,64.5,Math.PI/2);
+placeSpirit(ramenCook,SQ.x+6.4,SQ.z-4.6,-Math.PI*.75);
 const golfFrog=makeSpirit({name:"Kaeru",fur:"#6fa04a",muzzle:"#cfe39a",robe:"#3a6a3a",sash:"#e9c46a",hat:"#e9c46a"});
 placeSpirit(golfFrog,GOLF.x-GOLF.w/2-1.2,GOLF.z-1.2,Math.PI/2);
 const drummer=makeSpirit({name:"Taro",fur:"#e9d7b9",muzzle:"#f6ead2",robe:"#1f3d63",sash:"#c23a2a",mask:"#1f1d22",hat:"#c23a2a"});
 placeSpirit(drummer,SQ.x-2.6,SQ.z+2.6,Math.PI*.75);
+addInteract({x:SQ.x-2.6,z:SQ.z+2.6,r:2.4,k:"太",label:"Talk to Taro",fn:()=>npcSay(drummer,"taro")});
 
 /* ===================== mini golf (3 holes, real 3D physics) ===================== */
 const GOLFY=.26; const HOLES=[]; const golf={hole:0,strokes:0,total:[],ball:null,vx:0,vz:0,aiming:false,aim:{x:0,z:0},power:0,sunk:false,bar:null};
@@ -1244,15 +1245,16 @@ const GOLFY=.26; const HOLES=[]; const golf={hole:0,strokes:0,total:[],ball:null
   const ball=new THREE.Mesh(new THREE.SphereGeometry(.13,12,8),toon("#ffffff")); ball.castShadow=true; ball.visible=false; scene.add(ball); golf.ball=ball;
   const aimG=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(1,0,0)]); golf.line=new THREE.Line(aimG,new THREE.LineBasicMaterial({color:0xffffff,transparent:true,opacity:.85})); golf.line.visible=false; scene.add(golf.line);
   addInteract({x:GOLF.x-GOLF.w/2+1,z:GOLF.z,r:4,k:"球",label:"Play mini golf",fn:()=>golfStart()});
-  addInteract({x:golfFrog.g.position.x,z:golfFrog.g.position.z,r:2.6,k:"蛙",label:"Talk to Kaeru",fn:()=>{ npcBow(golfFrog); toast(pick(["Kaeru: Three holes. The third one has a spinning gate. I built it to humble a crane.","Kaeru: Par is a suggestion. Like most rules in this valley.","Kaeru: Pull back, then let go. Gently. Gentler than that."])); }});
+  addInteract({x:golfFrog.g.position.x,z:golfFrog.g.position.z,r:2.6,k:"蛙",label:"Talk to Kaeru",fn:()=>npcSay(golfFrog,"kaeru")});
   discoveries.push({id:"golf",x:GOLF.x-GOLF.w/2,z:GOLF.z,r:6,k:"球場",n:"Kaeru's Mini Golf",line:"A frog built this. He takes it more seriously than I take anything. Play a round. Do not let him see you cheat."});
   AREAS.push({id:"golf",k:"球場",n:"Kaeru's Mini Golf",test:(x,z)=>inGolf(x,z,2)});
 }
-function golfHud(){ const h=HOLES[golf.hole]; $("#golfHud").innerHTML=`<b>Hole ${golf.hole+1}/3</b> · Par ${h.par} · Strokes ${golf.strokes}<br><span>Drag back from anywhere and release to putt · or A/D to aim, hold Space · Esc to leave</span>`; }
-function golfStart(){ pmode="golf"; golf.hole=0; golf.total=[]; golfTee(); $("#golfHud").classList.add("show"); controls.enabled=false; npcBow(golfFrog); }
-function golfTee(){ const h=HOLES[golf.hole]; golf.strokes=0; golf.sunk=false; golf.vx=golf.vz=0; golf.ball.visible=true; golf.ball.position.set(h.tee.x,GOLFY+.13,h.tee.z); golf.aim={x:1,z:0}; golfHud(); }
+function golfHud(){ const h=HOLES[golf.hole]; const who=golf.np>1?`<b style="color:${golf.turn?"#ff8fb8":"#7fdcff"}">${golf.turn?"Player 2":"Player 1"}</b> · `:""; const tot=golf.np>1?` · P1 ${golf.score[0].reduce((a,b)=>a+b,0)} vs P2 ${golf.score[1].reduce((a,b)=>a+b,0)}`:""; $("#golfHud").innerHTML=`${who}<b>Hole ${golf.hole+1}/3</b> · Par ${h.par} · Strokes ${golf.strokes}${tot}<br><span>Drag back and release to putt · A/D + hold Space${golf.np>1?" · Player 2 phone: ◀ ▶ aim, hold A":""} · Esc to leave</span>`; }
+function golfStart(){ pmode="golf"; golf.hole=0; golf.total=[]; golf.np=P2.on?2:1; golf.turn=0; golf.score=[[],[]]; golfTee(); $("#golfHud").classList.add("show"); controls.enabled=false; npcBow(golfFrog); }
+function golfTee(){ const h=HOLES[golf.hole]; golf.strokes=0; golf.sunk=false; golf.vx=golf.vz=0; golf.ball.visible=true; golf.ball.material.color.set(golf.turn?"#ffb3cf":"#ffffff"); golf.ball.position.set(h.tee.x,GOLFY+.13,h.tee.z); golf.aim={x:1,z:0}; golfHud(); }
+function golfP2(b,down){ if(pmode!=="golf"||golf.turn!==1) return; if(b==="left") golf.p2l=down; else if(b==="right") golf.p2r=down; else if(b==="a"){ if(down) golf.p2c=true; else if(golf.p2c){ golf.p2c=false; } } }
 function golfEnd(){ pmode="walk"; controls.enabled=true; golf.ball.visible=false; golf.line.visible=false; $("#golfHud").classList.remove("show"); player.position.set(GOLF.x-GOLF.w/2-2.2,H(GOLF.x-GOLF.w/2-2.2,GOLF.z),GOLF.z); }
-function golfShoot(dx,dz,p){ if(golf.sunk||Math.hypot(golf.vx,golf.vz)>.05) return; const l=Math.hypot(dx,dz)||1; const sp=clamp(p,0,1)*11; golf.vx=dx/l*sp; golf.vz=dz/l*sp; golf.strokes++; golfHud(); sfx((a,t)=>{ const o=a.createOscillator(),g=a.createGain(); o.frequency.value=900; g.gain.setValueAtTime(.12,t); g.gain.exponentialRampToValueAtTime(.001,t+.12); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+.15); }); }
+function golfShoot(dx,dz,p){ if(golf.sunk||Math.hypot(golf.vx,golf.vz)>.05) return; const l=Math.hypot(dx,dz)||1; const sp=clamp(p,0,1)*11; golf.vx=dx/l*sp; golf.vz=dz/l*sp; golf.strokes++; golfHud(); rumble([12+Math.round(p*30)],golf.turn+1); sfx((a,t)=>{ const o=a.createOscillator(),g=a.createGain(); o.frequency.value=900; g.gain.setValueAtTime(.12,t); g.gain.exponentialRampToValueAtTime(.001,t+.12); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+.15); }); }
 let golfDrag=null;
 canvas.addEventListener("pointerdown",e=>{ if(pmode!=="golf") return; golfDrag={x:e.clientX,y:e.clientY}; });
 addEventListener("pointermove",e=>{ if(pmode!=="golf"||!golfDrag) return; const dx=e.clientX-golfDrag.x, dy=e.clientY-golfDrag.y; const f=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-f.z, rz=f.x;
@@ -1261,7 +1263,8 @@ addEventListener("pointerup",()=>{ if(pmode!=="golf"||!golfDrag) return; golfDra
 function golfFrame(dt){ if(pmode!=="golf") return; const h=HOLES[golf.hole], b=golf.ball.position;
   if(golf.bar) golf.bar.rotation.y=clock*1.3;
   if(keys.KeyA||keys.ArrowLeft||keys.KeyD||keys.ArrowRight){ const a=Math.atan2(golf.aim.z,golf.aim.x)+((keys.KeyA||keys.ArrowLeft)?-1:1)*dt*1.6; golf.aim={x:Math.cos(a),z:Math.sin(a)}; }
-  if(keys.Space){ golf.power=Math.min(1,golf.power+dt*.7); golf.charging=true; } else if(golf.charging){ golf.charging=false; golfShoot(golf.aim.x,golf.aim.z,golf.power); golf.power=0; }
+  if(golf.p2l||golf.p2r){ const a=Math.atan2(golf.aim.z,golf.aim.x)+(golf.p2l?-1:1)*dt*1.4; golf.aim={x:Math.cos(a),z:Math.sin(a)}; }
+  if(keys.Space||golf.p2c){ golf.power=Math.min(1,golf.power+dt*.7); golf.charging=true; } else if(golf.charging){ golf.charging=false; golfShoot(golf.aim.x,golf.aim.z,golf.power); golf.power=0; }
   const steps=4; for(let s=0;s<steps;s++){ const st=dt/steps; b.x+=golf.vx*st; b.z+=golf.vz*st;
     const R=.13; if(b.x<h.x0+R){ b.x=h.x0+R; golf.vx=Math.abs(golf.vx)*.7; } if(b.x>h.x1-R){ b.x=h.x1-R; golf.vx=-Math.abs(golf.vx)*.7; } if(b.z<h.z-h.hw+R){ b.z=h.z-h.hw+R; golf.vz=Math.abs(golf.vz)*.7; } if(b.z>h.z+h.hw-R){ b.z=h.z+h.hw-R; golf.vz=-Math.abs(golf.vz)*.7; }
     for(const o of h.obs){ const dx=b.x-o.x, dz=b.z-o.z, d=Math.hypot(dx,dz), m=o.r+R; if(d<m&&d>1e-4){ const nx=dx/d, nz=dz/d; b.x=o.x+nx*m; b.z=o.z+nz*m; const vn=golf.vx*nx+golf.vz*nz; if(vn<0){ golf.vx-=1.7*vn*nx; golf.vz-=1.7*vn*nz; } } }
@@ -1270,8 +1273,8 @@ function golfFrame(dt){ if(pmode!=="golf") return; const h=HOLES[golf.hole], b=g
       const d=distSeg(b.x,b.z,ax,az,bx,bz); if(d<R+.1){ const t=clamp(((b.x-ax)*(bx-ax)+(b.z-az)*(bz-az))/((bx-ax)**2+(bz-az)**2),0,1); const px=ax+(bx-ax)*t, pz=az+(bz-az)*t; let nx=b.x-px, nz=b.z-pz; const l=Math.hypot(nx,nz)||1; nx/=l; nz/=l; b.x=px+nx*(R+.11); b.z=pz+nz*(R+.11); const vn=golf.vx*nx+golf.vz*nz; if(vn<.5){ golf.vx+=(-1.6*vn+1.5)*nx; golf.vz+=(-1.6*vn+1.5)*nz; } } } }
   const sp=Math.hypot(golf.vx,golf.vz); const fr=Math.max(0,sp-dt*2.6)/(sp||1); golf.vx*=fr; golf.vz*=fr; golf.ball.rotation.x+=golf.vz*dt*6; golf.ball.rotation.z-=golf.vx*dt*6;
   const dc=Math.hypot(b.x-h.cup.x,b.z-h.cup.z); if(!golf.sunk&&dc<.24&&sp<4.5){ golf.sunk=true; golf.vx=golf.vz=0; b.set(h.cup.x,GOLFY-.08,h.cup.z); chime(); hostBuzz&&hostBuzz();
-      const diff=golf.strokes-h.par, word=golf.strokes===1?"Hole in one!":diff<=-1?"Birdie.":diff===0?"Par.":diff===1?"Bogey.":"…It went in eventually."; toast(`Hole ${golf.hole+1}: ${golf.strokes} strokes. ${word}`); golf.total.push(golf.strokes);
-      setTimeout(()=>{ if(golf.hole<2){ golf.hole++; golfTee(); } else { const tot=golf.total.reduce((a,b)=>a+b,0); whisper(`Your round: ${tot} strokes (par 8). ${tot<=7?"Kaeru croaks with respect.":tot<=9?"Kaeru nods slowly.":"Kaeru pretends he didn't see."}`,8000); store.golfBest=Math.min(store.golfBest||99,tot); save(); golfEnd(); } },1600); }
+      const diff=golf.strokes-h.par, word=golf.strokes===1?"Hole in one!":diff<=-1?"Birdie.":diff===0?"Par.":diff===1?"Bogey.":"…It went in eventually."; toast(`${golf.np>1?(golf.turn?"Player 2 · ":"Player 1 · "):""}Hole ${golf.hole+1}: ${golf.strokes} strokes. ${word}`); golf.total.push(golf.strokes); golf.score[golf.turn].push(golf.strokes); rumble([30,40,70],golf.turn+1);
+      setTimeout(()=>{ if(golf.np>1&&golf.turn===0){ golf.turn=1; golfTee(); return; } golf.turn=0; if(golf.hole<2){ golf.hole++; golfTee(); } else if(golf.np>1){ const a=golf.score[0].reduce((x,y)=>x+y,0), b=golf.score[1].reduce((x,y)=>x+y,0); whisper(`Final: Player 1 ${a} · Player 2 ${b}. ${a===b?"A tie. Kaeru demands a rematch.":(a<b?"Player 1":"Player 2")+" wins. Kaeru bows to the champion."}`,9000); golfEnd(); } else { const tot=golf.total.reduce((a,b)=>a+b,0); whisper(`Your round: ${tot} strokes (par 8). ${tot<=7?"Kaeru croaks with respect.":tot<=9?"Kaeru nods slowly.":"Kaeru pretends he didn't see."}`,8000); store.golfBest=Math.min(store.golfBest||99,tot); save(); golfEnd(); } },1600); }
   else if(dc<.6&&sp<1.2){ golf.vx+=(h.cup.x-b.x)*dt*3; golf.vz+=(h.cup.z-b.z)*dt*3; }
   // aim line + camera
   const moving=sp>.05; golf.line.visible=!moving&&!golf.sunk; if(golf.line.visible){ const len=.6+golf.power*3.2; const p=golf.line.geometry.attributes.position; p.setXYZ(0,b.x,b.y,b.z); p.setXYZ(1,b.x+golf.aim.x*len,b.y,b.z+golf.aim.z*len); p.needsUpdate=true; golf.line.material.color.setHSL(.33-.33*golf.power,.8,.6); }
@@ -1491,8 +1494,8 @@ ACTS.push(
  {id:"onsen",name:"soaking in Yuki Onsen",hours:[[19,24],[0,1],[13,15]],w:2,wNight:2,eyes:"closed",face:"move",
   pos:(t,o)=>o.set(ONS.x+Math.cos(t*.06)*1.5,H(ONS.x,ONS.z+ONS.r+2)+.2,ONS.z+Math.sin(t*.06)*1.2),
   line:"Ahh. A ghost in a hot spring. The snow lands on my head and forgets it was cold. Join me, or let me soak in peace."},
- {id:"village",name:"drinking tea at the village stall",hours:[[10,17]],w:2,face:"move",
-  pos:(t,o)=>o.set(2.2+Math.sin(t*.1)*.4,H(2.2,57)+2.4,56.2),
+ {id:"village",name:"drinking tea at the night market",hours:[[10,17]],w:2,face:"move",
+  pos:(t,o)=>o.set(SQ.x-3+Math.sin(t*.1)*.4,H(SQ.x-3,SQ.z-3)+2.4,SQ.z-3),
   line:"The stall keeper refills my cup before it is empty. That is the whole secret of hospitality, you know."},
  {id:"orchard",name:"walking beneath the cherry blossoms",hours:[[9,18]],w:2,face:"move",
   pos:(t,o)=>o.set(ORC.x+Math.cos(t*.05)*6.5,H(ORC.x,ORC.z)+3.4,ORC.z+Math.sin(t*.05)*6.5),
@@ -1748,14 +1751,15 @@ Gabriel's interests: tech, AI and building apps, Japanese culture, philosophy, a
 function placeName(){ let best=null,bd=1e9; for(const d of discoveries){ const dd=Math.hypot(player.position.x-d.x,player.position.z-d.z); if(dd<bd){bd=dd;best=d;} } return bd<14?best.n:(Math.hypot(player.position.x,player.position.z)<14?"the koi pond":"the garden paths"); }
 function context(){ const h=nowHour(), d=new Date(); const notes=store.notes.length?store.notes.map(n=>"- "+n).join("\n"):"(none yet — you are just getting to know him)";
   const gap=store.prevVisit?Math.round((Date.now()-store.prevVisit)/36e5):null;
-  return `World now: ${partOfDay(h)}, ${S}, ${d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}. Right now you are ${ai.act?actName(ai.act):'in the garden'}; Gabriel came and found you there, near ${placeName()}. Visit number ${store.visits}.${gap!==null&&gap>20?` Before this visit he had been away about ${gap>48?Math.round(gap/24)+" days":gap+" hours"}.`:""}\n\nWhat you know about Gabriel (things he has told you):\n${notes}`; }
+  return `World now: ${partOfDay(h)}, ${S}, ${d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"})}. Right now you are ${ai.act?actName(ai.act):'in the garden'}; Gabriel came and found you there, near ${placeName()}. Visit number ${store.visits}. Your mood today: ${mood()} (let it color your words, lightly).${gap!==null&&gap>20?` Before this visit he had been away about ${gap>48?Math.round(gap/24)+" days":gap+" hours"}.`:""}\n\nWhat you know about Gabriel (things he has told you):\n${notes}`; }
 const transcript=(n=16)=>store.history.slice(-n).map(m=>(m.r==="u"?"Gabriel: ":"Sensei: ")+m.c).join("\n");
 const PROVERBS=["Hm. Still water reflects the moon. Sit a while, and so will you.","The koi does not hurry the current, my student. It reads it.","Even the castle was built one stone at a time.","When you do not know the next step… sweep the veranda. Clarity hides under small tasks.","Fall seven times. Stand up eight. Nana korobi, ya oki."];
 function greeting(){ const p=partOfDay(nowHour()).toLowerCase();
-  const sea={spring:"The blossoms fall into the pond again.",summer:"The cicadas are loud today.",autumn:"The maples burn red. The koi keep stealing their leaves.",winter:"Snow rests on the castle roof like a white hat."}[S];
-  if(store.visits<=1) return `Hm. So… you are Gabriel. Three hundred years, and one morning, I have waited for a student. ${sea} Walk with me. The garden is yours to wander.`;
-  const L={"deep night":"Awake at this hour, my student? The lanterns and I keep strange company.","dawn":"You rise with the mist. Good. The mind is clearest before the world wakes.","morning":"Good morning, Gabriel-san.","midday":"The sun is high. Have you eaten?","afternoon":"The afternoon is long, and quiet.","golden hour":"The light turns gold on the water. A good hour to reflect.","dusk":"Dusk. The castle lights itself. So should you.","night":"Night has come. I was only… reading. Certainly not playing the console."};
-  return `${L[p]||"Welcome back."} ${sea}`; }
+  const sea={spring:["The blossoms fall into the pond again.","Spring makes the koi restless."],summer:["The cicadas are loud today.","Even the stones are warm."],autumn:["The maples burn red. The koi keep stealing their leaves.","The wind smells of roasted chestnuts.","The ginkgo is dropping its gold again."],winter:["Snow rests on the castle roof like a white hat.","My breath would fog, if I had breath."]}[S];
+  if(store.visits<=1) return `Hm. So… you are Gabriel. Three hundred years, and one morning, I have waited for a student. ${sea[0]} Walk with me. The garden is yours to wander.`;
+  const L={"deep night":["Awake at this hour, my student?","The lanterns and I keep strange company tonight.","Shh. The koi are dreaming."],"dawn":["You rise with the mist. Good.","Dawn. The clearest hour for the mind."],"morning":["Good morning, Gabriel-san.","Morning. The tea is not ready, and neither am I.","Ah, you are up."],"midday":["The sun is high. Have you eaten?","Midday. Even the shadows are resting."],"afternoon":["The afternoon is long, and quiet.","Ah, an afternoon visitor."],"golden hour":["The light turns gold on the water.","Golden hour. A good hour to reflect."],"dusk":["Dusk. The castle lights itself.","The lanterns are waking up."],"night":["Night has come.","Evening, my student. I was only… reading."]};
+  const open=freshPick(L[p]||["Welcome back."]); const b=lineBank(); const more=(b&&freshPick(b.greet))||freshPick(sea);
+  return `${open} ${more}`; }
 
 /* ===================== chat ===================== */
 const log=$("#log");
@@ -1843,6 +1847,74 @@ function groundY(x,z){ if(zone==="sky"){ const y=skyWalk(x,z); return y===null?S
   if(Math.abs(along)<BR.len/2&&Math.abs(across)<1.15) y=Math.max(y,BR.y0+BR.arch*Math.cos(along/BR.len*Math.PI)+.1);
   return y; }
 
+/* ===================== living dialogue: a fresh bank of lines every day ===================== */
+const MOODS=["serene","playful","sleepy","wistful","proud","curious","mischievous","nostalgic"];
+const todayKey=()=>{ const d=new Date(); return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate(); };
+function mood(){ if(!store.moodDay||store.moodDay.day!==todayKey()){ store.moodDay={day:todayKey(),m:pick(MOODS)}; save(); } return store.moodDay.m; }
+const lineBank=()=>store.bank&&store.bank.day===todayKey()?store.bank:null;
+function freshPick(arr){ if(!arr||!arr.length) return null; const s=store.seenLines||(store.seenLines=[]); const c=arr.filter(l=>!s.includes(l)); const l=pick(c.length?c:arr); s.push(l); if(s.length>90) s.splice(0,s.length-90); save(); return l; }
+const NPC_VOICE={okitsune:"Okitsune, the white fox who keeps the tea stall at the Night Market: elegant, teasing, loves gossip about Sensei, speaks softly and a little slyly",
+  tanuki:"Tanuki-san, the ramen cook: jolly, boastful about his 300-year broth, food puns, generous",
+  kaeru:"Kaeru, the frog who built the mini golf course: far too serious about golf, competitive, dry humor",
+  taro:"Taro, the festival drummer: energetic, loves rhythm and festivals, short punchy sentences"};
+let bankBusy=false;
+async function refreshBank(force){ if(bankBusy||(!force&&lineBank())) return; bankBusy=true; try{ await sampleReady; if(!sample) return;
+  const recent=store.history.slice(-10).map(m=>(m.r==="u"?"Gabriel: ":"Sensei: ")+m.c.slice(0,160)).join("\n")||"(no recent talk)";
+  const facts=[store.games&&Object.keys(store.games).length?"game bests: "+JSON.stringify(store.games):"", store.golfBest?"mini golf best round: "+store.golfBest:"", (store.found||[]).length?"places found: "+store.found.join(", "):"", (store.charms||[]).length?"charms: "+store.charms.join(", "):"", store.notes&&store.notes.length?"what Sensei knows about Gabriel: "+store.notes.slice(-8).join("; "):""].filter(Boolean).join("\n");
+  const acts=ACTS.map(a=>`${a.id} (${a.name})`).join(", ");
+  const prompt=`You write ambient dialogue for "Sensei Hakuun", a cozy Japanese zen-garden game. Sensei Hakuun is a 300-year-old ghost koi with a straw hat and a beard: calm, warm, wise, slightly mischievous, with his own hobbies (calligraphy, painting, tea, stargazing, secretly playing the game console). His student is Gabriel.
+Today: ${S}, ${new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}. Sensei's mood today: ${mood()}.
+Recent talk:\n${recent}\n${facts}
+Write FRESH lines. Every line different in topic and rhythm: observations about the garden, his own little projects and opinions, gentle teasing, small philosophy, memories, questions for Gabriel, references to things Gabriel did. 1-2 short sentences each, no emoji, no quotation marks.
+Also write lines for the valley's spirits: ${Object.entries(NPC_VOICE).map(([k,v])=>k+" = "+v).join("; ")}. They have opinions about each other and about Sensei.
+Return JSON exactly: {"greet":[8 lines Sensei says when Gabriel arrives, any time of day],"idle":[12 lines Sensei says while wandering near Gabriel],"acts":{${ACTS.map(a=>`"${a.id}":[2 lines]`).join(",")}},"npc":{"okitsune":[6],"tanuki":[6],"kaeru":[6],"taro":[6]}}. Activity ids: ${acts}.`;
+  const v=await Promise.race([sample.json(prompt,{cache:false}),new Promise((_,r)=>setTimeout(()=>r(new Error("slow")),90000))]);
+  if(v&&Array.isArray(v.greet)&&v.greet.length){ store.bank={day:todayKey(),greet:v.greet,idle:v.idle||[],acts:v.acts||{},npc:v.npc||{}}; save(); }
+ }catch(e){ console.warn("[bank]",e); } finally{ bankBusy=false; } }
+const NPC_FALLBACK={okitsune:["The tea is hot, the gossip hotter. Sensei sneezed in the onsen yesterday and blamed a frog.","Sit, sit. Even ghosts need a cup between worries.","He pretends he never plays the console. The controller is always warm."],
+  tanuki:["Three hundred years of broth! Each year the noodles get a little more confident.","You look hungry. You always look hungry. That is a compliment, here.","Kaeru says golf is serious. I say lunch is serious."],
+  kaeru:["Three holes. The third one has a spinning gate. I built it to humble a crane.","Par is a suggestion. Like most rules in this valley.","Pull back, then let go. Gently. Gentler than that."],
+  taro:["Don! Don! Ka-don! Feel that? That is the valley's heartbeat.","Festivals are just reasons to hit things joyfully.","When the drum is loud, worries get quiet. Try it."]};
+function npcSay(n,key){ npcBow(n); const l=freshPick(lineBank()?.npc?.[key])||freshPick(NPC_FALLBACK[key]); toast(`${n.name}: ${l}`); }
+let idleChatT=rand(120,200);
+function idleChat(dt){ if(!entered||chatOpen||MG||pmode!=="walk"||zone!=="world") return; idleChatT-=dt; if(idleChatT>0) return;
+  const pd=sensei.position.distanceTo(player.position); if(pd>14){ idleChatT=20; return; } idleChatT=rand(160,280);
+  const l=freshPick(lineBank()?.idle)||freshPick(PROVERBS); if(l){ whisper(l,8000); speak(l); } }
+
+/* ===================== haptics to the phone(s) ===================== */
+function rumble(pat=[20],pl=0){ try{ if(window.sensei&&window.sensei.send) window.sensei.send("remote:buzz",{player:pl,pat}); else if(hRoom) hRoom.emit("buzz",{pat}).catch(()=>{}); }catch(e){} }
+
+/* ===================== player two ===================== */
+const P2={on:false,g:null,rig:null,legs:[],speed:0,ph:0,k:{}};
+function buildP2(){ if(P2.g) return; const g=new THREE.Group(); const rig=pRig.clone(true); g.add(rig);
+  const pink=toon("#e88aa8"), pinkD=toon("#c86a8c"), blue=toon("#4fc3f7");
+  rig.traverse(o=>{ if(!o.isMesh) return; if(o.material===cloakM){ o.material=pink.clone(); o.material.side=THREE.DoubleSide; } else if(o.material===cloakD) o.material=pinkD; else if(o.material.color&&o.material.color.getHexString()==="c8452f") o.material=blue; });
+  P2.legs=rig.children.filter(c=>c.isGroup); shadowy(g,true,false); scene.add(g); P2.g=g; P2.rig=rig; g.visible=false; }
+function p2Set(on){ buildP2(); P2.on=on; P2.g.visible=on; $("#p2chip").classList.toggle("show",on);
+  if(on){ P2.g.position.copy(player.position).add(new THREE.Vector3(1.6,0,0)); toast("Player 2 joined. Move with I J K L (or the second phone's ✚), act with O (or its A)."); rumble([40,40,40],2); }
+  else toast("Player 2 left the garden."); }
+function p2Input(b,down){ const map={up:"up",down:"down",left:"left",right:"right"}; if(map[b]) P2.k[map[b]]=down; else if(b==="a"&&down) p2Act(); else if(b==="b") P2.k.b=down;
+  if(MG&&MG.p2) MG.p2(b,down); else if(pmode==="golf") golfP2(b,down); }
+function p2Act(){ if(MG||!P2.on) return; if(pmode==="golf") return; let best=null,bd=1e9; for(const it of interacts){ if((it.zone||"world")!==zone||(it.when&&!it.when())||it.sensei) continue; const d=Math.hypot(P2.g.position.x-it.x,P2.g.position.z-it.z); if(d<(it.r||2.5)&&d<bd){ bd=d; best=it; } } if(best) best.fn(); }
+function p2Frame(dt){ if(!P2.on||!P2.g) return; const g=P2.g;
+  if(g.position.distanceTo(player.position)>24||pmode!=="walk"){ g.position.copy(player.position).add(new THREE.Vector3(1.6,0,0)); }
+  let ix=(P2.k.right||keys.KeyL?1:0)-(P2.k.left||keys.KeyJ?1:0), iz=(P2.k.down||keys.KeyK?1:0)-(P2.k.up||keys.KeyI?1:0);
+  if(!MG&&!chatOpen&&pmode==="walk"&&(ix||iz)){ const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x; let mx=rx*ix-fwd.x*iz, mz=rz*ix-fwd.z*iz; const ml=Math.hypot(mx,mz)||1; mx/=ml; mz/=ml;
+    P2.speed=lerp(P2.speed,5.5,dt*8); const np={x:g.position.x+mx*P2.speed*dt,z:g.position.z+mz*P2.speed*dt}; collide(np); g.position.x=np.x; g.position.z=np.z; g.rotation.y=angLerp(g.rotation.y,Math.atan2(mx,mz),Math.min(1,dt*12)); P2.ph+=dt*P2.speed*2.2; }
+  else P2.speed=lerp(P2.speed,0,dt*10);
+  g.position.y=lerp(g.position.y,groundY(g.position.x,g.position.z),Math.min(1,dt*18));
+  const mv=P2.speed>.3; P2.legs[0].rotation.x=mv?Math.sin(P2.ph)*.7:0; P2.legs[1].rotation.x=mv?-Math.sin(P2.ph)*.7:0; P2.rig.position.y=mv?Math.abs(Math.sin(P2.ph))*.08:Math.sin(clock*2+1)*.015; }
+if(window.sensei&&window.sensei.on){ window.sensei.on("p2",d=>{ if(!P2.on) p2Set(true); if(d.t==="down") p2Input(d.b,true); else if(d.t==="up") p2Input(d.b,false); else if(d.t==="press") p2Input(d.b,true); });
+  window.sensei.on("remote",r=>{ if(r&&r.players&&!r.players.includes(2)&&P2.on&&P2.phone) p2Set(false); if(r&&r.players&&r.players.includes(2)) P2.phone=true; }); }
+addEventListener("keydown",e=>{ if(document.activeElement===$("#inp")) return; if(e.code==="KeyP"&&entered&&!MG&&!chatOpen) p2Set(!P2.on); if(e.code==="KeyO"&&P2.on) p2Act(); });
+
+/* ===================== quick local judging (the AI's words can follow) ===================== */
+function inkStats(cv){ const S2=96, t=document.createElement("canvas"); t.width=t.height=S2; const g=t.getContext("2d"); g.drawImage(cv,0,0,S2,S2); const d=g.getImageData(0,0,S2,S2).data;
+  let n=0,sx=0,sy=0,x0=S2,x1=0,y0=S2,y1=0; for(let y=0;y<S2;y++) for(let x=0;x<S2;x++){ const i=(y*S2+x)*4; const dark=d[i+3]>40&&(d[i]+d[i+1]+d[i+2])<300; if(dark){ n++; sx+=x; sy+=y; x0=Math.min(x0,x); x1=Math.max(x1,x); y0=Math.min(y0,y); y1=Math.max(y1,y); } }
+  const r=n/(S2*S2); if(!n) return {r:0,c:1,fill:0}; const cx=sx/n/S2-.5, cy=sy/n/S2-.5; return {r,c:Math.hypot(cx,cy),fill:((x1-x0)*(y1-y0))/(S2*S2)}; }
+function localShodo(cv){ const s=inkStats(cv); let sc=3; if(s.r>.05&&s.r<.34) sc+=2; if(s.r>.09&&s.r<.26) sc+=1; if(s.c<.12) sc+=2; else if(s.c<.2) sc+=1; if(s.fill>.25&&s.fill<.8) sc+=2;
+  sc=clamp(sc,1,9); const w=s.r>.34?"Heavy ink. The brush should dance, not stomp.":s.r<.05?"Too shy. Let the brush commit to the paper.":s.c>.2?"The character wanders off the center. Give it a home in the middle.":s.fill<.25?"Small and careful. Be braver with the size.":pick(["Balanced. The strokes sit together like old friends.","Steady hand. Now let the last stroke breathe a little more.","Good proportion. The spaces between strokes matter as much as the strokes."]); return {score:sc,words:w}; }
+
 /* ===================== main loop ===================== */
 let clock=0,last=performance.now(),boop=0,blink=0,nextBlink=2,yaw=0,walkPh=0,speedNow=0;
 const dummy=new THREE.Object3D(), tmpV=new THREE.Vector3(), senseiTarget=new THREE.Vector3();
@@ -1853,7 +1925,7 @@ function frame(now){
   const dt=Math.min(.05,(now-last)/1000); last=now; clock+=dt; tUni.value=clock;
   // ---- player movement ----
   hostFrame();
-  golfFrame(dt); npcFrame(dt);
+  golfFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   if(entered&&!chatOpen&&!uiBlock()&&pmode!=="golf"){
     let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x+rjoy.x;
     let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y;
@@ -1874,7 +1946,7 @@ function frame(now){
   pRig.position.y=moving?Math.abs(Math.sin(walkPh))*.08:Math.sin(clock*2)*.015; pRig.rotation.x=moving?.08:0;
   cloak.scale.x=cloak.scale.z=1+(moving?Math.sin(walkPh*2)*.03:0); scarfTail.rotation.x=.3+(moving?.5+Math.sin(walkPh*2)*.15:Math.sin(clock*1.5)*.05);
   // ---- camera follow ----
-  if(entered&&pmode!=="golf"){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); const delta=tgt.clone().sub(controls.target); controls.target.add(delta); camera.position.add(delta); }
+  if(entered&&pmode!=="golf"){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); if(P2.on&&pmode==="walk"){ tgt.add(P2.g.position).multiplyScalar(.5); tgt.y+=.85; const sep=P2.g.position.distanceTo(player.position); const want=clamp(9+sep*.9,9,26); const off=camera.position.clone().sub(controls.target); const L=off.length(); if(L<want-.3) camera.position.copy(controls.target).addScaledVector(off.normalize(),lerp(L,want,.05)); } const delta=tgt.clone().sub(controls.target); controls.target.add(delta); camera.position.add(delta); }
   if(pmode!=="golf") controls.update();
   if(zone==="hall"){ camera.position.x=clamp(camera.position.x,HALL.x-HALL.w/2+.5,HALL.x+HALL.w/2-.5); camera.position.z=clamp(camera.position.z,HALL.z-HALL.d/2+.5,HALL.z+HALL.d/2-.5); camera.position.y=clamp(camera.position.y,HALL.y+.6,HALL.y+6.4); }
   else { const cg=(zone==="sky"?SKY.y-6:zone==="balcony"?Math.max(BALC.y,H(camera.position.x,camera.position.z)):Math.max(H(camera.position.x,camera.position.z),lakeE(camera.position.x,camera.position.z)<1?-.25:-99))+.8; if(camera.position.y<cg) camera.position.y=cg; }
@@ -1904,7 +1976,7 @@ function frame(now){
       else { const nx=tmpV; a.pos(clock+.6,nx); faceYaw=Math.atan2(-(nx.z-senseiTarget.z),nx.x-senseiTarget.x); }
       closed=a.eyes==="closed"&&!(entered&&pd<7);
       if(a.koi&&clock-ai.lastKoi>4){ ai.lastKoi=clock; attract={x:sensei.position.x,z:sensei.position.z,until:clock+3.5,t0:clock}; addRipple({x:sensei.position.x+rand(-.6,.6),z:sensei.position.z+rand(-.6,.6)}); }
-      if(entered&&!ai.greeted&&pd<9&&!chatOpen){ ai.greeted=true; const ln=night>.5&&a.nightLine?a.nightLine:a.line; whisper(ln,8000); speak(ln); }
+      if(entered&&!ai.greeted&&pd<9&&!chatOpen){ ai.greeted=true; const ln=freshPick(lineBank()?.acts?.[a.id])||(night>.5&&a.nightLine?a.nightLine:a.line); whisper(ln,8000); speak(ln); }
     }
     $("#sStat").textContent="Sensei · "+(ai.travel?"on his way · "+actName(a):actName(a));
   }
@@ -1967,7 +2039,7 @@ function frame(now){
 
 /* ===================== boot ===================== */
 applyTime(); initAi(); setInterval(applyTime,30000); requestAnimationFrame(frame); buildFluffyGrass(); loadNature();
-if(location.search.includes("dbg")) window.__dbg={openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
+if(location.search.includes("dbg")) window.__dbg={p2Set:v=>p2Set(v),openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
 
 const memReady=loadMemory().then(()=>{ subscribeScrolls(); loadSandArt(); });
 /* ===================== shodō: calligraphy ===================== */
@@ -1997,27 +2069,27 @@ $("#shClear").addEventListener("click",shClear); $("#shNext").addEventListener("
 $("#shGuideT").addEventListener("click",()=>{ shGuide=!shGuide; $("#shGuide").style.opacity=shGuide?1:0; });
 $("#shSubmit").addEventListener("click",async()=>{
   if(shInk<120){ $("#shFb").textContent="Hm. The paper is still mostly paper. Write first, then show me."; return; }
-  const [k,m]=KANJI[shIdx]; $("#shFb").textContent="Sensei leans over the paper…";
-  await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
-  if(!sample||!lim||!lim.images){ const line="Hm. My eyes are only a ghost's eyes here. But I see effort in it. Again tomorrow."; $("#shFb").textContent=line; speak(line); return; }
+  const [k,m]=KANJI[shIdx];
   const out=document.createElement("canvas"); out.width=out.height=512; const o=out.getContext("2d"); o.fillStyle="#f3ead6"; o.fillRect(0,0,512,512); o.drawImage(shC,0,0,512,512);
-  try{ const v=await senseiSees(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi calligraphy master. The image is your student Gabriel's brush attempt at the kanji ${k} (${m}). He may be a beginner. Judge honestly but kindly: does it read as ${k}? stroke balance, proportion, confidence, spacing. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice, naming one specific thing to improve or one thing done well"}.`,out);
-    const sc=clamp(Math.round(+v.score||0),1,10), words=String(v.words||"").slice(0,400);
-    store.shodo=store.shodo||{}; const prev=store.shodo[k]||0; if(sc>prev){ store.shodo[k]=sc; save(); }
-    $("#shFb").textContent=`${sc}/10 — ${words}`; $("#shScore").textContent=`Best: ${Math.max(sc,prev)}/10`; speak(words); if(sc>=8){ chime(); hostBuzz(); }
-  }catch(e){ $("#shFb").textContent="…the ink smudged in the spirit world. Show me once more."; } });
+  const show=(v,tag="")=>{ const sc=clamp(Math.round(+v.score||0),1,10), words=String(v.words||"").slice(0,400); store.shodo=store.shodo||{}; const prev=store.shodo[k]||0; if(sc>prev){ store.shodo[k]=sc; save(); }
+    $("#shFb").textContent=`${sc}/10 — ${words}${tag}`; $("#shScore").textContent=`Best: ${Math.max(sc,prev)}/10`; speak(words); if(sc>=8){ chime(); hostBuzz(); } };
+  const quick=localShodo(shC); $("#shFb").textContent="Hm…";
+  await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
+  if(!sample||!lim||!lim.images){ show(quick); return; }
+  const ver=++shVer; const prompt=`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi calligraphy master. The image is your student Gabriel's brush attempt at the kanji ${k} (${m}). Judge honestly but kindly: does it read as ${k}? stroke balance, proportion, confidence. Return JSON {"score": integer 1-10, "words": "one short sentence in your voice"}.`;
+  try{ show(await senseiSees(prompt,out,4500)); }
+  catch(e){ show(quick); if(e&&e.late) e.late.then(v=>{ if(ver===shVer) show(v," (Sensei looked closer)"); }).catch(()=>{}); } });
+let shVer=0;
 
 /* ===================== minigames: kyūdō, taiko, sand raking ===================== */
 // Robust "Sensei looks at a picture" call: small JPEG, JSON first, then plain text parsed by hand, one retry.
-async function senseiSees(prompt,canvas){
-  const blob=await new Promise(r=>canvas.toBlob(r,"image/jpeg",.8));
+async function senseiSees(prompt,canvas,timeout=6000){
+  const c2=document.createElement("canvas"); const k=Math.min(1,384/Math.max(canvas.width,canvas.height)); c2.width=Math.round(canvas.width*k); c2.height=Math.round(canvas.height*k); c2.getContext("2d").drawImage(canvas,0,0,c2.width,c2.height);
+  const blob=await new Promise(r=>c2.toBlob(r,"image/jpeg",.75));
   const parse=t=>{ t=String(t||""); const m=t.match(/\{[\s\S]*\}/); if(m){ try{ return JSON.parse(m[0]); }catch(e){} } const n=t.match(/\b(10|[1-9])\s*(?:\/\s*10)?\b/); return n?{score:+n[1],words:t.replace(/[{}"]/g,"").replace(/score\s*:?\s*\d+/i,"").replace(/words\s*:?/i,"").trim()}:null; };
-  let lastErr=null;
-  for(let i=0;i<2;i++){
-    try{ const v=await sample.json(prompt,{images:[blob],cache:false}); if(v&&v.score!=null) return v; }catch(e){ lastErr=e; console.warn("[sensei sees] json",e); }
-    try{ const r=await sample(prompt+"\nReply with only the JSON object.",{images:[blob],cache:false}); const v=parse(r&&r.text); if(v&&v.score!=null) return v; }catch(e){ lastErr=e; console.warn("[sensei sees] text",e); }
-    await new Promise(r=>setTimeout(r,1200)); }
-  throw lastErr||new Error("no answer");
+  const ask=(async()=>{ try{ const v=await sample.json(prompt,{images:[blob],cache:false}); if(v&&v.score!=null) return v; }catch(e){ console.warn("[sensei sees] json",e); }
+    const r=await sample(prompt+"\nReply with only the JSON object.",{images:[blob],cache:false}); const v=parse(r&&r.text); if(v&&v.score!=null) return v; throw new Error("no answer"); })();
+  return await Promise.race([ask,new Promise((_,rj)=>setTimeout(()=>rj(Object.assign(new Error("slow"),{late:ask})),timeout))]);
 }
 const mgEl=$("#mg"), mgC=$("#mgC"), mgX=mgC.getContext("2d");
 let MG=null; // the active game object
@@ -2105,8 +2177,10 @@ const TK3={ build(){ if(this.sc) return; const sc=new THREE.Scene(); this.sc=sc;
     this.pool=[]; this.sparks=[];
   },
   noteMesh(i,type){ let m=this.pool[i]; if(!m){ m=new THREE.Group(); const d=new THREE.Mesh(this.noteG.don,this.noteM.don); m.add(d); const r=new THREE.Mesh(new THREE.TorusGeometry(.62,.06,6,24),this.rimM); r.rotation.x=Math.PI/2; r.position.y=.14; m.add(r); m.castShadow=true; this.sc.add(m); this.pool[i]=m; } m.children[0].material=this.noteM[type]; return m; },
-  hitFx(type){ this.drumKick=.25; this.sticks[type==="don"?0:1].userData.hit=.18; for(let i=0;i<10;i++){ const s=new THREE.Mesh(new THREE.OctahedronGeometry(.08,0),new THREE.MeshBasicMaterial({color:type==="don"?0xffb070:0x9ad8ff})); s.position.set(0,.4,0); s.userData={v:new THREE.Vector3(rand(-2,2),rand(2,5),rand(-2,2)),t:.6}; this.sc.add(s); this.sparks.push(s); } },
-  update(tk,dt,now){ const speed=7; let k=0; for(const n of tk.notes){ if(n.hit) continue; const x=(n.time-now)*speed; if(x>36||x<-1) continue; const m=this.noteMesh(k++,n.type); m.visible=true; m.position.set(x,.32,0); m.scale.setScalar(n.type==="ka"?.78:1); } for(let i=k;i<this.pool.length;i++) this.pool[i].visible=false;
+  hitFx(type,pl=0){ this.drumKick=.25; this.sticks[type==="don"?0:1].userData.hit=.18; for(let i=0;i<10;i++){ const s=new THREE.Mesh(new THREE.OctahedronGeometry(.08,0),new THREE.MeshBasicMaterial({color:type==="don"?0xffb070:0x9ad8ff})); s.position.set(0,.4,this.duel?(pl?1.15:-1.15):0); s.userData={v:new THREE.Vector3(rand(-2,2),rand(2,5),rand(-2,2)),t:.6}; this.sc.add(s); this.sparks.push(s); } },
+  update(tk,dt,now){ const speed=7; let k=0; this.duel=!!tk.duel; if(!this.lane2){ const l2=new THREE.Group(); const ln=new THREE.Mesh(new THREE.BoxGeometry(36,.12,1.8),F3("#1d1210")); ln.position.set(17,.06,0); l2.add(ln); const r=new THREE.Mesh(new THREE.TorusGeometry(.75,.07,8,32),new THREE.MeshBasicMaterial({color:0xff8fb8})); r.rotation.x=Math.PI/2; r.position.y=.2; l2.add(r); this.sc.add(l2); this.lane2=l2; }
+    this.lane2.visible=this.duel; this.lane2.position.z=1.15; this.ring.position.z=this.duel?-1.15:0; this.ring.material.color.set(this.duel?0x7fdcff:0xf4ecd8);
+    [[tk.notes,this.duel?-1.15:0],...(this.duel&&tk.b?[[tk.b.notes,1.15]]:[])].forEach(([ns,z])=>{ for(const n of ns){ if(n.hit) continue; const x=(n.time-now)*speed; if(x>36||x<-1) continue; const m=this.noteMesh(k++,n.type); m.visible=true; m.position.set(x,.32,z); m.scale.setScalar((n.type==="ka"?.78:1)*(this.duel?.8:1)); } }); for(let i=k;i<this.pool.length;i++) this.pool[i].visible=false;
     this.drumKick=Math.max(0,(this.drumKick||0)-dt); this.drum.scale.setScalar(1+this.drumKick*.25); this.sticks.forEach((s,i)=>{ const h=s.userData.hit||0; s.userData.hit=Math.max(0,h-dt); s.rotation.z=h>0?-.35:.5+Math.sin(now*3+i)*.05; });
     this.ring.scale.setScalar(1+Math.sin(now*tk.bpm/60*TAU)*.05);
     for(let i=this.sparks.length-1;i>=0;i--){ const s=this.sparks[i]; s.userData.t-=dt; s.userData.v.y-=12*dt; s.position.addScaledVector(s.userData.v,dt); if(s.userData.t<=0){ this.sc.remove(s); this.sparks.splice(i,1); } } }
@@ -2136,31 +2210,33 @@ function mg3Render(stage,W,H){ const r=mg3Ready(); if(stage.cam.aspect!==W/H){ s
 
 /* ---------- 弓道 Kyūdō ---------- */
 const KYUDO={ title:"弓道 · Kyūdō", sub:"Hold to draw · release to loose · four arrows",
-  start(){ KY3.reset(); this.arrows=[]; this.n=0; this.draw=0; this.drawing=false; this.aim=[.5,.45]; this.t=0; this.fly=null; this.wind=rand(-1,1); this.msg="Breathe in as you draw. Release on the out-breath."; this.done=false; },
+  start(){ KY3.reset(); this.duel=P2.on; this.N=this.duel?8:4; this.arrows=[]; this.n=0; this.draw=0; this.drawing=false; this.aim=[.5,.45]; this.t=0; this.fly=null; this.wind=rand(-1,1); this.msg="Breathe in as you draw. Release on the out-breath."; this.done=false; },
   down(x,y){ if(this.fly||this.done) return; this.drawing=true; this.aim=[x,y]; sfx((a,t)=>{ const o=a.createOscillator(),g=a.createGain(); o.type="sawtooth"; o.frequency.setValueAtTime(80,t); o.frequency.linearRampToValueAtTime(140,t+1.2); g.gain.setValueAtTime(.0,t); g.gain.linearRampToValueAtTime(.02,t+.3); g.gain.linearRampToValueAtTime(0,t+1.3); const f=a.createBiquadFilter(); f.type="lowpass"; f.frequency.value=500; o.connect(f); f.connect(g); g.connect(voiceBus); o.start(t); o.stop(t+1.4); }); },
   move(x,y){ this.aim=[x,y]; }, up(){ if(this.drawing) this.loose(); },
+  p2(b,down){ if(!this.duel||this.n%2!==1||b!=="a") return; if(down&&!this.drawing&&!this.fly) this.down(...this.aim); else if(!down&&this.drawing) this.loose(); },
   key(c,dn){ if(c==="Space"){ if(dn&&!this.drawing&&!this.fly) this.down(...this.aim); else if(!dn&&this.drawing) this.loose(); } },
   pen(x,y,dn){ const ax=.5+(x-.5)*.5, ay=.45+(y-.5)*.45; if(dn&&!this.drawing) this.down(ax,ay); else if(dn) this.aim=[ax,ay]; else if(!dn&&this.drawing) this.loose(); },
   sway(){ const over=Math.max(0,this.draw-1)*1.8; const a=.004+over*.012; return [Math.sin(this.t*1.3)*a+Math.sin(this.t*3.1)*a*.4, Math.cos(this.t*1.1)*a*.8]; },
-  loose(){ this.drawing=false; const [sx,sy]=this.sway(); const p=clamp(this.draw,0,1.4); const short=p<.75?(.75-p)*.35:0;
+  loose(){ this.drawing=false; rumble([18],(this.duel?this.n%2:0)+1); const [sx,sy]=this.sway(); const p=clamp(this.draw,0,1.4); const short=p<.75?(.75-p)*.35:0;
     const tx=this.aim[0]+sx+this.wind*.012, ty=this.aim[1]+sy+short; this.fly={t:0,x:tx,y:ty}; this.draw=0;
     sfx((a,t)=>{ const n=a.createBufferSource(); n.buffer=noiseBuf; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=1800; f.Q.value=.8; const g=a.createGain(); g.gain.setValueAtTime(.12,t); g.gain.exponentialRampToValueAtTime(.001,t+.35); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(t); n.stop(t+.4);
       const o=a.createOscillator(),og=a.createGain(); o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(110,t+.25); og.gain.setValueAtTime(.08,t); og.gain.exponentialRampToValueAtTime(.001,t+.3); o.connect(og); og.connect(voiceBus); o.start(t); o.stop(t+.3); }); },
   frame(dt,W,H){ this.t+=dt; if(this.drawing) this.draw=Math.min(2.2,this.draw+dt/1.5);
     const g=mgX; g.clearRect(0,0,W,H);
     if(this.fly){ this.fly.t+=dt/.55; const f=this.fly, k=Math.min(1,f.t);
-      if(k>=1){ const pt=KY3.aimPoint(f.x,f.y); const d=Math.hypot(pt.x-KY3.T.x,pt.y-KY3.T.y)/KY3.R; const pts=d<.2?10:d<.4?7:d<.56?5:d<.86?3:d<1?1:0; KY3.stick(d<1.8?pt:pt.setZ(KY3.T.z-1.5)); this.arrows.push({x:f.x,y:f.y,pts}); this.n++; this.fly=null;
+      if(k>=1){ const pt=KY3.aimPoint(f.x,f.y); const d=Math.hypot(pt.x-KY3.T.x,pt.y-KY3.T.y)/KY3.R; const pts=d<.2?10:d<.4?7:d<.56?5:d<.86?3:d<1?1:0; KY3.stick(d<1.8?pt:pt.setZ(KY3.T.z-1.5)); this.arrows.push({x:f.x,y:f.y,pts,pl:this.duel?this.n%2:0}); this.n++; this.fly=null; rumble(pts?[25,30,45]:[12],(this.duel?(this.n-1)%2:0)+1);
         sfx((a,t)=>{ const o=a.createOscillator(),og=a.createGain(); o.frequency.value=pts?140:60; og.gain.setValueAtTime(.18,t); og.gain.exponentialRampToValueAtTime(.001,t+.25); o.connect(og); og.connect(voiceBus); o.start(t); o.stop(t+.3); });
         this.msg=pts>=10?"Kaichū. The center. Hm… do not let it go to your head.":pts>=7?"Close to the heart of it.":pts>=3?"On the target. The bow is honest.":pts?"Just on the edge.":"Into the sand. The sand thanks you."; hostBuzz();
         this.wind=rand(-1,1);
-        if(this.n>=4){ this.done=true; const tot=this.arrows.reduce((s,a)=>s+a.pts,0); const best=mgBest("kyudo",tot);
+        if(this.n>=this.N&&this.duel){ this.done=true; const sc=[0,1].map(q=>this.arrows.filter(a=>a.pl===q).reduce((s,a)=>s+a.pts,0)); setTimeout(()=>mgResult(`P1 ${sc[0]} · P2 ${sc[1]}`,"Four arrows each",sc[0]===sc[1]?"Even. The target loved you both equally.":(sc[0]>sc[1]?"Player 1":"Player 2")+" takes the range. Bow to each other."),900); }
+        else if(this.n>=this.N){ this.done=true; const tot=this.arrows.reduce((s,a)=>s+a.pts,0); const best=mgBest("kyudo",tot);
           setTimeout(()=>mgResult(`${tot} / 40`,`${this.arrows.filter(a=>a.pts).length} of 4 arrows on the target${best?" · new best":""}`, tot>=30?"Four arrows, one mind. I am almost impressed.":tot>=18?"Good. The arrow follows the breath. Yours is getting calmer.":tot>=8?"The target is patient. So am I. Again.":"Hm. You were shooting at your thoughts, not the target. Breathe first."),900); } } }
     KY3.build(); KY3.update(this,dt); mg3Render(KY3,W,H);
     // aim & bow
     const [sx,sy]=this.sway(); const ax=(this.aim[0]+sx)*W, ay=(this.aim[1]+sy)*H;
     if(!this.fly&&!this.done){ g.strokeStyle="rgba(255,255,255,.85)"; g.lineWidth=1.5; g.beginPath(); g.arc(ax,ay,10+(1-Math.min(1,this.draw))*14,0,TAU); g.stroke(); g.beginPath(); g.moveTo(ax-4,ay); g.lineTo(ax+4,ay); g.moveTo(ax,ay-4); g.lineTo(ax,ay+4); g.stroke(); }
     // HUD
-    g.fillStyle="rgba(20,18,30,.55)"; g.fillRect(16,H-64,280,48); g.fillStyle="#f4ecd8"; g.font="15px Shippori Mincho, serif"; g.fillText(`Arrow ${Math.min(this.n+1,4)} / 4   ·   ${this.arrows.reduce((s,a)=>s+a.pts,0)} pts`,30,H-34);
+    g.fillStyle="rgba(20,18,30,.55)"; g.fillRect(16,H-64,this.duel?420:280,48); g.fillStyle="#f4ecd8"; g.font="15px Shippori Mincho, serif"; g.fillText(this.duel?`${this.n%2?"Player 2":"Player 1"} · arrow ${Math.min(Math.floor(this.n/2)+1,4)}/4  ·  P1 ${this.arrows.filter(a=>a.pl===0).reduce((s,a)=>s+a.pts,0)} · P2 ${this.arrows.filter(a=>a.pl===1).reduce((s,a)=>s+a.pts,0)}`:`Arrow ${Math.min(this.n+1,4)} / 4   ·   ${this.arrows.reduce((s,a)=>s+a.pts,0)} pts`,30,H-34);
     g.fillStyle="rgba(244,236,216,.95)"; g.font="16px Shippori Mincho, serif"; g.textAlign="center"; g.fillText(this.msg,W/2,H*.08); g.textAlign="left";
     if(this.drawing){ g.fillStyle="rgba(20,18,30,.5)"; g.fillRect(W/2-90,H*.94,180,10); g.fillStyle=this.draw>1.15?"#c8452f":"#f4ecd8"; g.fillRect(W/2-90,H*.94,180*Math.min(1,this.draw/1.15),10); }
   }
@@ -2170,25 +2246,27 @@ const KYUDO={ title:"弓道 · Kyūdō", sub:"Hold to draw · release to loose �
 const TAIKO={ title:"太鼓 · Taiko", sub:"Red DON: F / J / left side · Blue KA: D / K / right side",
   start(){ TK3.build(); initAudio(); if(actx.state==="suspended") actx.resume(); this.bpm=108; const beat=60/this.bpm; this.t0=actx.currentTime+2.2; this.notes=[]; let t=0; const bars=16;
     for(let b=0;b<bars;b++){ const lvl=Math.min(1,.35+b/bars); for(let s=0;s<8;s++){ const strong=s%2===0; if(b===0&&s>3) continue; if(Math.random()<(strong?.62+lvl*.2:.12+lvl*.3)) this.notes.push({time:this.t0+(b*8+s)*beat/2,type:Math.random()<(s%4===0?.78:.42)?"don":"ka",hit:null}); } }
-    this.end_t=this.t0+bars*4*beat+1.2; this.score=0; this.combo=0; this.maxc=0; this.good=0; this.ok=0; this.miss=0; this.flash=null; this.finished=false;
+    this.end_t=this.t0+bars*4*beat+1.2; this.score=0; this.combo=0; this.maxc=0; this.good=0; this.ok=0; this.miss=0; this.flash=null; this.finished=false; this.duel=P2.on; this.b=this.duel?{notes:this.notes.map(n=>({time:n.time,type:n.type,hit:null})),score:0,combo:0,maxc:0,good:0,ok:0,miss:0}:null;
     // backing: koto on the downbeat + soft shaker, scheduled ahead
     const kot=[146.83,196,220,233.08,293.66]; for(let b=0;b<bars;b++){ for(let q=0;q<4;q++){ const tt=this.t0+(b*4+q)*beat; if(q===0||Math.random()<.35){ const ps=actx.createBufferSource(); ps.buffer=ks(kot[(b+q*2)%kot.length]*(q===0?1:2)); const pg=actx.createGain(); pg.gain.value=q===0?.4:.18; ps.connect(pg); pg.connect(voiceBus); ps.start(tt); } const n=actx.createBufferSource(); n.buffer=noiseBuf; const f=actx.createBiquadFilter(); f.type="highpass"; f.frequency.value=6000; const g=actx.createGain(); g.gain.setValueAtTime(.03,tt+beat/2); g.gain.exponentialRampToValueAtTime(.001,tt+beat/2+.06); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(tt+beat/2); n.stop(tt+beat/2+.08); } }
   },
   end(){},
-  drum(type){ sfx((a,t)=>{ if(type==="don"){ const o=a.createOscillator(),g=a.createGain(); o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(55,t+.18); g.gain.setValueAtTime(.55,t); g.gain.exponentialRampToValueAtTime(.001,t+.35); o.connect(g); g.connect(voiceBus); o.start(t); o.stop(t+.4); }
+  drum(type,pl=0){ sfx((a,t)=>{ if(type==="don"){ const o=a.createOscillator(),g=a.createGain(); o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(55,t+.18); g.gain.setValueAtTime(.55,t); g.gain.exponentialRampToValueAtTime(.001,t+.35); o.connect(g); g.connect(voiceBus); o.start(t); o.stop(t+.4); }
       else { const n=a.createBufferSource(); n.buffer=noiseBuf; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=2400; f.Q.value=2; const g=a.createGain(); g.gain.setValueAtTime(.35,t); g.gain.exponentialRampToValueAtTime(.001,t+.07); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(t); n.stop(t+.1); const o=a.createOscillator(),og=a.createGain(); o.frequency.value=950; og.gain.setValueAtTime(.08,t); og.gain.exponentialRampToValueAtTime(.001,t+.06); o.connect(og); og.connect(voiceBus); o.start(t); o.stop(t+.08); } });
-    const now=actx.currentTime; let best=null,bd=1; for(const n of this.notes){ if(n.hit) continue; const d=Math.abs(n.time-now); if(d<bd){ bd=d; best=n; } }
-    if(best&&bd<.14){ if(best.type!==type){ this.flash={txt:"wrong drum",c:"#9a8670",t:.4}; return; } best.hit=bd<.055?"good":"ok"; TK3.hitFx(type); if(best.hit==="good"){ this.good++; this.score+=300; } else { this.ok++; this.score+=100; } this.combo++; this.maxc=Math.max(this.maxc,this.combo); this.flash={txt:best.hit==="good"?"良 GOOD":"可 OK",c:best.hit==="good"?"#f7c948":"#f4ecd8",t:.4}; if(this.combo%20===0) hostBuzz(); } },
-  key(c,dn){ if(!dn) return; if(c==="KeyF"||c==="KeyJ") this.drum("don"); else if(c==="KeyD"||c==="KeyK") this.drum("ka"); },
+    const P=pl?this.b:this; if(!P) return; const now=actx.currentTime; let best=null,bd=1; for(const n of P.notes){ if(n.hit) continue; const d=Math.abs(n.time-now); if(d<bd){ bd=d; best=n; } }
+    if(best&&bd<.14){ if(best.type!==type){ this.flash={txt:"wrong drum",c:"#9a8670",t:.4}; return; } best.hit=bd<.055?"good":"ok"; TK3.hitFx(type,pl); rumble([10],pl+1); if(best.hit==="good"){ P.good++; P.score+=300; } else { P.ok++; P.score+=100; } P.combo++; P.maxc=Math.max(P.maxc,P.combo); this.flash={pl,txt:best.hit==="good"?"良 GOOD":"可 OK",c:best.hit==="good"?"#f7c948":"#f4ecd8",t:.4}; if(P.combo%20===0) hostBuzz(); } },
+  key(c,dn){ if(!dn) return; if(this.duel){ if(c==="KeyF") this.drum("don",0); else if(c==="KeyD") this.drum("ka",0); else if(c==="KeyJ") this.drum("don",1); else if(c==="KeyK") this.drum("ka",1); return; } if(c==="KeyF"||c==="KeyJ") this.drum("don"); else if(c==="KeyD"||c==="KeyK") this.drum("ka"); },
+  p2(b,down){ if(!down||!this.duel) return; if(b==="a") this.drum("don",1); else if(b==="b") this.drum("ka",1); },
   down(x,y,e){ if(e&&e.button===2) this.drum("ka"); else this.drum(x<.5?"don":"ka"); },
   hit(type){ this.drum(type); },
   frame(dt,W,H){ const g=mgX, now=actx.currentTime; const hx=W*.5, ly=H*.36; g.clearRect(0,0,W,H);
-    for(const n of this.notes){ if(n.hit) continue; if(now-n.time>.14){ n.hit="miss"; this.miss++; this.combo=0; this.flash={txt:"不 MISS",c:"#7a8aa8",t:.35}; } }
+    for(const P of [this,this.b]){ if(!P) continue; for(const n of P.notes){ if(n.hit) continue; if(now-n.time>.14){ n.hit="miss"; P.miss++; P.combo=0; if(P===this) this.flash={txt:"不 MISS",c:"#7a8aa8",t:.35}; } } }
     TK3.update(this,dt,now); mg3Render(TK3,W,H); g.textAlign="center";
     if(this.flash){ this.flash.t-=dt; g.fillStyle=this.flash.c; g.font="bold 24px Shippori Mincho, serif"; g.fillText(this.flash.txt,hx,ly-62); if(this.flash.t<=0) this.flash=null; }
-    g.fillStyle="#f4ecd8"; g.font="18px Shippori Mincho, serif"; g.fillText(`${this.score}`,W*.5,H*.82); g.font="13px sans-serif"; g.fillStyle="rgba(244,236,216,.7)"; g.fillText(this.combo>2?`${this.combo} combo`:"",W*.5,H*.86);
+    g.fillStyle="#f4ecd8"; g.font="18px Shippori Mincho, serif"; if(this.duel){ g.fillStyle="#7fdcff"; g.fillText(`P1 ${this.score}`,W*.38,H*.82); g.fillStyle="#ff8fb8"; g.fillText(`P2 ${this.b.score}`,W*.62,H*.82); g.font="12px sans-serif"; g.fillStyle="rgba(244,236,216,.7)"; g.fillText("P1: F don · D ka      P2: J don · K ka (or phone A / B)",W*.5,H*.9); g.fillStyle="#f4ecd8"; } else g.fillText(`${this.score}`,W*.5,H*.82); g.font="13px sans-serif"; g.fillStyle="rgba(244,236,216,.7)"; g.fillText(this.combo>2?`${this.combo} combo`:"",W*.5,H*.86);
     if(now<this.t0){ g.font="30px Shippori Mincho, serif"; g.fillStyle="#f4ecd8"; g.fillText(Math.ceil(this.t0-now)||"始",W*.5,H*.3); }
     g.textAlign="left";
+    if(!this.finished&&now>this.end_t&&this.duel){ this.finished=true; const a=this.score,b2=this.b.score; mgResult(`P1 ${a} · P2 ${b2}`,`P1 良${this.good} 可${this.ok} 不${this.miss} · P2 良${this.b.good} 可${this.b.ok} 不${this.b.miss}`, a===b2?"A perfect tie. The drum refuses to choose.":(a>b2?"Player 1":"Player 2")+" wins the duel. Taro wants a rematch already."); }
     if(!this.finished&&now>this.end_t){ this.finished=true; const total=this.notes.length, acc=Math.round((this.good+this.ok*.5)/Math.max(1,total)*100); const best=mgBest("taiko",this.score);
       mgResult(`${this.score} pts · ${acc}%`,`良 ${this.good} · 可 ${this.ok} · 不 ${this.miss} · best combo ${this.maxc}${best?" · new best":""}`, acc>=90?"The drum and you agreed on everything. Rare.":acc>=70?"Your hands found the heartbeat. Mostly.":acc>=45?"The rhythm was there. You arrived a little late to it.":"Hm. The drum spoke. You were thinking of something else."); } }
 };
@@ -2235,8 +2313,8 @@ async function sandJudge(){ if(RAKE.judging) return; const local=RAKE.localJudge
   await sampleReady; let lim=null; try{ lim=sample&&await sample.limits(); }catch(e){}
   if(!sample||!lim||!lim.images){ done(local); return; }
   const c=document.createElement("canvas"); c.width=640; c.height=400; const g=c.getContext("2d"); g.drawImage(sandCv,0,0,640,400); SAND_ROCKS.forEach(rk=>{ const [x,y,r]=rockPx(rk); g.fillStyle="#6e6b63"; g.beginPath(); g.arc(x*.625,y*.625,r*.625,0,TAU); g.fill(); });
-  try{ done(await senseiSees(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi zen master. The image is a top-down view of the dry garden (karesansui) your student Gabriel just raked; the grey circles are the stones. Judge it like a zen gardener: flow, evenness of lines, how the patterns respond to the stones, sense of calm. Return JSON {"score": integer 1-10, "words": "one or two short sentences in your voice"}.`,c)); }
-  catch(e){ console.warn("[rake judge] falling back to local eye",e); done(local); } }
+  try{ done(await senseiSees(`You are Sensei Hakuun, a calm, warm, slightly mischievous ghost-koi zen master. The image is a top-down view of the dry garden (karesansui) your student Gabriel just raked; the grey circles are the stones. Judge it like a zen gardener: flow, evenness of lines, how the patterns respond to the stones, sense of calm. Return JSON {"score": integer 1-10, "words": "one short sentence in your voice"}.`,c,4500)); }
+  catch(e){ console.warn("[rake judge] quick eye",e); done(local); } }
 $("#mgJudge").addEventListener("click",()=>{ if(MG===RAKE) sandJudge(); });
 $("#mgReset").addEventListener("click",()=>{ if(MG===RAKE){ sandBase(); applySand(); RAKE.resetStats(); RAKE.verdict="Fresh sand. A fresh mind."; store.sandArt=null; save(); } });
 const GAMES={kyudo:KYUDO,taiko:TAIKO,rake:RAKE};
@@ -2249,6 +2327,7 @@ let menuOpen=true, lastReply="", firstEnter=true;
 function showMenu(){ menuOpen=true; $("#hint").style.opacity=0; $("#title").classList.remove("gone"); $("#miEnterT").textContent=entered?"Return to the Garden":"Enter the Garden"; closeChat(); hostPush(); }
 function hideMenu(){ menuOpen=false; $("#hint").style.opacity=chatOpen?0:1; $("#title").classList.add("gone"); ["pairPanel","setPanel"].forEach(id=>$("#"+id).classList.remove("show")); hostPush(); }
 async function enterGame(){
+  setTimeout(()=>refreshBank(),4000);
   hideMenu(); controls.autoRotate=false; if(!window.sensei){ try{ const el=document.documentElement; if(!document.fullscreenElement&&el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }catch(e){} }
   if(firstEnter){ firstEnter=false; if(musicPref) startSound();
     controls.target.set(player.position.x,player.position.y+1.7,player.position.z); camera.position.set(player.position.x,player.position.y+5,player.position.z+9.5);
@@ -2283,7 +2362,7 @@ async function hostInit(){ if(hostStarted) return; hostStarted=true;
     hostPush();
   }catch(e){ $("#pairStat").textContent="Live connection isn't available in this view. Open the page on claude.ai in a browser."; hostStarted=false; } }
 function hostMode(){ return MG?(MG===KYUDO?"kyudo":MG===TAIKO?"taiko":"rake"):shodoOpen?"shodo":(menuOpen||document.querySelector(".panel.show"))?"menu":chatOpen?"chat":"game"; }
-function hostBuzz(){ if(hRoom) hRoom.emit("buzz",{}).catch(()=>{}); }
+function hostBuzz(pat){ if(hRoom) hRoom.emit("buzz",{}).catch(()=>{}); if(window.sensei&&window.sensei.send) window.sensei.send("remote:buzz",{player:0,pat:pat||[30,40,30]}); }
 function hostPush(){ if(!hRoom) return; hRoom.presence({host:{mode:hostMode(),last:(lastReply||"").slice(0,600),act:ai.act?actName(ai.act):""}}).catch(()=>{}); }
 function remotePeer(){ if(!hRoom) return null; return hRoom.peers().find(p=>!p.sameTab&&p.presence&&p.presence.rc)||null; }
 const CLICKABLE=".mi,.pbtn,.ibtn,#act,.x,#send,#whisper,.m.s,#clock,#voiceCycle,.scrollItem,.shB";

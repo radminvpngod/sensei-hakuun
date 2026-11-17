@@ -1,120 +1,159 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#e9e6df">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="theme-color" content="#bfe6ff">
 <title>Sensei Remote</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
-html,body{margin:0;height:100%;background:radial-gradient(ellipse at 50% 0%,#232842,#0e1019 70%);color:#f4ecd8;font-family:-apple-system,"Segoe UI",system-ui,sans-serif;overflow:hidden;touch-action:none;overscroll-behavior:none}
-.remote{position:absolute;inset:0;padding:calc(env(safe-area-inset-top) + 12px) 22px calc(env(safe-area-inset-bottom) + 14px);display:flex;flex-direction:column;align-items:center;gap:14px}
-.top{width:100%;display:flex;align-items:center;gap:10px}
-.brand{white-space:nowrap;font-family:"Hiragino Mincho ProN","Yu Mincho",Georgia,serif;font-size:19px;letter-spacing:.04em;flex:1}
-.brand b{color:#e2553a;font-weight:500;margin-right:6px}
-.chip{min-width:0;max-width:52%;overflow:hidden;display:flex;align-items:center;gap:7px;padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);font-size:12px;color:#c9c2b3}
-.ir{display:contents}.ir .led{width:8px;height:8px;border-radius:50%;background:#555}.ir .led.on{background:#5ad1ff;box-shadow:0 0 10px #5ad1ff}
-.status{font-size:12px;color:#c9c2b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gear{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);font-size:18px}
-.hint{font-size:12px;color:#8f8a7e;text-align:center;margin-top:-2px}
-.pad{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
-.dpad{position:relative;width:168px;height:168px;flex:none;border-radius:50%;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
-.dpad div{position:absolute;background:linear-gradient(180deg,#3a3f55,#2a2e40);box-shadow:0 3px 0 #171a26,0 6px 14px rgba(0,0,0,.35)}
-.dpad .h{left:14px;top:60px;width:140px;height:48px;border-radius:12px}.dpad .v{left:60px;top:14px;width:48px;height:140px;border-radius:12px}
-.dpad .hit{background:transparent!important;box-shadow:none!important;z-index:2;border-radius:12px}
-.dpad .hit::after{content:"";position:absolute;inset:16px;border-radius:3px;border:solid #8f8a7e;border-width:0 2px 2px 0}
-.dpad .hit[data-k=up]::after{transform:rotate(-135deg) scale(.5)}.dpad .hit[data-k=down]::after{transform:rotate(45deg) scale(.5)}.dpad .hit[data-k=left]::after{transform:rotate(135deg) scale(.5)}.dpad .hit[data-k=right]::after{transform:rotate(-45deg) scale(.5)}
-.dpad .hit.down{background:rgba(255,255,255,.08)!important}
-.abrow{display:flex;align-items:flex-end;gap:22px}
-.btnA{width:116px;height:116px;border-radius:50%;background:radial-gradient(circle at 40% 32%,#fffaf0,#e6dccb);box-shadow:0 5px 0 #a99f8c,0 12px 26px rgba(0,0,0,.45);display:grid;place-items:center;font-size:44px;color:#5a5348;font-weight:600;flex:none}
-.btnB{width:64px;height:64px;border-radius:50%;background:linear-gradient(180deg,#e2553a,#b83c26);box-shadow:0 4px 0 #7a2416,0 8px 18px rgba(0,0,0,.4);display:grid;place-items:center;font-size:22px;font-weight:700;color:#fff;margin-bottom:6px}
-.row{display:flex;gap:16px;align-items:center;justify-content:center}
-.sm{width:52px;height:52px;border-radius:50%;background:linear-gradient(180deg,#3a3f55,#2a2e40);display:grid;place-items:center;font-size:21px;color:#e8e1d2;box-shadow:0 3px 0 #171a26,0 6px 12px rgba(0,0,0,.3)}
-.home{width:56px;height:56px;background:linear-gradient(180deg,#f4ecd8,#d8cdb6);color:#3a2c1e;box-shadow:0 3px 0 #9a8f78,0 6px 12px rgba(0,0,0,.3);font-size:22px}
-.num{font-size:19px;font-weight:700;width:48px;height:48px}
-.down,.btnA.down,.btnB.down,.sm.down,.pill.down{transform:translateY(3px) scale(.96);filter:brightness(.9)}
-.btnA.down{box-shadow:0 2px 0 #a99f8c,0 6px 14px rgba(0,0,0,.4)}
-.bottom{width:100%;display:flex;gap:10px}
-.pill{padding:14px 16px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);font-size:14px;color:#efe7d6;font-weight:600;text-align:center}
-.mic{flex:1;background:linear-gradient(180deg,#e2553a,#b83c26);border:0;color:#fff;font-size:15px}
-.mic.down{background:linear-gradient(180deg,#7be3a0,#4fbf7a);color:#0d2416}
-.scroll{position:fixed;right:0;top:34%;width:20px;height:170px;border-radius:12px 0 0 12px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.08);border-right:0;color:#8f8a7e;font-size:9px;display:grid;place-items:center;writing-mode:vertical-rl;letter-spacing:.25em}
-.sheet{position:fixed;left:0;right:0;bottom:0;background:#181b29;border-radius:22px 22px 0 0;border-top:1px solid rgba(255,255,255,.1);padding:14px 20px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:12px;transform:translateY(105%);transition:transform .3s;z-index:9;box-shadow:0 -20px 50px rgba(0,0,0,.5)}
-.sheet.show{transform:none}.sheet .grab{width:44px;height:5px;border-radius:3px;background:#3a3f55;align-self:center}
-.sheet h3{margin:0;font-family:"Hiragino Mincho ProN","Yu Mincho",Georgia,serif;font-weight:500;font-size:17px}
-.sheet .row{justify-content:flex-start;gap:10px;flex-wrap:wrap}
-.opts{display:flex;gap:12px;align-items:center;font-size:13px;color:#c9c2b3;flex-wrap:wrap}
+:root{--ink:#24324a;--ghost:#f6fbff;--glow:#bfe6ff;--aqua:#4fc3f7;--koi:#ff7a59;--straw:#e7c27d;--p:#4fc3f7}
+body.p2{--p:#ff8fb8}
+html,body{margin:0;height:100%;overflow:hidden;touch-action:none;overscroll-behavior:none;font-family:"Segoe UI",-apple-system,system-ui,sans-serif;color:var(--ink);
+ background:radial-gradient(ellipse at 50% -10%,#ffffff 0%,#d9f2ff 35%,#8fd3f5 70%,#5bb6e6 100%)}
+.bubbles{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.bubbles i{position:absolute;bottom:-60px;border-radius:50%;background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.95),rgba(255,255,255,.25) 40%,rgba(255,255,255,.05) 70%);box-shadow:inset 0 0 6px rgba(255,255,255,.6);animation:rise linear infinite}
+@keyframes rise{to{transform:translateY(-120vh) translateX(20px)}}
+.koi{position:fixed;width:180px;height:60px;left:-200px;top:62%;opacity:.18;animation:swim 26s linear infinite;pointer-events:none}
+@keyframes swim{to{transform:translateX(calc(100vw + 400px))}}
+.remote{position:absolute;left:50%;top:calc(env(safe-area-inset-top) + 10px);bottom:calc(env(safe-area-inset-bottom) + 10px);transform:translateX(-50%);width:min(86vw,330px);
+ border-radius:58px 58px 64px 64px;background:linear-gradient(180deg,#ffffff 0%,#f1f8ff 55%,#e3eef8 100%);
+ box-shadow:inset 0 3px 0 #fff,inset 0 -8px 18px rgba(80,140,190,.18),inset 6px 0 14px rgba(255,255,255,.9),0 26px 60px rgba(30,80,130,.35),0 0 0 1px rgba(120,170,210,.25);
+ display:flex;flex-direction:column;align-items:center;padding:18px 18px 16px;gap:12px;overflow:hidden}
+.remote:before{content:"";position:absolute;left:8%;right:52%;top:10px;height:42%;border-radius:50px;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,0));pointer-events:none}
+.ir{width:64%;height:20px;border-radius:12px;background:linear-gradient(180deg,#3a4a66,#141a28);box-shadow:inset 0 2px 5px rgba(0,0,0,.6),0 1px 0 #fff;position:relative;flex:none}
+.ir:after{content:"";position:absolute;left:10%;right:10%;top:3px;height:5px;border-radius:5px;background:linear-gradient(90deg,transparent,rgba(160,220,255,.5),transparent)}
+.led{position:absolute;right:10px;top:6px;width:8px;height:8px;border-radius:50%;background:#4a5568}
+.led.on{background:var(--p);box-shadow:0 0 10px var(--p)}
+.status{font-size:11.5px;color:#5c7088;letter-spacing:.04em;text-align:center;min-height:15px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:none}
+.gloss{position:relative;display:grid;place-items:center;border-radius:50%;flex:none;transition:transform .08s}
+.gloss:after{content:"";position:absolute;left:18%;right:18%;top:7%;height:42%;border-radius:50%;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,0));pointer-events:none}
+.dpad{position:relative;width:150px;height:150px;flex:none;border-radius:50%;background:radial-gradient(circle,#eef5fb 55%,#dbe7f2);box-shadow:inset 0 2px 6px rgba(80,120,160,.25),0 1px 0 #fff}
+.dpad .h,.dpad .v{position:absolute;background:linear-gradient(180deg,#f7fbff,#c9d6e4);box-shadow:0 3px 0 #9fb2c6,0 6px 12px rgba(40,80,120,.25),inset 0 2px 0 #fff}
+.dpad .h{left:16px;top:56px;width:118px;height:38px;border-radius:12px}.dpad .v{left:56px;top:16px;width:38px;height:118px;border-radius:12px}
+.dpad .hit{position:absolute;z-index:2;border-radius:12px}
+.dpad .hit:before{content:"";position:absolute;left:50%;top:50%;width:0;height:0;margin:-6px 0 0 -6px;border:6px solid transparent}
+.dpad .hit[data-k=up]:before{border-bottom-color:#8aa0b8;margin-top:-10px}.dpad .hit[data-k=down]:before{border-top-color:#8aa0b8;margin-top:-2px}
+.dpad .hit[data-k=left]:before{border-right-color:#8aa0b8;margin-left:-10px}.dpad .hit[data-k=right]:before{border-left-color:#8aa0b8;margin-left:-2px}
+.dpad .hit.down{background:rgba(79,195,247,.18)}
+.btnA{width:104px;height:104px;background:radial-gradient(circle at 50% 60%,#ffffff,#dfeaf5 70%,#c4d4e4);box-shadow:0 0 0 6px rgba(191,230,255,.9),0 0 0 7px rgba(120,180,220,.5),0 6px 0 #9fb2c6,0 14px 26px rgba(40,90,140,.3);
+ font-size:42px;font-weight:700;color:#5a7290;font-family:"Segoe UI",system-ui,sans-serif}
+.abrow{display:flex;align-items:center;gap:18px}
+.btnB{width:60px;height:60px;background:radial-gradient(circle at 50% 65%,#ff9b7e,var(--koi) 60%,#d9553a);box-shadow:0 4px 0 #a83e28,0 9px 18px rgba(180,70,40,.35);color:#fff;font-size:22px;font-weight:800}
+.row{display:flex;gap:16px;align-items:center;justify-content:center;flex:none}
+.sm{width:46px;height:46px;background:radial-gradient(circle at 50% 65%,#ffffff,#d8e4f0);box-shadow:0 3px 0 #9fb2c6,0 6px 12px rgba(40,90,140,.22);font-size:22px;color:#5a7290;font-weight:700}
+.home{width:50px;height:50px;background:radial-gradient(circle at 50% 65%,#fff3d6,var(--straw) 75%,#c99d4f);box-shadow:0 3px 0 #a17a35,0 6px 12px rgba(150,110,40,.3);color:#5a3d12;font-family:"Hiragino Mincho ProN","Yu Mincho",serif;font-size:20px}
+.num{width:50px;height:50px;font-size:20px}
+.down{transform:translateY(3px) scale(.95);filter:brightness(.95)}
+.spacer{flex:1;min-height:4px}
+.players{display:flex;gap:9px;flex:none}.players i{width:9px;height:9px;border-radius:2px;background:#c9d6e4;box-shadow:inset 0 1px 2px rgba(0,0,0,.2)}
+.players i.on{background:var(--p);box-shadow:0 0 8px var(--p)}
+.mark{font-family:"Hiragino Mincho ProN","Yu Mincho",Georgia,serif;font-size:15px;letter-spacing:.18em;color:#7a8ea6;flex:none}
+.mark b{color:var(--koi);font-weight:500}
+.tools{display:flex;gap:10px;width:100%;flex:none}
+.pill{flex:1;padding:13px 10px;border-radius:22px;text-align:center;font-size:14px;font-weight:700;color:#fff;position:relative;overflow:hidden;
+ background:linear-gradient(180deg,#7fdcff,#2fa6e0);box-shadow:0 3px 0 #1d7fb2,0 8px 16px rgba(30,120,180,.3),inset 0 1px 0 rgba(255,255,255,.7)}
+.pill:after{content:"";position:absolute;left:8%;right:8%;top:2px;height:45%;border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,0))}
+.pill.mic.down{background:linear-gradient(180deg,#9df0b8,#3fbf74);box-shadow:0 3px 0 #2a8a52}
+.pill.gear{flex:0 0 52px;background:linear-gradient(180deg,#ffffff,#d8e4f0);color:#5a7290;box-shadow:0 3px 0 #9fb2c6,0 8px 16px rgba(30,90,140,.2)}
+.scroll{position:fixed;right:0;top:34%;width:22px;height:170px;border-radius:14px 0 0 14px;background:linear-gradient(90deg,rgba(255,255,255,.5),rgba(255,255,255,.85));box-shadow:-2px 4px 12px rgba(30,90,140,.2);color:#6b8098;font-size:9px;display:grid;place-items:center;writing-mode:vertical-rl;letter-spacing:.25em}
+.sheet{position:fixed;left:0;right:0;bottom:0;border-radius:26px 26px 0 0;padding:14px 20px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:12px;transform:translateY(105%);transition:transform .3s;z-index:9;
+ background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(225,242,255,.95));backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 -14px 40px rgba(30,90,140,.25)}
+.sheet.show{transform:none}.sheet .grab{width:44px;height:5px;border-radius:3px;background:#b9cadb;align-self:center}
+.sheet h3{margin:0;font-size:16px;color:#3a5070}
+.sheet .row{justify-content:flex-start;gap:8px;flex-wrap:wrap}
+.chipb{padding:10px 14px;border-radius:16px;background:linear-gradient(180deg,#fff,#dce8f3);box-shadow:0 2px 0 #a9bccf;font-size:13.5px;font-weight:700;color:#3a5070}
+.opts{display:flex;gap:12px;align-items:center;font-size:13px;color:#4a6080;flex-wrap:wrap}
 .opts label{display:flex;gap:5px;align-items:center}
-input[type=range]{width:140px;accent-color:#e2553a}
-.type{display:flex;gap:6px;width:100%}
-.type input{flex:1;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px 14px;background:#0e1019;color:#f4ecd8;font-size:16px;-webkit-user-select:text;user-select:text;touch-action:auto}
-.spacer{display:none}
-.start,.cal{position:fixed;inset:0;background:rgba(10,12,22,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#f4ecd8;text-align:center;padding:30px;z-index:10}
+input[type=range]{flex:1;min-width:120px;accent-color:#2fa6e0}
+.type input{width:100%;border:1px solid #c4d4e4;border-radius:16px;padding:12px 14px;background:#fff;color:var(--ink);font-size:16px;-webkit-user-select:text;user-select:text;touch-action:auto}
+.start,.cal{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:30px;z-index:10;color:#24324a;
+ background:radial-gradient(ellipse at 50% 20%,rgba(255,255,255,.97),rgba(205,236,255,.97))}
 .cal{display:none;z-index:11}.cal.show{display:flex}
 .start h1,.cal h2{font-family:"Hiragino Mincho ProN","Yu Mincho",Georgia,serif;font-weight:500;margin:0;font-size:26px}
-.start p,.cal p{opacity:.8;font-size:14px;line-height:1.55;margin:0;max-width:320px}
-.big{border:0;border-radius:16px;padding:16px 28px;background:linear-gradient(180deg,#e2553a,#b83c26);color:#fff;font-size:18px;font-weight:600;min-width:220px}
-.cal .pill{border:0}
+.start p,.cal p{opacity:.85;font-size:14px;line-height:1.55;margin:0;max-width:320px}
+.big{border:0;border-radius:24px;padding:16px 30px;min-width:230px;color:#fff;font-size:18px;font-weight:700;background:linear-gradient(180deg,#7fdcff,#2fa6e0);box-shadow:0 4px 0 #1d7fb2,0 10px 22px rgba(30,120,180,.35)}
+.dots{display:grid;grid-template-columns:repeat(3,22px);gap:8px}.dots i{width:22px;height:14px;border-radius:4px;background:#d3e2ef}.dots i.done{background:#5fd18f}.dots i.cur{background:var(--koi);box-shadow:0 0 8px var(--koi)}
+.cal .x{background:none;border:0;color:#5a7290;font-size:14px;font-weight:600}
+#hap{position:fixed;left:-100px;top:-100px;opacity:0}
 </style></head>
 <body>
+<div class="bubbles" id="bubbles"></div>
+<svg class="koi" viewBox="0 0 180 60"><path d="M10 30 Q50 5 110 22 Q140 28 150 30 Q140 32 110 38 Q50 55 10 30 Z" fill="#fff"/><path d="M150 30 L178 12 L170 30 L178 48 Z" fill="#fff"/><circle cx="36" cy="27" r="3" fill="#24324a"/></svg>
 <div class="remote">
-  <div class="top"><div class="brand"><b>白</b>Sensei Remote</div><div class="chip ir"><span class="led" id="led"></span><span class="status" id="status">connecting…</span></div><div class="gear" id="gear">⚙</div></div>
-  <div class="hint">Point the top of your phone at your screen</div>
-  <div class="pad">
-    <div class="dpad"><div class="h"></div><div class="v"></div>
-      <div class="hit" data-k="up" style="left:60px;top:8px;width:48px;height:56px"></div><div class="hit" data-k="down" style="left:60px;top:104px;width:48px;height:56px"></div>
-      <div class="hit" data-k="left" style="left:8px;top:60px;width:56px;height:48px"></div><div class="hit" data-k="right" style="left:104px;top:60px;width:56px;height:48px"></div></div>
-    <div class="abrow"><div style="width:64px"></div><div class="btnA" id="A">A</div><div class="btnB" id="B">B</div></div>
-    <div class="row"><div class="sm" data-k="minus">−</div><div class="sm home" data-k="home">⌂</div><div class="sm" data-k="plus">+</div></div>
-    <div class="row"><div class="sm num" data-k="one">1</div><div class="sm num" data-k="two">2</div></div>
-  </div>
-  <div class="bottom"><div class="pill mic" id="mic">🎙 Hold to talk</div><div class="pill" data-k="sensei">白 Sensei</div></div>
+  <div class="ir"><span class="led" id="led"></span></div>
+  <div class="status" id="status">connecting…</div>
+  <div class="dpad"><div class="h"></div><div class="v"></div>
+    <div class="hit" data-k="up" style="left:56px;top:8px;width:38px;height:52px"></div><div class="hit" data-k="down" style="left:56px;top:90px;width:38px;height:52px"></div>
+    <div class="hit" data-k="left" style="left:8px;top:56px;width:52px;height:38px"></div><div class="hit" data-k="right" style="left:90px;top:56px;width:52px;height:38px"></div></div>
+  <div class="abrow"><div style="width:60px"></div><div class="gloss btnA" id="A">A</div><div class="gloss btnB" id="B">B</div></div>
+  <div class="row"><div class="gloss sm" data-k="minus">−</div><div class="gloss home" data-k="home">⌂</div><div class="gloss sm" data-k="plus">+</div></div>
+  <div class="spacer"></div>
+  <div class="row"><div class="gloss sm num" data-k="one">1</div><div class="gloss sm num" data-k="two">2</div></div>
+  <div class="players" id="players"><i></i><i></i><i></i><i></i></div>
+  <div class="mark"><b>白</b> SENSEI</div>
+  <div class="tools"><div class="pill mic" id="mic">🎙 Hold to talk</div><div class="pill gear" id="gear">⚙</div></div>
 </div>
 <div class="scroll" id="scroll">SCROLL</div>
 <div class="sheet" id="sheet"><div class="grab"></div><h3>Pointer & tools</h3>
-  <div class="row"><div class="pill" id="center">◎ Re-center</div><div class="pill" id="calib">⌖ Calibrate</div><div class="pill" id="pause">❚❚ Pause</div></div>
+  <div class="row"><div class="chipb" id="center">◎ Re-center</div><div class="chipb" id="calib">⌖ Calibrate (9 points)</div><div class="chipb" id="pause">❚❚ Pause</div><div class="chipb" data-k="sensei">白 Summon Sensei</div></div>
   <div class="opts"><label><input type="radio" name="pm" value="aim" checked> Aim (point)</label><label><input type="radio" name="pm" value="air"> Air mouse</label></div>
-  <div class="opts">Smoothing <input type="range" id="smooth" min="0" max="90" value="55"></div>
+  <div class="opts">Sensitivity <input type="range" id="sensK" min="40" max="130" value="80"></div>
+  <div class="opts">Steadiness <input type="range" id="smooth" min="0" max="100" value="60"></div>
+  <div class="opts"><label><input type="checkbox" id="hapOn" checked> Haptics</label></div>
   <div class="type"><input id="txt" placeholder="Type a game or command…" enterkeyhint="go"></div>
-  <div class="pill" id="sheetX">Done</div>
+  <div class="chipb" id="sheetX" style="text-align:center">Done</div>
 </div>
-<div class="cal" id="cal"><h2 id="calT">Calibrate</h2><p id="calP"></p><button class="big" id="calGo">Tap when pointing</button><button class="pill" id="calX" style="border:0">Cancel</button></div>
-<div class="start" id="start"><h1>遙 Sensei Remote</h1><p>Hold your phone with the top edge pointing at your main monitor, like a Wii remote. First we calibrate: you point at the center, then a corner. After that the cursor goes where you point.</p><button class="big" id="go">Start pointer</button><p style="font-size:12px;opacity:.6">A = click (hold to drag) · B = right-click · ✚ = arrow keys · 1 = play/pause · 2 = back · ⌂ = launcher · − / + = volume · 🎙 = talk to Sensei</p></div>
+<div class="cal" id="cal"><h2 id="calT">Calibrate</h2><div class="dots" id="dots"></div><p id="calP"></p><button class="big" id="calGo">Tap while pointing</button><button class="x" id="calX">Cancel</button></div>
+<div class="start" id="start"><h1>白 Sensei Remote</h1><p>Hold your phone like a Wii remote, top edge toward your main monitor. We'll calibrate nine points (center, edges and corners) so the cursor lands exactly where you point.</p><button class="big" id="go">Start pointer</button><p style="font-size:12px;opacity:.65">A = click (hold to drag) · B = right-click · ✚ = arrows · 1 = play/pause · 2 = back · ⌂ = launcher · − / + = volume · 🎙 = talk</p></div>
+<label id="hap"><input type="checkbox" switch id="hapIn"></label>
 <script>
 const $ = s => document.querySelector(s);
-document.addEventListener("DOMContentLoaded",()=>{});
 const key = new URLSearchParams(location.search).get("k") || "";
-let ws = null, open = false, paused = false, sens = 16, inv = false;
+const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
+let ws = null, open = false, paused = false, sens = 16, player = 1;
+// bubbles
+{ const b = $("#bubbles"); for (let i = 0; i < 16; i++) { const e = document.createElement("i"); const s = 10 + Math.random() * 36; e.style.cssText = `left:${Math.random() * 100}%;width:${s}px;height:${s}px;animation-duration:${10 + Math.random() * 14}s;animation-delay:${-Math.random() * 20}s`; b.appendChild(e); } }
+function setPlayer(n){ player = n; document.body.classList.toggle("p2", n === 2); document.querySelectorAll("#players i").forEach((e, i) => e.classList.toggle("on", i === n - 1)); }
+setPlayer(1);
 function connect(){
   if (!location.host) { $("#status").textContent = "open this page from the QR code on your PC"; return; }
   ws = new WebSocket(`wss://${location.host}/?k=${encodeURIComponent(key)}`);
   ws.onopen = () => { open = true; $("#led").classList.add("on"); $("#status").textContent = "connected to your PC"; };
   ws.onclose = () => { open = false; $("#led").classList.remove("on"); $("#status").textContent = "reconnecting…"; setTimeout(connect, 1500); };
-  ws.onmessage = e => { try{ const d = JSON.parse(e.data); if (d.t === "hello" && d.sens) { sens = d.sens; } }catch(err){} };
+  ws.onmessage = e => { try { const d = JSON.parse(e.data); if (d.t === "hello") { if (d.sens) sens = d.sens; if (d.player) { setPlayer(d.player); $("#status").textContent = d.player === 2 ? "Player 2 · move with ✚ · A to act" : "Player 1 · connected"; } } else if (d.t === "buzz") haptic(d.p || [20]); } catch (err) {} };
 }
 connect();
 const send = d => { if (open) ws.send(JSON.stringify(d)); };
-const buzz = (ms = 12) => { try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} };
+/* ---- haptics: Android vibrates; on iPhone a hidden iOS switch gives a real tap ---- */
+let hapOn = (LS && LS.getItem("senseiHap")) !== "0"; $("#hapOn").checked = hapOn; $("#hapOn").onchange = e => { hapOn = e.target.checked; LS && LS.setItem("senseiHap", hapOn ? "1" : "0"); };
+function tick(){ try { $("#hap").click(); } catch (e) {} }
+function haptic(p){ if (!hapOn) return; const pat = Array.isArray(p) ? p : [p];
+  if (navigator.vibrate) { try { if (navigator.vibrate(pat)) return; } catch (e) {} }
+  let t = 0; for (let i = 0; i < pat.length; i += 2) { const on = pat[i]; const n = Math.max(1, Math.round(on / 45)); for (let k = 0; k < n; k++) setTimeout(tick, t + k * 55); t += on + (pat[i + 1] || 0); } }
+const buzz = (ms = 12) => haptic(ms);
 
 /* ---- motion ---- */
-// AIM mode: the phone's real direction (yaw, pitch) compared with where it pointed during calibration.
-//   For the direction of the phone's top edge: yaw = -alpha, pitch = beta (rolling the phone doesn't matter).
-// AIR mode: the gyroscope "air mouse" (relative movement).
-const LS = (() => { try { return window.localStorage; } catch (e) { return null; } })();
-let cal = null; try { cal = JSON.parse(LS && LS.getItem("senseiCal") || "null"); } catch (e) {}
+let cal = null; try { cal = JSON.parse(LS && LS.getItem("senseiCal9") || "null"); } catch (e) {}
 let pm = (LS && LS.getItem("senseiPM")) || "aim"; document.querySelectorAll('[name=pm]').forEach(r => { r.checked = r.value === pm; r.onchange = () => { pm = r.value; LS && LS.setItem("senseiPM", pm); }; });
-let smooth = +((LS && LS.getItem("senseiSmooth")) || 55); $("#smooth").value = smooth; $("#smooth").oninput = e => { smooth = +e.target.value; LS && LS.setItem("senseiSmooth", smooth); };
+let smooth = +((LS && LS.getItem("senseiSteady")) || 60); $("#smooth").value = smooth; $("#smooth").oninput = e => { smooth = +e.target.value; LS && LS.setItem("senseiSteady", smooth); };
+let sensK = +((LS && LS.getItem("senseiSensK")) || 80); $("#sensK").value = sensK; $("#sensK").oninput = e => { sensK = +e.target.value; LS && LS.setItem("senseiSensK", sensK); };
 const wrap = a => ((a + 540) % 360) - 180;
-let yaw = 0, pitch = 0, haveOri = false, sx = 0, sy = 0, lastAim = "", calStep = null, c0 = null;
+let yaw = 0, pitch = 0, haveOri = false, lastAim = "", calStep = -1, samples = [];
 function onOri(e){ if (e.alpha == null) return; yaw = -e.alpha; pitch = e.beta; haveOri = true; }
 let ax = 0, ay = 0;
 function onMotion(e){ if (pm !== "air" || paused) return; const r = e.rotationRate; if (!r) return; let iv = e.interval || 16; if (iv < 1) iv *= 1000; const dt = Math.min(iv, 50) / 1000;
-  const yw = Math.abs(r.alpha) > 1.2 ? r.alpha : 0, pt = Math.abs(r.beta) > 1.2 ? r.beta : 0; ax += -yw * dt * sens; ay += -pt * dt * sens; }
+  const yw = Math.abs(r.alpha) > 1.5 ? r.alpha : 0, pt = Math.abs(r.beta) > 1.5 ? r.beta : 0; const k = sens * sensK / 100; ax += -yw * dt * k; ay += -pt * dt * k; }
+// One-Euro filter: rock steady when you hold still, no lag when you sweep
+function OneEuro(){ let x = null, dx = 0; const alpha = (fc, dt) => 1 / (1 + 1 / (2 * Math.PI * fc * dt));
+  return (v, dt, minC, beta) => { if (x === null) { x = v; return v; } const d = (v - x) / dt; const ad = alpha(1, dt); dx = dx + ad * (d - dx); const fc = minC + beta * Math.abs(dx); const a = alpha(fc, dt); x = x + a * (v - x); return x; }; }
+let fx = OneEuro(), fy = OneEuro();
+const feat = (u, v) => [1, u, v, u * v, u * u, v * v];
+function mapAim(){ const u = wrap(yaw - cal.y0), v = pitch - cal.p0, f = feat(u, v); let x = 0, y = 0; for (let i = 0; i < 6; i++) { x += cal.ax[i] * f[i]; y += cal.ay[i] * f[i]; } const k = sensK / 100; return [x * k, y * k]; }
 setInterval(() => {
   if (paused) return;
   if (pm === "air") { if (Math.abs(ax) >= .5 || Math.abs(ay) >= .5) { send({ t: "move", dx: +ax.toFixed(1), dy: +ay.toFixed(1) }); ax = ay = 0; } return; }
-  if (!haveOri || !cal || calStep) return;
-  const rx = wrap(yaw - cal.y0) * cal.kx, ry = -(pitch - cal.p0) * cal.ky;   // -1..1 across the main monitor
-  const k = 1 - smooth / 100 * .9, d = Math.hypot(rx - sx, ry - sy), f = Math.min(1, k + d * 2.5);   // steady when still, quick when sweeping
-  sx += (rx - sx) * f; sy += (ry - sy) * f;
+  if (!haveOri || !cal || !cal.ax || calStep >= 0) return;
+  const [rx, ry] = mapAim(); const minC = .25 + (100 - smooth) / 100 * 2.2, beta = 1.1;
+  const sx = fx(rx, .016, minC, beta), sy = fy(ry, .016, minC, beta);
   const x = +Math.max(-1.6, Math.min(1.6, sx)).toFixed(4), y = +Math.max(-1.6, Math.min(1.6, sy)).toFixed(4), out = x + "," + y;
   if (out !== lastAim) { lastAim = out; send({ t: "aim", x, y }); }
 }, 16);
@@ -125,19 +164,30 @@ async function askMotion(){
   } catch (e) {}
   addEventListener("deviceorientation", onOri); addEventListener("devicemotion", onMotion);
 }
-/* ---- calibration: center, then top-right corner ---- */
-function calOpen(){ calStep = "center"; $("#cal").classList.add("show"); $("#calT").textContent = "1 · Center"; $("#calP").textContent = "Hold the phone the way you'll use it. Point its TOP EDGE at the target in the CENTER of your main monitor, then tap."; send({ t: "calib", step: "center" }); }
-$("#calGo").addEventListener("click", () => {
+/* ---- 9-point calibration: center, the four corners, the four edge centers ---- */
+const IN = .86;
+const PTS = [["center", 0, 0], ["top-left corner", -1, -1], ["top edge, middle", 0, -1], ["top-right corner", 1, -1], ["right edge, middle", 1, 0], ["bottom-right corner", 1, 1], ["bottom edge, middle", 0, 1], ["bottom-left corner", -1, 1], ["left edge, middle", -1, 0]];
+function dots(){ const d = $("#dots"); d.innerHTML = ""; const ord = [1, 2, 3, 8, 0, 4, 7, 6, 5]; ord.forEach(i => { const e = document.createElement("i"); if (samples[i]) e.className = "done"; if (i === calStep) e.className = "cur"; d.appendChild(e); }); }
+function calShow(){ const [n, x, y] = PTS[calStep]; $("#calT").textContent = `${calStep + 1} of 9`; $("#calP").textContent = `Point the TOP EDGE of your phone at the target on the ${n} of your main monitor. Hold still, then tap.`; dots(); send({ t: "calib", step: "pt", fx: x * IN, fy: y * IN, n: calStep + 1 }); }
+function calOpen(){ calStep = 0; samples = []; $("#cal").classList.add("show"); calShow(); }
+function avgSample(ms = 350){ return new Promise(res => { const ys = [], ps = []; const id = setInterval(() => { ys.push(yaw); ps.push(pitch); }, 16); setTimeout(() => { clearInterval(id); const y0 = ys[0]; const my = y0 + ys.reduce((s, v) => s + wrap(v - y0), 0) / ys.length; res({ y: my, p: ps.reduce((s, v) => s + v, 0) / ps.length }); }, ms); }); }
+function solve(A, b){ const n = b.length, M = A.map((r, i) => [...r, b[i]]); for (let c = 0; c < n; c++) { let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r; [M[c], M[p]] = [M[p], M[c]]; if (Math.abs(M[c][c]) < 1e-9) return null; for (let r = 0; r < n; r++) if (r !== c) { const f = M[r][c] / M[c][c]; for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k]; } } return M.map((r, i) => r[n] / r[i]); }
+function fit(rows, targ, nf){ const A = [...Array(nf)].map(() => Array(nf).fill(0)), b = Array(nf).fill(0); rows.forEach((f, i) => { for (let r = 0; r < nf; r++) { b[r] += f[r] * targ[i]; for (let c = 0; c < nf; c++) A[r][c] += f[r] * f[c]; } }); for (let r = 0; r < nf; r++) A[r][r] += 1e-6; return solve(A, b); }
+$("#calGo").addEventListener("click", async () => {
   if (!haveOri) { $("#calP").textContent = "I can't feel the phone moving yet. Allow motion access (reload the page if you denied it)."; return; }
-  if (calStep === "center") { c0 = { y: yaw, p: pitch }; calStep = "corner"; $("#calT").textContent = "2 · Corner"; $("#calP").textContent = "Now point at the target in the TOP-RIGHT corner, then tap."; send({ t: "calib", step: "corner" }); buzz(25); }
-  else if (calStep === "corner") { const dy = Math.abs(wrap(yaw - c0.y)), dp = Math.abs(pitch - c0.p);
-    cal = { y0: c0.y, p0: c0.p, kx: 1 / Math.max(4, dy), ky: 1 / Math.max(2.5, dp) }; LS && LS.setItem("senseiCal", JSON.stringify(cal));
-    calStep = null; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); sx = sy = 0; pm = "aim"; document.querySelector('[name=pm][value=aim]').checked = true; LS && LS.setItem("senseiPM", "aim"); buzz([30, 40, 30]); $("#status").textContent = "calibrated · point and press A"; }
+  if (calStep < 0) return; $("#calGo").disabled = true; samples[calStep] = await avgSample(); $("#calGo").disabled = false; haptic(25);
+  if (calStep < 8) { calStep++; calShow(); return; }
+  const y0 = samples[0].y, p0 = samples[0].p; const rows = samples.map(s => feat(wrap(s.y - y0), s.p - p0)); const tx = PTS.map(p => p[1] * IN), ty = PTS.map(p => p[2] * IN);
+  let axc = fit(rows, tx, 6), ayc = fit(rows, ty, 6);
+  if (!axc || !ayc) { const r3 = rows.map(r => r.slice(0, 3)); axc = fit(r3, tx, 3); ayc = fit(r3, ty, 3); if (axc) { axc.push(0, 0, 0); ayc.push(0, 0, 0); } }
+  if (!axc) { $("#calP").textContent = "Those points were too close together. Point right at each target and try again."; calStep = 0; samples = []; calShow(); return; }
+  cal = { y0, p0, ax: axc, ay: ayc }; LS && LS.setItem("senseiCal9", JSON.stringify(cal));
+  calStep = -1; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); fx = OneEuro(); fy = OneEuro(); pm = "aim"; document.querySelector('[name=pm][value=aim]').checked = true; LS && LS.setItem("senseiPM", "aim"); haptic([30, 40, 30]); $("#status").textContent = "calibrated · point and press A";
 });
-$("#calX").addEventListener("click", () => { calStep = null; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); });
-$("#calib").addEventListener("click", calOpen);
-$("#go").addEventListener("click", async () => { await askMotion(); $("#start").style.display = "none"; buzz(30); if (!cal || pm === "aim") setTimeout(calOpen, 500); });
-/* ---- hold to talk: the phone records, your PC listens ---- */
+$("#calX").addEventListener("click", () => { calStep = -1; $("#cal").classList.remove("show"); send({ t: "calib", step: "done" }); });
+$("#calib").addEventListener("click", () => { $("#sheet").classList.remove("show"); calOpen(); });
+$("#go").addEventListener("click", async () => { await askMotion(); $("#start").style.display = "none"; buzz(30); if (player === 1 && (!cal || pm === "aim") && !(cal && cal.ax)) setTimeout(calOpen, 500); });
+/* ---- hold to talk ---- */
 { const mic = $("#mic"); let mr = null, chunks = [];
   mic.addEventListener("pointerdown", async e => { e.preventDefault(); mic.classList.add("down"); buzz(20);
     try { const st = await navigator.mediaDevices.getUserMedia({ audio: true }); chunks = []; mr = new MediaRecorder(st); mr.ondataavailable = ev => chunks.push(ev.data);
@@ -145,7 +195,6 @@ $("#go").addEventListener("click", async () => { await askMotion(); $("#start").
       mr.start(); if (!mic.classList.contains("down")) mr.stop(); } catch (err) { $("#status").textContent = "microphone unavailable here"; mic.classList.remove("down"); } });
   const up = () => { if (!mic.classList.contains("down")) return; mic.classList.remove("down"); try { if (mr && mr.state === "recording") mr.stop(); } catch (e) {} };
   mic.addEventListener("pointerup", up); mic.addEventListener("pointercancel", up); mic.addEventListener("pointerleave", up); }
-
 /* ---- buttons ---- */
 function hold(el, b){
   el.addEventListener("pointerdown", e => { e.preventDefault(); el.classList.add("down"); buzz(); send({ t: "down", b }); });
@@ -154,16 +203,16 @@ function hold(el, b){
 }
 hold($("#A"), "a"); hold($("#B"), "b");
 const HOLDABLE = ["up", "down", "left", "right"];
-document.querySelectorAll("[data-k]").forEach(el => { const k = el.dataset.k, hold = HOLDABLE.includes(k);
-  el.addEventListener("pointerdown", e => { e.preventDefault(); el.classList.add("down"); buzz(); send(hold ? { t: "down", b: k } : { t: "press", b: k }); });
-  const up = () => { if (!el.classList.contains("down")) return; el.classList.remove("down"); if (hold) send({ t: "up", b: k }); };
+document.querySelectorAll("[data-k]").forEach(el => { const k = el.dataset.k, hd = HOLDABLE.includes(k);
+  el.addEventListener("pointerdown", e => { e.preventDefault(); el.classList.add("down"); buzz(); send(hd ? { t: "down", b: k } : { t: "press", b: k }); });
+  const up = () => { if (!el.classList.contains("down")) return; el.classList.remove("down"); if (hd) send({ t: "up", b: k }); };
   el.addEventListener("pointerup", up); el.addEventListener("pointercancel", up); el.addEventListener("pointerleave", up);
 });
-$("#center").addEventListener("pointerdown", e => { e.preventDefault(); buzz(); if (pm === "aim" && cal && haveOri) { cal.y0 = yaw; cal.p0 = pitch; sx = sy = 0; LS && LS.setItem("senseiCal", JSON.stringify(cal)); } send({ t: "center" }); });
+$("#center").addEventListener("pointerdown", e => { e.preventDefault(); buzz(); if (pm === "aim" && cal && haveOri) { cal.y0 = yaw; cal.p0 = pitch; fx = OneEuro(); fy = OneEuro(); LS && LS.setItem("senseiCal9", JSON.stringify(cal)); } send({ t: "center" }); });
 $("#pause").addEventListener("pointerdown", e => { e.preventDefault(); paused = !paused; buzz(); $("#pause").textContent = paused ? "▶ Resume" : "❚❚ Pause"; $("#status").textContent = paused ? "pointer paused" : "pointer on"; });
 { const s = $("#scroll"); let ly = null; s.addEventListener("pointerdown", e => { ly = e.clientY; s.setPointerCapture(e.pointerId); });
   s.addEventListener("pointermove", e => { if (ly === null) return; const d = e.clientY - ly; if (Math.abs(d) > 6) { send({ t: "scroll", dy: -d * 4 }); ly = e.clientY; } });
   s.addEventListener("pointerup", () => ly = null); s.addEventListener("pointercancel", () => ly = null); }
 $("#txt").addEventListener("keydown", e => { if (e.key === "Enter") { const v = e.target.value.trim(); if (v) send({ t: "type", text: v }); e.target.value = ""; e.target.blur(); } });
-(function(){ const sh=$("#sheet"); $("#gear").addEventListener("click",()=>sh.classList.toggle("show")); $("#sheetX").addEventListener("click",()=>sh.classList.remove("show")); $("#calib").addEventListener("click",()=>sh.classList.remove("show")); })();
+$("#gear").addEventListener("click", () => $("#sheet").classList.toggle("show")); $("#sheetX").addEventListener("click", () => $("#sheet").classList.remove("show"));
 </script></body></html>

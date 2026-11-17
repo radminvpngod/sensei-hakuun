@@ -1,7 +1,7 @@
 {
- "version": 8,
+ "version": 9,
  "shellApi": 2,
- "notes": "A smaller, richer low-poly valley. Mini golf, 3D games, sky islands, new remote.",
+ "notes": "2 players, fresh daily dialogue, quicker grading, haptics, 9-point remote calibration.",
  "files": [
   "brain-client.js",
   "core.js",

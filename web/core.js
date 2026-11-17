@@ -355,16 +355,17 @@ module.exports = function core(ctx) {
     const wss = new WebSocket.Server({ server: srv, maxPayload: 8 * 1024 * 1024 });
     wss.on('connection', (ws, req) => {
       const u = new URL(req.url, 'https://x'); if (u.searchParams.get('k') !== settings.token) { ws.close(4001, 'bad key'); return; }
-      remotes.add(ws); notifyRemote(); ws.send(JSON.stringify({ t: 'hello', sens: settings.sens }));
+      const used = new Set([...remotes].map(r => r.player)); ws.player = used.has(1) ? 2 : 1; remotes.add(ws); notifyRemote(); ws.send(JSON.stringify({ t: 'hello', sens: settings.sens, player: ws.player }));
       ws.on('message', m => { let d; try { d = JSON.parse(m); } catch (e) { return; } handleRemote(d, ws); });
       ws.on('close', () => { remotes.delete(ws); notifyRemote(); });
     });
     srv.on('error', e => say('The phone remote could not start: ' + e.message, 'error'));
     srv.listen(PORT, '0.0.0.0');
   }
-  function notifyRemote() { broadcast('remote', { connected: remotes.size }); }
+  function notifyRemote() { broadcast('remote', { connected: remotes.size, players: [...remotes].map(r => r.player) }); }
   const VK = { plus: 0xAF, minus: 0xAE, one: 0xB3, two: 0x1B, up: 0x26, down: 0x28, left: 0x25, right: 0x27, enter: 0x0D, tab: 0x09, next: 0xB0, prev: 0xB1 };
   function handleRemote(d, ws) {
+    if (ws && ws.player === 2 && garden && !garden.isDestroyed() && garden.isVisible() && /^(down|up|press)$/.test(d.t) && d.b !== 'home') { garden.webContents.send('p2', d); return; }
     switch (d.t) {
       case 'move': { const b = allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; }
         cursor.x = Math.max(b.l, Math.min(b.r, cursor.x + (+d.dx || 0))); cursor.y = Math.max(b.t, Math.min(b.b, cursor.y + (+d.dy || 0))); pointerSeen = Date.now(); break; }
@@ -373,7 +374,7 @@ module.exports = function core(ctx) {
         cursor = { x: Math.max(b.l, Math.min(b.r, pd.x + pd.width / 2 + (+d.x || 0) * pd.width / 2)), y: Math.max(b.t, Math.min(b.b, pd.y + pd.height / 2 + (+d.y || 0) * pd.height / 2)) };
         pointerSeen = Date.now(); break; }
       case 'calib': { calibStep = d.step && d.step !== 'done' ? d.step : null; const w = ensurePtrWin(); const pd = screen.getPrimaryDisplay().bounds;
-        const send = () => { if (w && !w.isDestroyed()) { const o = w.getBounds(); w.webContents.send('calib', { step: d.step, primary: { x: pd.x - o.x, y: pd.y - o.y, w: pd.width, h: pd.height } }); } };
+        const send = () => { if (w && !w.isDestroyed()) { const o = w.getBounds(); w.webContents.send('calib', { step: d.step, fx: d.fx, fy: d.fy, n: d.n, primary: { x: pd.x - o.x, y: pd.y - o.y, w: pd.width, h: pd.height } }); } };
         if (w.webContents.isLoading()) w.webContents.once('did-finish-load', send); else send(); break; }
       case 'center': { const pd = screen.getPrimaryDisplay().bounds; cursor = { x: pd.x + pd.width / 2, y: pd.y + pd.height / 2 }; pointerSeen = Date.now(); break; }
       case 'down': if (d.b === 'a') mouse.down('left'); else if (d.b === 'b') mouse.down('right'); else if (VK[d.b]) mouse.keyDown(VK[d.b]); break;
@@ -395,6 +396,8 @@ module.exports = function core(ctx) {
   /* ================= IPC ================= */
   ipcMain.on('open', (e, what) => { ({ garden: openGarden, palette: () => togglePalette(true), pair: openPair, settings: openSettings, mind: () => ensureBrain(true) })[what]?.(); });
   ipcMain.on('palette:hide', () => togglePalette(false));
+  ipcMain.on('remote:buzz', (e, b) => { const msg = JSON.stringify({ t: 'buzz', p: (b && b.pat) || [20] }); remotes.forEach(r => { if (!b || !b.player || r.player === b.player) { try { r.send(msg); } catch (err) {} } }); });
+  ipcMain.handle('remote:players', () => [...remotes].map(r => r.player));
   ipcMain.handle('asset', async (e, rel) => { rel = String(rel || '').replace(/\\/g, '/'); if (!/^assets\/[\w.-]+$/.test(rel)) return null; try { return fs.readFileSync(webPath(rel)); } catch (err) { log('asset', rel, err.message); return null; } });
   ipcMain.handle('catalog', async (e, fresh) => (fresh || !catalog.length) ? await rescan() : catalog);
   ipcMain.on('launch', (e, item) => { launchItem(item); togglePalette(false); });

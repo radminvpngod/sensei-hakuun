@@ -16,10 +16,10 @@ const S = window.sensei, ptr = document.getElementById("ptr"), tgt = document.ge
 S.on("pointer", p => { ptr.style.left = p.x + "px"; ptr.style.top = p.y + "px"; ptr.classList.add("on"); clearTimeout(idle); idle = setTimeout(() => ptr.classList.remove("on"), 1500); });
 S.on("calib", c => {
   if (!c.step || c.step === "done") { tgt.style.display = lbl.style.display = "none"; return; }
-  const P = c.primary, corner = c.step === "corner";
-  const x = corner ? P.x + P.w - 70 : P.x + P.w / 2, y = corner ? P.y + 70 : P.y + P.h / 2;
+  const P = c.primary; const fx = c.step === "pt" ? c.fx : (c.step === "corner" ? .86 : 0), fy = c.step === "pt" ? c.fy : (c.step === "corner" ? -.86 : 0);
+  const x = P.x + P.w / 2 + fx * P.w / 2, y = P.y + P.h / 2 + fy * P.h / 2;
   tgt.style.left = x + "px"; tgt.style.top = y + "px"; tgt.style.display = "block";
-  lbl.textContent = corner ? "Now point at this corner, then tap" : "Point the top of your phone here, then tap";
-  lbl.style.left = (corner ? x - 220 : x) + "px"; lbl.style.top = (y + 80) + "px"; lbl.style.display = "block";
+  lbl.textContent = (c.n ? c.n + " / 9 · " : "") + "point the top of your phone here, then tap";
+  const lx = Math.max(P.x + 230, Math.min(P.x + P.w - 230, x)), ly = fy > .5 ? y - 120 : y + 80; lbl.style.left = lx + "px"; lbl.style.top = ly + "px"; lbl.style.display = "block";
 });
 </script></body></html>
