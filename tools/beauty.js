@@ -9,8 +9,8 @@ const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.json': 'applica
 const serve = () => new Promise(res => { const s = http.createServer((q, r) => { const f = path.join(WEB, decodeURIComponent(q.url.split('?')[0])); if (!f.startsWith(WEB) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { r.writeHead(404); r.end(); return; } r.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(r); }); s.listen(0, '127.0.0.1', () => res(s.address().port)); });
 // [name, camera position, look-at] — composed like screenshots a player would take
 const VIEWS = [
-  ['Garden gate', [4, 6, 40], [0, 2, 22]], ['Koi pond', [9, 7, 14], [0, 0, 0]], ['Tea house', [6, 5, 11], [17, 2, 15]], ['Dry garden', [22, 8, -8], [31, 0, 2]],
-  ['Castle approach', [12, 9, -14], [34, 8, -40]], ['Shrine stairs', [6, 6, -30], [0, 9, -60]], ['Kumo Peak', [0, 10, -40], [-30, 18, -72]], ['Mirror Lake', [40, 7, 8], [62, 0, 22]],
+  ['Garden gate', [1.5, 4.5, 56], [0, 2, 30]], ['Koi pond', [9, 7, 14], [0, 0, 0]], ['Tea house', [6, 5, 11], [17, 2, 15]], ['Dry garden', [22, 8, -8], [31, 0, 2]],
+  ['Castle approach', [12, 9, -14], [34, 8, -40]], ['Shrine stairs', [4, 5, -33], [0, 11, -58]], ['Kumo Peak', [0, 10, -40], [-30, 18, -72]], ['Mirror Lake', [44, 14, 2], [62, 0, 22]],
   ['Night Market', [20, 8, 60], [8, 2, 76]], ['Golf to market walk', [40, 12, 30], [20, 0, 62]], ['Orchard', [-24, 7, 36], [-40, 2, 52]], ['Valley overview', [-70, 45, 70], [0, 0, 0]]];
 app.whenReady().then(async () => {
   const port = await serve(); const w = new BrowserWindow({ width: 1280, height: 720, show: true, webPreferences: { backgroundThrottling: false } }); const sleep = ms => new Promise(r => setTimeout(r, ms)); const errors = [];

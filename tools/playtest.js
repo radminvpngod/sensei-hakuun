@@ -47,7 +47,7 @@ app.whenReady().then(async () => {
   }
   // every minigame opens and closes cleanly
   const games = JSON.parse(await js('JSON.stringify(Object.keys(__dbg.GAMES||{}))') || '[]');
-  for (const g of games) { const before = errors.length; await js(`__dbg.openGame(${JSON.stringify(g)})`); await sleep(1800); await shot('game-' + g); await js('__dbg.mgClose()'); await sleep(500); if (errors.length > before) issues.push({ id: issues.length + 1, kind: 'game-error', where: g, detail: errors.slice(before).join(' | ') }); }
+  for (const g of games) { const before = errors.length; await js(`(__dbg.GAMES.taiko._picked=true, __dbg.openGame(${JSON.stringify(g)}))`); await sleep(1800); await shot('game-' + g); await js('__dbg.mgClose()'); await sleep(500); if (errors.length > before) issues.push({ id: issues.length + 1, kind: 'game-error', where: g, detail: errors.slice(before).join(' | ') }); }
   // climbing, summit, glide
   await js('__dbg.adv.startAt()'); await keyDown('KeyW'); await sleep(3000); await keyUp('KeyW'); let r = JSON.parse(await js('JSON.stringify({m:__dbg.pmode(),y:__dbg.ADV.y})'));
   if (r.m !== 'climb' || r.y < 1) issues.push({ id: issues.length + 1, kind: 'climb', where: 'Kumo Peak', detail: 'climbing did not progress: ' + JSON.stringify(r) });

@@ -267,6 +267,25 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
   <div class="mgTop"><div><div class="t" id="mgTitle"></div><div class="s" id="mgSub"></div></div><div class="sp"></div><div id="rakeTools"><div class="rt on" data-rt="rake">耙 Rake</div><div class="rt" data-rt="smooth">平 Smooth</div><div class="rt" data-rt="pour">砂 Color sand</div><div class="sw" id="swatches"></div></div><div class="shB" id="mgReset">消 Fresh sand</div><div class="shB main" id="mgJudge">見 Show Sensei</div><div class="shB" id="mgClose">Leave</div></div>
   <div id="mgRes"><div id="mgResT"></div><div id="mgResL"></div><div id="mgResS"></div><div class="shB main" id="mgAgain">Again</div><div class="shB" id="mgLeave">Leave</div></div>
 </div>
+<div class="panel" id="musicPanel">
+  <h2>音 · Music</h2>
+  <p style="font-size:13px;opacity:.8;margin:.2em 0 .6em">Paste a SoundCloud link (a track, a playlist, or your profile's /likes). It plays through the speaker lanterns by the tea house and in the Night Market, louder as you walk closer.</p>
+  <input id="scUrl" placeholder="https://soundcloud.com/…" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid rgba(43,36,32,.25);background:#fffaf0;font:inherit">
+  <div id="musicNow" style="margin:.6em 0;font-size:13.5px;opacity:.85">Nothing playing</div>
+  <div class="pbtn" id="scGo">Play on the speakers <b>再</b></div>
+  <div class="pbtn" id="scStop">Stop <b>止</b></div>
+  <div class="pbtn" id="scTaiko">Play Taiko to this song (live) <b>鼓</b></div>
+  <div class="pbtn" id="ambTog">Garden ambience</div>
+  <div class="pbtn" data-close="musicPanel">Close</div>
+</div>
+<div class="panel" id="songPanel">
+  <h2>太鼓 · Choose your song</h2>
+  <div class="pbtn" data-song="classic">Classic festival drums <b>祭</b></div>
+  <div class="pbtn" data-song="file">A song file from your PC (mp3, m4a, wav) <b>譜</b></div>
+  <div class="pbtn" data-song="live">Live: whatever's playing (SoundCloud, Spotify…) <b>聴</b></div>
+  <label style="display:flex;gap:10px;align-items:center;font-size:13.5px;margin:.6em 0">Difficulty <select id="tkDiff" style="font:inherit;padding:4px 8px;border-radius:8px"><option value="1">Gentle</option><option value="2" selected>Normal</option><option value="3">Hard</option></select></label>
+  <div class="pbtn" data-close="songPanel">Cancel</div>
+</div>
 <div class="panel tall" id="travelPanel">
   <h2>Lantern travel</h2><p style="font-size:13px;opacity:.8">Light the stone lanterns you find. Then step to any lit lantern and travel between them.</p>
   <canvas id="bigMap" width="360" height="360" style="width:min(70vw,300px);display:block;margin:6px auto 10px"></canvas>
@@ -888,7 +907,9 @@ const teaLight=new THREE.PointLight(0xffc27a,0,14,2);
   const top=new THREE.Mesh(new THREE.BoxGeometry(2.8,.12,1.3),dark); top.position.y=.42; tbl.add(top);
   [[-1.25,-.5],[1.25,-.5],[-1.25,.5],[1.25,.5]].forEach(([x,z])=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(.12,.36,.12),dark); l.position.set(x,.18,z); tbl.add(l); });
   const cush=new THREE.Mesh(new THREE.BoxGeometry(1,.16,1),toon("#8c2f2f")); cush.position.set(0,.08,-1.3); tbl.add(cush);
-  const pc=new THREE.Group(); pc.position.set(-.8,.49,0); pc.rotation.y=0; tbl.add(pc);
+  const pc=new THREE.Group(); pc.position.set(-.8,.49,0); pc.rotation.y=0; tbl.add(pc); { const ts=new THREE.Group(); ts.position.set(.75,.49,.05); tbl.add(ts); const pot=new THREE.Mesh(new THREE.SphereGeometry(.13,12,8),toon("#3a3f36")); pot.scale.y=.8; pot.position.y=.1; ts.add(pot); const lid=new THREE.Mesh(new THREE.CylinderGeometry(.05,.07,.04,10),toon("#3a3f36")); lid.position.y=.2; ts.add(lid); const sp=new THREE.Mesh(new THREE.CylinderGeometry(.015,.03,.14,6),toon("#3a3f36")); sp.rotation.z=-1.1; sp.position.set(.15,.12,0); ts.add(sp);
+  [[-.22,.12],[-.2,-.14]].forEach(([x,z])=>{ const cup=new THREE.Mesh(new THREE.CylinderGeometry(.05,.04,.08,10),toon("#e9e1cf")); cup.position.set(x,.04,z); ts.add(cup); const tea=new THREE.Mesh(new THREE.CircleGeometry(.042,10),toon("#7d8f3a")); tea.rotation.x=-Math.PI/2; tea.position.set(x,.081,z); ts.add(tea); });
+  const warm=new THREE.PointLight(0xffc27a,1.4,7,1.8); warm.position.set(0,1.6,-.8); tbl.add(warm); }
   pc.add(new THREE.Mesh(new THREE.BoxGeometry(.8,.04,.55),toon("#9aa0a8")));
   const scr=new THREE.Group(); scr.position.set(0,.02,-.27); scr.rotation.x=-.25; pc.add(scr);
   const lid=new THREE.Mesh(new THREE.BoxGeometry(.8,.55,.04),toon("#2a2f38")); lid.position.y=.28; scr.add(lid);
@@ -1692,7 +1713,7 @@ let pal=palette(nowHour()), night=0;
 function applyTime(){
   const h=nowHour(); pal=palette(h); night=Math.min(1,pal.dark/.45);
   skyMat.uniforms.top.value.copy(pal.skyTop); skyMat.uniforms.bottom.value.copy(pal.skyBot);
-  scene.fog.color.copy(pal.skyBot).lerp(pal.mist,.3);
+  scene.fog.color.copy(pal.skyBot).lerp(pal.mist,.22).lerp(new THREE.Color(.55,.66,.82),.18*(1-night));
   farMat.color.copy(pal.far); midMat.color.copy(pal.mid);
   starMat.opacity=night; mistMats.forEach(m=>{ m.color.copy(pal.mist); m.opacity=.3-night*.16; });
   hemi.color.copy(pal.skyTop).lerp(C("#ffffff"),.5); hemi.groundColor.set(S==="winter"?"#8a96a8":"#4a5a3a"); hemi.intensity=1.25-night*.8;
@@ -1808,7 +1829,11 @@ function startSound(){
   }catch(e){ soundOn=false; }
 }
 function stopSound(){ soundOn=false; $("#soundBtn").classList.add("off"); clearTimeout(musicTimer); clearTimeout(fluteTimer); clearTimeout(crickTimer); if(ambBus&&actx) ambBus.gain.linearRampToValueAtTime(0,actx.currentTime+.8); }
-$("#soundBtn").addEventListener("click",()=>soundOn?stopSound():startSound());
+$("#soundBtn").addEventListener("click",()=>openMusic());
+$("#scGo").addEventListener("click",()=>scPlay($("#scUrl").value)); $("#scStop").addEventListener("click",()=>scStop());
+$("#ambTog").addEventListener("click",()=>{ soundOn?stopSound():startSound(); setTimeout(musicUI,50); });
+$("#scTaiko").addEventListener("click",()=>{ $("#musicPanel").classList.remove("show"); if(!MUS.playing&&$("#scUrl").value) scPlay($("#scUrl").value); setTimeout(()=>pickSong("live"),MUS.playing?0:2500); });
+document.querySelectorAll("[data-song]").forEach(b=>b.addEventListener("click",()=>pickSong(b.dataset.song)));
 
 /* ---- the ghastly layer: a spectral drone, a breath of wind and an eerie wail that rise under his voice ---- */
 function ghostStart(style="whimsy"){
@@ -2307,7 +2332,7 @@ function frame(now){
 
 /* ===================== boot ===================== */
 applyTime(); initAi(); setInterval(applyTime,30000); requestAnimationFrame(frame); buildFluffyGrass(); loadNature();
-if(location.search.includes("dbg")) window.__dbg={hour:h=>{ previewHour=h; applyTime(); },get discoveries(){return discoveries;},shot:(pos,tgt,w=640,h=360)=>{ const oP=camera.position.clone(), oT=controls.target.clone(); camera.position.set(...pos); camera.lookAt(...tgt); camera.updateMatrixWorld(); composer.render(); const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); const src=renderer.domElement, sw=src.width, sh=src.height, ar=w/h; let cw=sw, ch=sw/ar; if(ch>sh){ ch=sh; cw=sh*ar; } g.drawImage(src,(sw-cw)/2,(sh-ch)/2,cw,ch,0,0,w,h); camera.position.copy(oP); controls.target.copy(oT); camera.lookAt(oT); const d=g.getImageData(0,0,w,h).data; let n=0,sl=0,sl2=0,ss=0,dark=0,blown=0,edge=0; const L=new Float32Array(w*h); for(let i=0;i<w*h;i++){ const r=d[i*4]/255,gg=d[i*4+1]/255,b=d[i*4+2]/255; const l=.299*r+.587*gg+.114*b; L[i]=l; sl+=l; sl2+=l*l; const mx=Math.max(r,gg,b),mn=Math.min(r,gg,b); ss+=mx?(mx-mn)/mx:0; if(l<.06) dark++; if(l>.97) blown++; n++; } for(let y=1;y<h-1;y+=2) for(let x=1;x<w-1;x+=2){ const i=y*w+x; if(Math.abs(L[i+1]-L[i-1])+Math.abs(L[i+w]-L[i-w])>.18) edge++; } const mean=sl/n; return {img:c.toDataURL('image/jpeg',.82),m:{lum:+mean.toFixed(3),contrast:+Math.sqrt(sl2/n-mean*mean).toFixed(3),sat:+(ss/n).toFixed(3),crushed:+(dark/n).toFixed(3),blown:+(blown/n).toFixed(3),busy:+(edge/(n/4)).toFixed(3)}}; },get circles(){return circles;},get boxes(){return boxes;},lakeE,groundY:(x,z)=>groundY(x,z),insideCollider:(x,z,m)=>insideCollider(x,z,m),get zone(){return zone;},get CAMBLOCK(){return CAMBLOCK;},PRX,PRZ,day:()=>{ previewHour=11; applyTime(); },pmode:()=>pmode,get ADV(){return ADV;},adv:{startAt:()=>{ const x=PEAK.x+PEAK.r0+1.2,z=PEAK.z; player.position.set(x,H(x,z),z); startClimb(); }},blk:{set:(x,y,z,m)=>{BKS.map.set(bkey(x,y,z),m); blkRebuild();},toggle:()=>blkToggle(true)},player,golfEnd:()=>golfEnd(),setZone:(...a)=>setZone(...a),get golf(){return golf;},openLife:t=>openLife(t),senseiPaintsToday:()=>senseiPaintsToday(),welcome:(id)=>{ compState().pending=id; welcomeCompanion(id,true); },build:()=>senseiBuildsToday(),SKYI,get LIFE(){return LIFE;},get GAMES(){return GAMES;},get RAKE(){return RAKE;},gradeTest:(ch)=>{ const c=document.createElement('canvas'); c.width=c.height=800; const g=c.getContext('2d'); const out={}; g.fillStyle='#120e0c'; g.font='600 640px "Shippori Mincho",serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(ch,400,430); out.good=localShodo(c,ch); out.good.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.lineWidth=40; g.strokeStyle='#120e0c'; g.beginPath(); g.ellipse(450,350,250,110,-.4,0,6.28); g.moveTo(200,600); g.lineTo(550,420); g.stroke(); out.scribble=localShodo(c,ch); out.scribble.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.font='600 640px "Shippori Mincho",serif'; g.fillText('水',400,430); out.wrongChar=localShodo(c,ch); out.wrongChar.m=shodoMatch(c,ch); return JSON.stringify(out); },p2Set:v=>p2Set(v),openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
+if(location.search.includes("dbg")) window.__dbg={chartTest:async(bpm=128)=>{ initAudio(); const sr=44100, dur=20, oc=new OfflineAudioContext(1,sr*dur,sr); const beat=60/bpm; for(let t=.5;t<dur-.5;t+=beat){ const o=oc.createOscillator(), g=oc.createGain(); o.frequency.setValueAtTime(120,t); o.frequency.exponentialRampToValueAtTime(45,t+.15); g.gain.setValueAtTime(.9,t); g.gain.exponentialRampToValueAtTime(.001,t+.2); o.connect(g); g.connect(oc.destination); o.start(t); o.stop(t+.25); const nb=oc.createBuffer(1,sr*.05,sr), d=nb.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*(1-i/d.length); const n=oc.createBufferSource(); n.buffer=nb; const hp=oc.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=6000; const hg=oc.createGain(); hg.gain.value=.5; n.connect(hp); hp.connect(hg); hg.connect(oc.destination); n.start(t+beat/2); } const buf=await oc.startRendering(); const ch=await chartFromBuffer(buf,2); TAIKO.song={buf,chart:ch,name:'test beat'}; TAIKO.mode='file'; return JSON.stringify({bpm:ch.bpm,n:ch.notes.length,don:ch.notes.filter(x=>x.type==='don').length,ka:ch.notes.filter(x=>x.type==='ka').length,first:ch.notes.slice(0,6).map(x=>x.t.toFixed(2)+x.type)}); },hour:h=>{ previewHour=h; applyTime(); },get discoveries(){return discoveries;},shot:(pos,tgt,w=640,h=360)=>{ const oP=camera.position.clone(), oT=controls.target.clone(); camera.position.set(...pos); camera.lookAt(...tgt); camera.updateMatrixWorld(); composer.render(); const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); const src=renderer.domElement, sw=src.width, sh=src.height, ar=w/h; let cw=sw, ch=sw/ar; if(ch>sh){ ch=sh; cw=sh*ar; } g.drawImage(src,(sw-cw)/2,(sh-ch)/2,cw,ch,0,0,w,h); camera.position.copy(oP); controls.target.copy(oT); camera.lookAt(oT); const d=g.getImageData(0,0,w,h).data; let n=0,sl=0,sl2=0,ss=0,dark=0,blown=0,edge=0; const L=new Float32Array(w*h); for(let i=0;i<w*h;i++){ const r=d[i*4]/255,gg=d[i*4+1]/255,b=d[i*4+2]/255; const l=.299*r+.587*gg+.114*b; L[i]=l; sl+=l; sl2+=l*l; const mx=Math.max(r,gg,b),mn=Math.min(r,gg,b); ss+=mx?(mx-mn)/mx:0; if(l<.06) dark++; if(l>.97) blown++; n++; } for(let y=1;y<h-1;y+=2) for(let x=1;x<w-1;x+=2){ const i=y*w+x; if(Math.abs(L[i+1]-L[i-1])+Math.abs(L[i+w]-L[i-w])>.18) edge++; } const mean=sl/n; return {img:c.toDataURL('image/jpeg',.82),m:{lum:+mean.toFixed(3),contrast:+Math.sqrt(sl2/n-mean*mean).toFixed(3),sat:+(ss/n).toFixed(3),crushed:+(dark/n).toFixed(3),blown:+(blown/n).toFixed(3),busy:+(edge/(n/4)).toFixed(3)}}; },get circles(){return circles;},get boxes(){return boxes;},lakeE,groundY:(x,z)=>groundY(x,z),insideCollider:(x,z,m)=>insideCollider(x,z,m),get zone(){return zone;},get CAMBLOCK(){return CAMBLOCK;},PRX,PRZ,day:()=>{ previewHour=11; applyTime(); },pmode:()=>pmode,get ADV(){return ADV;},adv:{startAt:()=>{ const x=PEAK.x+PEAK.r0+1.2,z=PEAK.z; player.position.set(x,H(x,z),z); startClimb(); }},blk:{set:(x,y,z,m)=>{BKS.map.set(bkey(x,y,z),m); blkRebuild();},toggle:()=>blkToggle(true)},player,golfEnd:()=>golfEnd(),setZone:(...a)=>setZone(...a),get golf(){return golf;},openLife:t=>openLife(t),senseiPaintsToday:()=>senseiPaintsToday(),welcome:(id)=>{ compState().pending=id; welcomeCompanion(id,true); },build:()=>senseiBuildsToday(),SKYI,get LIFE(){return LIFE;},get GAMES(){return GAMES;},get RAKE(){return RAKE;},gradeTest:(ch)=>{ const c=document.createElement('canvas'); c.width=c.height=800; const g=c.getContext('2d'); const out={}; g.fillStyle='#120e0c'; g.font='600 640px "Shippori Mincho",serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(ch,400,430); out.good=localShodo(c,ch); out.good.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.lineWidth=40; g.strokeStyle='#120e0c'; g.beginPath(); g.ellipse(450,350,250,110,-.4,0,6.28); g.moveTo(200,600); g.lineTo(550,420); g.stroke(); out.scribble=localShodo(c,ch); out.scribble.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.font='600 640px "Shippori Mincho",serif'; g.fillText('水',400,430); out.wrongChar=localShodo(c,ch); out.wrongChar.m=shodoMatch(c,ch); return JSON.stringify(out); },p2Set:v=>p2Set(v),openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
 
 const memReady=loadMemory().then(()=>{ subscribeScrolls(); loadSandArt(); });
 /* ===================== Sensei's own life: his art board, his friends, his own building projects ===================== */
@@ -2638,7 +2663,7 @@ function startClimb(){ if(pmode!=="walk"||zone!=="world") return; const dx=playe
 function advInput(){ const ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x+rjoy.x+P1J.x+PAD1.x, iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y+P1J.y+PAD1.y; return [clamp(ix,-1,1),clamp(iz,-1,1)]; }
 let advLeapPrev=false;
 function advFrame(dt){
-  petalFrame(dt); scaleFrame(dt); cloudFrame(dt); campFrame(dt); ruinFrame(dt); festFrame(dt); if(ADV.flag) ADV.flag.rotation.y=Math.sin(clock*3)*.25;
+  petalFrame(dt); scaleFrame(dt); cloudFrame(dt); campFrame(dt); lookFrame(); musicFrame(dt); ruinFrame(dt); festFrame(dt); if(ADV.flag) ADV.flag.rotation.y=Math.sin(clock*3)*.25;
   if(!entered) return; const [ix,iz]=advInput(); const leap=!!(keys.Space||(navigator.getGamepads&&[...navigator.getGamepads()].some(g=>g&&g.buttons[0]&&g.buttons[0].pressed))); const leapEdge=leap&&!advLeapPrev; advLeapPrev=leap;
   // walk: auto-climb when pushing into the rock; jump off the summit to glide
   if(pmode==="walk"&&zone==="world"){ const dx=player.position.x-PEAK.x, dz=player.position.z-PEAK.z, d=Math.hypot(dx,dz);
@@ -2817,6 +2842,76 @@ function addRim(root){ root.traverse(o=>{ const mats=o.isMesh?(Array.isArray(o.m
     addInteract({x:x+1.6,z,r:2.6,k:"炊",label:"Cook something",fn:()=>{ const d=pick([["Grilled river fish","Salt, fire, patience."],["Onigiri","Sensei insists the triangle shape is spiritually important."],["Miso soup","It warms the hands first, then the rest of you."],["Roasted chestnuts","The autumn's best idea."],["Yakitori","Smoke gets in your eyes. Worth it."],["Sweet potato","Wrapped in leaves, buried in the embers, forgotten, remembered."]]); chime(); toast(`You cooked: ${d[0]}. ${d[1]}`); store.meals=(store.meals||0)+1; save(); }});
     discoveries.push({id:"camp",x,z,r:6,k:"焚火",n:"The Campfire",line:"Every traveller deserves a fire and something bubbling in a pot."}); } }
 function campFrame(dt){ const f=LIFE.fire; if(!f) return; f.fl.forEach((m,i)=>{ m.scale.y=.8+Math.sin(clock*13+i*2)*.18+Math.random()*.08; m.rotation.y+=dt*2; }); f.pl.intensity=2+Math.sin(clock*17)*.35+Math.random()*.25; }
+/* ===================== MUSIC: SoundCloud speakers in the garden + Taiko that charts any song ===================== */
+const MUS={sc:null,url:"",playing:false,speakers:[],vol:0,live:null};
+// two speaker lanterns: one on the tea house veranda path, one in the Night Market
+[[12.5,9.5],[SQ.x+5.5,SQ.z+3]].forEach(([x,z])=>{ const y=H(x,z); const g=new THREE.Group(); g.position.set(x,y,z); scene.add(g);
+  const base=new THREE.Mesh(new THREE.CylinderGeometry(.42,.5,.3,8),stoneTexMat("#8f8a7e")); base.position.y=.15; g.add(base);
+  const post=new THREE.Mesh(new THREE.BoxGeometry(.32,1.1,.32),DWOOD); post.position.y=.85; g.add(post);
+  const box=new THREE.Mesh(new THREE.BoxGeometry(.85,.85,.7),toon("#5a3b26")); box.position.y=1.8; g.add(box);
+  const grille=new THREE.Mesh(new THREE.CircleGeometry(.3,20),toon("#2a1e16")); grille.position.set(0,1.8,.36); g.add(grille);
+  const cone=new THREE.Mesh(new THREE.CircleGeometry(.12,16),toon("#d8b26a",{emissive:new THREE.Color("#a0701a"),emissiveIntensity:.2})); cone.position.set(0,1.8,.365); g.add(cone);
+  const roof=gableRoof(1.2,1,.4,toon("#33363f",{flatShading:true})); roof.position.y=2.25; g.add(roof); g.rotation.y=Math.atan2(-x+0,-z+15)*0; shadowy(g); addCircle(x,z,.55);
+  MUS.speakers.push({x,z,cone}); addInteract({x,z,r:2.6,k:"音",label:"Music speaker",fn:()=>openMusic()}); });
+function scSend(method,value){ const f=MUS.sc; if(!f||!f.contentWindow) return; try{ f.contentWindow.postMessage(JSON.stringify(value===undefined?{method}:{method,value}),"*"); }catch(e){} }
+function scPlay(url){ url=(url||"").trim(); if(!/soundcloud\.com\//.test(url)){ toast("Paste a SoundCloud link: a track, a playlist, or your profile's likes."); return; }
+  if(location.protocol!=="file:"&&!window.sensei){ toast("SoundCloud plays in the Sensei app on your PC (the web version can't embed other sites)."); }
+  if(!MUS.sc){ const f=document.createElement("iframe"); f.allow="autoplay"; f.style.cssText="position:fixed;width:2px;height:2px;left:-10px;top:-10px;opacity:0;pointer-events:none;border:0"; document.body.appendChild(f); MUS.sc=f;
+    addEventListener("message",e=>{ if(!/soundcloud\.com$/.test(new URL(e.origin||"http://x").hostname)) return; let d=e.data; try{ d=typeof d==="string"?JSON.parse(d):d; }catch(_){ return; } if(d&&d.method==="ready"){ ["play","pause","finish"].forEach(ev=>scSend("addEventListener",ev)); scSend("play"); }
+      if(d&&d.method==="play"){ MUS.playing=true; scSend("getCurrentSound"); } if(d&&(d.method==="pause"||d.method==="finish")) MUS.playing=d.method!=="pause"?MUS.playing:false; if(d&&d.method==="getCurrentSound"&&d.value){ MUS.title=(d.value.title||"")+(d.value.user?" · "+d.value.user.username:""); musicUI(); } }); }
+  MUS.url=url; store.scUrl=url; save(); MUS.sc.src="https://w.soundcloud.com/player/?url="+encodeURIComponent(url)+"&auto_play=true&visual=false&show_comments=false&buying=false&sharing=false&download=false"; MUS.playing=true; MUS.title="loading…"; if(soundOn) stopSound(); musicUI(); toast("Playing through the garden's speakers. Walk closer to hear it better."); }
+function scStop(){ if(MUS.sc){ scSend("pause"); MUS.sc.src="about:blank"; } MUS.playing=false; MUS.title=""; musicUI(); }
+function musicFrame(dt){ if(!MUS.playing||!MUS.sc) return; let d=1e9; if(zone==="world") for(const s of MUS.speakers) d=Math.min(d,Math.hypot(player.position.x-s.x,player.position.z-s.z)); const want=MG&&MG===GAMES.taiko?100:zone!=="world"?25:clamp(100-(d-3)*3.2,8,100);
+  MUS.vol=lerp(MUS.vol,want,Math.min(1,dt*2)); if((MUS._t=(MUS._t||0)+dt)>.25){ MUS._t=0; scSend("setVolume",Math.round(MUS.vol)); } MUS.speakers.forEach(s=>s.cone.scale.setScalar(1+Math.sin(clock*14)*.08*(MUS.vol/100))); }
+function openMusic(){ musicUI(); $("#musicPanel").classList.add("show"); }
+function musicUI(){ const el=$("#musicNow"); if(el) el.textContent=MUS.playing?("♪ "+(MUS.title||"playing")):"Nothing playing"; const a=$("#ambTog"); if(a) a.textContent=soundOn?"Garden ambience: on":"Garden ambience: off"; const i=$("#scUrl"); if(i&&!i.value) i.value=store.scUrl||""; }
+
+/* ---- Taiko song charts ---- */
+// Offline: decode a song, find onsets in a low band (DON) and a high band (KA), estimate tempo, snap to the beat grid.
+async function chartFromBuffer(buf,diff=2){ const sr=11025, len=Math.ceil(buf.duration*sr);
+  const render=async(type,freq)=>{ const oc=new OfflineAudioContext(1,len,sr); const s=oc.createBufferSource(); s.buffer=buf; let node=s; if(type){ const f=oc.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=.7; s.connect(f); node=f; } node.connect(oc.destination); s.start(); return (await oc.startRendering()).getChannelData(0); };
+  const [lo,hi,full]=await Promise.all([render("lowpass",160),render("highpass",2500),render(null)]); const hop=128, fps=sr/hop, n=Math.floor(len/hop);
+  const env=d=>{ const e=new Float32Array(n); for(let i=0;i<n;i++){ let s=0; for(let k=0;k<hop;k++){ const v=d[i*hop+k]||0; s+=v*v; } e[i]=Math.log(1e-6+s/hop); } const o=new Float32Array(n); for(let i=1;i<n;i++) o[i]=Math.max(0,e[i]-e[i-1]); return o; };
+  const oL=env(lo), oH=env(hi), oF=env(full);
+  // tempo by autocorrelation of the full-band onset curve, 75–175 BPM, with a gentle preference for ~110
+  let best=0,bestLag=0; for(let bpm=75;bpm<=175;bpm+=.5){ const lag=fps*60/bpm; let s=0; for(let i=0;i+lag*2<n;i+=2){ const a=Math.round(i+lag), b=Math.round(i+2*lag); s+=oF[i]*(oF[a]+.5*oF[b]); } s*=Math.exp(-.5*(((bpm-112)/70)**2)); if(s>best){ best=s; bestLag=lag; } }
+  const bpm=Math.round(fps*60/bestLag*2)/2, beat=60/bpm;
+  let bestPh=0,bs=-1; for(let ph=0;ph<beat;ph+=.01){ let s=0; for(let t=ph;t<buf.duration;t+=beat){ const i=Math.round(t*fps); s+=(oF[i]||0)+(oF[i+1]||0); } if(s>bs){ bs=s; bestPh=ph; } }
+  const local=(o,i,w)=>{ let s=0,c=0; for(let k=Math.max(0,i-w);k<Math.min(n,i+w);k++){ s+=o[k]; c++; } return s/Math.max(1,c); };
+  const peak=(o,t)=>{ const i=Math.round(t*fps); let m=0; for(let k=i-4;k<=i+4;k++) m=Math.max(m,o[k]||0); return m; };
+  const step=diff>=3?beat/4:diff>=2?beat/2:beat, thr=diff>=3?1.5:diff>=2?1.9:2.3; const notes=[]; let last=-1;
+  for(let t=bestPh;t<buf.duration-.3;t+=step){ const i=Math.round(t*fps); const pl=peak(oL,t), ph=peak(oH,t), mL=local(oL,i,Math.round(fps*1.5))+1e-4, mH=local(oH,i,Math.round(fps*1.5))+1e-4; const sL=pl/mL, sH=ph/mH;
+    const onBeat=Math.abs(((t-bestPh)/beat)%1)<.01||Math.abs(((t-bestPh)/beat)%1-1)<.01; const need=thr*(onBeat?.85:1.15);
+    if((sL>need||sH>need)&&t-last>=step*.9){ notes.push({t,type:sL*1.05>=sH?"don":"ka"}); last=t; } }
+  return {bpm,notes,duration:buf.duration}; }
+// Live: listen to whatever the PC is playing (Sensei app), lock onto the beat, and keep laying notes ahead on the predicted beats.
+async function liveListen(){ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia) throw new Error("no capture");
+  const stream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:true}); stream.getVideoTracks().forEach(t=>t.stop()); if(!stream.getAudioTracks().length) throw new Error("no audio");
+  initAudio(); const src=actx.createMediaStreamSource(stream); const mk=(type,f)=>{ const b=actx.createBiquadFilter(); b.type=type; b.frequency.value=f; const an=actx.createAnalyser(); an.fftSize=1024; src.connect(b); b.connect(an); return an; };
+  return {stream,lo:mk("lowpass",160),hi:mk("highpass",2500),buf:new Float32Array(1024),hist:[],last:{lo:-9,hi:-9},bpm:0,phase:0,laidTo:0}; }
+function liveTick(L,now){ const rms=an=>{ an.getFloatTimeDomainData(L.buf); let s=0; for(const v of L.buf) s+=v*v; return Math.log(1e-7+s/L.buf.length); };
+  const lo=rms(L.lo), hi=rms(L.hi); const pl=L.plo??lo, ph=L.phi??hi; L.plo=lo; L.phi=hi; const fl=Math.max(0,lo-pl), fh=Math.max(0,hi-ph); L.hist.push({t:now,fl,fh}); while(L.hist.length&&now-L.hist[0].t>12) L.hist.shift();
+  if((L._est=(L._est||0)+1)%30===0&&L.hist.length>200){ const H2=L.hist, dt=(H2[H2.length-1].t-H2[0].t)/H2.length, o=H2.map(h=>h.fl+h.fh*.6); let best=0,lag0=0; for(let bpm=75;bpm<=175;bpm+=1){ const lag=60/bpm/dt; let s=0; for(let i=0;i+lag<o.length;i++) s+=o[i]*o[Math.round(i+lag)]; s*=Math.exp(-.5*(((bpm-112)/70)**2)); if(s>best){ best=s; lag0=lag; } }
+    if(lag0){ const bpm=60/(lag0*dt); L.bpm=L.bpm?lerp(L.bpm,bpm,.35):bpm; const beat=60/L.bpm; let bp=0,bs=-1; for(let ph=0;ph<beat;ph+=.01){ let s=0; for(const h of H2){ const d=((h.t-ph)/beat)%1; if(d<.06||d>.94) s+=h.fl+h.fh*.6; } if(s>bs){ bs=s; bp=ph; } } L.phase=bp; } }
+  return {fl,fh}; }
+function livePlan(L,now,notes){ if(!L.bpm) return; const beat=60/L.bpm, step=beat/2; const ahead=now+3.2; let t=Math.max(L.laidTo,now+1.2); t=L.phase+Math.ceil((t-L.phase)/step)*step;
+  for(;t<ahead;t+=step){ // what happened at this point of the bar over the last few bars decides DON / KA / rest
+    let sl=0,sh=0,c=0; for(let k=1;k<=4;k++){ const tt=t-k*beat*4; for(const h of L.hist){ if(Math.abs(h.t-tt)<.05){ sl+=h.fl; sh+=h.fh; c++; } } } const onBeat=Math.abs(((t-L.phase)/beat)%1)<.05;
+    const e=(sl+sh)/Math.max(1,c); if(onBeat?e>.04:e>.09) notes.push({time:t,type:sl>=sh*.9?"don":"ka",hit:null}); else if(onBeat&&Math.random()<.35) notes.push({time:t,type:"don",hit:null}); }
+  L.laidTo=ahead; }
+function openSongPick(){ $("#songPanel").classList.add("show"); }
+async function pickSong(mode){ $("#songPanel").classList.remove("show"); TAIKO.mode=mode; TAIKO.song=null;
+  if(mode==="file"){ const inp=document.createElement("input"); inp.type="file"; inp.accept="audio/*"; inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; toast("Sensei is listening to your song and writing the drum chart…"); try{ initAudio(); const buf=await actx.decodeAudioData(await f.arrayBuffer()); const ch=await chartFromBuffer(buf,+($("#tkDiff").value||2)); TAIKO.song={buf,chart:ch,name:f.name.replace(/\.[^.]+$/,"")}; toast(`${TAIKO.song.name}: ${ch.bpm} BPM, ${ch.notes.length} notes. Ready.`); TAIKO._picked=true; openGame("taiko"); }catch(e){ console.warn(e); toast("Couldn't read that file. Try an mp3, m4a or wav."); } }; inp.click(); return; }
+  if(mode==="live"){ try{ toast("Listening to what your PC is playing…"); TAIKO.liveL=await liveListen(); TAIKO._picked=true; openGame("taiko"); }catch(e){ console.warn(e); toast(window.sensei?"Couldn't capture your PC's audio. Play something first, then try again.":"Live mode works in the Sensei app on your PC."); } return; }
+  TAIKO._picked=true; openGame("taiko"); }
+
+// soft contact shadow under Sensei so he reads as floating above the ground, not pasted on
+const SBLOB=(()=>{ const c=document.createElement("canvas"); c.width=c.height=64; const g=c.getContext("2d"); const gr=g.createRadialGradient(32,32,2,32,32,30); gr.addColorStop(0,"rgba(0,0,0,.45)"); gr.addColorStop(1,"rgba(0,0,0,0)"); g.fillStyle=gr; g.fillRect(0,0,64,64);
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(2.4,2.4),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false})); m.rotation.x=-Math.PI/2; m.renderOrder=2; scene.add(m); return m; })();
+// warm lantern light pooling on the Night Market's stones after dark
+const MKT_LIGHTS=[[-4,0],[4,-2]].map(([dx,dz])=>{ const l=new THREE.PointLight(0xffa860,0,13,1.6); l.position.set(SQ.x+dx,H(SQ.x+dx,SQ.z+dz)+3.2,SQ.z+dz); scene.add(l); return l; });
+function lookFrame(){ const sp=sensei.position; const gy=groundY(sp.x,sp.z); SBLOB.position.set(sp.x,gy+.04,sp.z); const hgt=Math.max(.1,sp.y-gy); SBLOB.scale.setScalar(clamp(1.4-hgt*.12,.5,1.3)); SBLOB.material.opacity=clamp(1.1-hgt*.18,.15,.9); SBLOB.visible=zone==="world";
+  MKT_LIGHTS.forEach(l=>l.intensity=night*2.4); }
 function advOnEnter(){ setTimeout(()=>addRim(scene),3000); setTimeout(()=>addRim(scene),15000); festBuild(); festGather(); setTimeout(greatTick,15000); setTimeout(takePostcard,40000); setInterval(()=>{ greatTick(); festGather(); },10*60*1000); }
 
 
@@ -3040,13 +3135,18 @@ const KYUDO={ title:"弓道 · Kyūdō", sub:"Hold to draw · release to loose �
 
 /* ---------- 太鼓 Taiko ---------- */
 const TAIKO={ title:"太鼓 · Taiko", sub:"Red DON: F / J / left side · Blue KA: D / K / right side",
-  start(){ TK3.build(); initAudio(); if(actx.state==="suspended") actx.resume(); this.bpm=108; const beat=60/this.bpm; this.t0=actx.currentTime+2.2; this.notes=[]; let t=0; const bars=16;
+  start(){ TK3.build(); initAudio(); if(actx.state==="suspended") actx.resume(); this._picked=false;
+    if(this.mode==="file"&&this.song||this.mode==="live"&&this.liveL){ this.t0=actx.currentTime+(this.mode==="live"?1:2.6); this.score=0; this.combo=0; this.maxc=0; this.good=0; this.ok=0; this.miss=0; this.flash=null; this.finished=false; this.duel=P2.on;
+      if(this.mode==="file"){ const ch=this.song.chart; this.bpm=ch.bpm; this.notes=ch.notes.map(n=>({time:this.t0+n.t,type:n.type,hit:null})); this.end_t=this.t0+ch.duration+.6; const src=actx.createBufferSource(); src.buffer=this.song.buf; const gg=actx.createGain(); gg.gain.value=.9; src.connect(gg); gg.connect(voiceBus); src.start(this.t0); this.srcNode=src; }
+      else { this.bpm=120; this.notes=[]; this.end_t=this.t0+240; this.liveL.laidTo=0; }
+      this.b=this.duel?{notes:[],score:0,combo:0,maxc:0,good:0,ok:0,miss:0}:null; if(this.duel&&this.mode!=="live") this.b.notes=this.notes.map(n=>({time:n.time,type:n.type,hit:null})); return; }
+    this.mode="classic"; this.bpm=108; const beat=60/this.bpm; this.t0=actx.currentTime+2.2; this.notes=[]; let t=0; const bars=16;
     for(let b=0;b<bars;b++){ const lvl=Math.min(1,.35+b/bars); for(let s=0;s<8;s++){ const strong=s%2===0; if(b===0&&s>3) continue; if(Math.random()<(strong?.62+lvl*.2:.12+lvl*.3)) this.notes.push({time:this.t0+(b*8+s)*beat/2,type:Math.random()<(s%4===0?.78:.42)?"don":"ka",hit:null}); } }
     this.end_t=this.t0+bars*4*beat+1.2; this.score=0; this.combo=0; this.maxc=0; this.good=0; this.ok=0; this.miss=0; this.flash=null; this.finished=false; this.duel=P2.on; this.b=this.duel?{notes:this.notes.map(n=>({time:n.time,type:n.type,hit:null})),score:0,combo:0,maxc:0,good:0,ok:0,miss:0}:null;
     // backing: koto on the downbeat + soft shaker, scheduled ahead
     const kot=[146.83,196,220,233.08,293.66]; for(let b=0;b<bars;b++){ for(let q=0;q<4;q++){ const tt=this.t0+(b*4+q)*beat; if(q===0||Math.random()<.35){ const ps=actx.createBufferSource(); ps.buffer=ks(kot[(b+q*2)%kot.length]*(q===0?1:2)); const pg=actx.createGain(); pg.gain.value=q===0?.4:.18; ps.connect(pg); pg.connect(voiceBus); ps.start(tt); } const n=actx.createBufferSource(); n.buffer=noiseBuf; const f=actx.createBiquadFilter(); f.type="highpass"; f.frequency.value=6000; const g=actx.createGain(); g.gain.setValueAtTime(.03,tt+beat/2); g.gain.exponentialRampToValueAtTime(.001,tt+beat/2+.06); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(tt+beat/2); n.stop(tt+beat/2+.08); } }
   },
-  end(){},
+  end(){ try{ this.srcNode&&this.srcNode.stop(); }catch(e){} this.srcNode=null; if(this.liveL){ this.liveL.stream.getTracks().forEach(t=>t.stop()); this.liveL=null; } },
   drum(type,pl=0){ sfx((a,t)=>{ if(type==="don"){ const o=a.createOscillator(),g=a.createGain(); o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(55,t+.18); g.gain.setValueAtTime(.55,t); g.gain.exponentialRampToValueAtTime(.001,t+.35); o.connect(g); g.connect(voiceBus); o.start(t); o.stop(t+.4); }
       else { const n=a.createBufferSource(); n.buffer=noiseBuf; const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=2400; f.Q.value=2; const g=a.createGain(); g.gain.setValueAtTime(.35,t); g.gain.exponentialRampToValueAtTime(.001,t+.07); n.connect(f); f.connect(g); g.connect(voiceBus); n.start(t); n.stop(t+.1); const o=a.createOscillator(),og=a.createGain(); o.frequency.value=950; og.gain.setValueAtTime(.08,t); og.gain.exponentialRampToValueAtTime(.001,t+.06); o.connect(og); og.connect(voiceBus); o.start(t); o.stop(t+.08); } });
     const P=pl?this.b:this; if(!P) return; const now=actx.currentTime; let best=null,bd=1; for(const n of P.notes){ if(n.hit) continue; const d=Math.abs(n.time-now); if(d<bd){ bd=d; best=n; } }
@@ -3055,12 +3155,15 @@ const TAIKO={ title:"太鼓 · Taiko", sub:"Red DON: F / J / left side · Blue K
   p2(b,down){ if(!down||!this.duel) return; if(b==="a") this.drum("don",1); else if(b==="b") this.drum("ka",1); },
   down(x,y,e){ if(e&&e.button===2) this.drum("ka"); else this.drum(x<.5?"don":"ka"); },
   hit(type){ this.drum(type); },
-  frame(dt,W,H){ const g=mgX, now=actx.currentTime; const hx=W*.5, ly=H*.36; g.clearRect(0,0,W,H);
+  frame(dt,W,H){ const g=mgX, now=actx.currentTime; const hx=W*.5, ly=H*.36; g.clearRect(0,0,W,H); if(!this.notes) return;
+    if(this.mode==="live"&&this.liveL){ liveTick(this.liveL,now); const before=this.notes.length; livePlan(this.liveL,now,this.notes); if(this.liveL.bpm) this.bpm=this.liveL.bpm; if(this.duel&&this.b&&this.notes.length>before) this.b.notes.push(...this.notes.slice(before).map(n=>({time:n.time,type:n.type,hit:null}))); if(this.notes.length>400) this.notes.splice(0,this.notes.length-400); }
     for(const P of [this,this.b]){ if(!P) continue; for(const n of P.notes){ if(n.hit) continue; if(now-n.time>.14){ n.hit="miss"; P.miss++; P.combo=0; if(P===this) this.flash={txt:"不 MISS",c:"#7a8aa8",t:.35}; } } }
     TK3.update(this,dt,now); mg3Render(TK3,W,H); g.textAlign="center";
     if(this.flash){ this.flash.t-=dt; g.fillStyle=this.flash.c; g.font="bold 24px Shippori Mincho, serif"; g.fillText(this.flash.txt,hx,ly-62); if(this.flash.t<=0) this.flash=null; }
     g.fillStyle="#f4ecd8"; g.font="18px Shippori Mincho, serif"; if(this.duel){ g.fillStyle="#7fdcff"; g.fillText(`P1 ${this.score}`,W*.38,H*.82); g.fillStyle="#ff8fb8"; g.fillText(`P2 ${this.b.score}`,W*.62,H*.82); g.font="12px sans-serif"; g.fillStyle="rgba(244,236,216,.7)"; g.fillText("P1: F don · D ka      P2: J don · K ka (or phone A / B)",W*.5,H*.9); g.fillStyle="#f4ecd8"; } else g.fillText(`${this.score}`,W*.5,H*.82); g.font="13px sans-serif"; g.fillStyle="rgba(244,236,216,.7)"; g.fillText(this.combo>2?`${this.combo} combo`:"",W*.5,H*.86);
     if(now<this.t0){ g.font="30px Shippori Mincho, serif"; g.fillStyle="#f4ecd8"; g.fillText(Math.ceil(this.t0-now)||"始",W*.5,H*.3); }
+    if(this.mode==="live"){ g.font="14px Shippori Mincho, serif"; g.fillStyle="rgba(244,236,216,.8)"; g.fillText(this.liveL&&this.liveL.bpm?`聴 live · ${Math.round(this.liveL.bpm)} BPM`:"聴 listening for the beat…",W*.5,H*.14); }
+    if(this.mode==="file"&&this.song){ g.font="14px Shippori Mincho, serif"; g.fillStyle="rgba(244,236,216,.8)"; g.fillText(`譜 ${this.song.name} · ${this.song.chart.bpm} BPM`,W*.5,H*.14); }
     g.textAlign="left";
     if(!this.finished&&now>this.end_t&&this.duel){ this.finished=true; const a=this.score,b2=this.b.score; mgResult(`P1 ${a} · P2 ${b2}`,`P1 良${this.good} 可${this.ok} 不${this.miss} · P2 良${this.b.good} 可${this.b.ok} 不${this.b.miss}`, a===b2?"A perfect tie. The drum refuses to choose.":(a>b2?"Player 1":"Player 2")+" wins the duel. Taro wants a rematch already."); }
     if(!this.finished&&now>this.end_t){ this.finished=true; const total=this.notes.length, acc=Math.round((this.good+this.ok*.5)/Math.max(1,total)*100); const best=mgBest("taiko",this.score);
@@ -3069,7 +3172,7 @@ const TAIKO={ title:"太鼓 · Taiko", sub:"Red DON: F / J / left side · Blue K
 
 /* ---------- 砂紋 Sand raking ---------- */
 const sandCv=document.createElement("canvas"); sandCv.width=1024; sandCv.height=640; const sandX=sandCv.getContext("2d");
-const SAND_ROCKS=[[-4,-1,1.3],[3.2,1.6,1],[4.6,-2.4,.7]];
+const SAND_ROCKS=[[-4,-1,1.3],[-1.9,1.9,.55],[-5.7,2.1,.42],[3.2,1.6,1],[4.6,-2.4,.7],[1.1,-3.2,.38]];
 const rockPx=([rx,ry,r])=>[(rx+8)/16*1024,(ry+5)/10*640,r/16*1024];
 /* ---- real sand: a height field + colour field; grains slide past their angle of repose and colours mix as they move ---- */
 const SW=256, SH=160, SN=SW*SH; const sH=new Float32Array(SN), sR=new Float32Array(SN), sG=new Float32Array(SN), sB=new Float32Array(SN), sBlk=new Uint8Array(SN), sNz=new Float32Array(SN);
@@ -3286,7 +3389,7 @@ const IKEBANA={ title:"生花 · Ikebana", sub:"Pick a stem · drag up/down to t
 };
 
 const GAMES={kyudo:KYUDO,taiko:TAIKO,rake:RAKE,bonsai:BONSAI,tea:TEA,ikebana:IKEBANA};
-function openGame(id){ const g=GAMES[id]; if(!g) return; mgEl.classList.toggle("rake",id==="rake"); $("#mgJudge").style.display=id==="rake"?"":"none"; $("#mgReset").style.display=id==="rake"?"":"none"; if(!entered) enterGame(); else hideMenu(); setTimeout(()=>mgOpen(g),entered?50:400); }
+function openGame(id){ const g=GAMES[id]; if(!g) return; if(id==="taiko"&&!TAIKO._picked){ openSongPick(); return; } mgEl.classList.toggle("rake",id==="rake"); $("#mgJudge").style.display=id==="rake"?"":"none"; $("#mgReset").style.display=id==="rake"?"":"none"; if(!entered) enterGame(); else hideMenu(); setTimeout(()=>mgOpen(g),entered?50:400); }
 $("#miGames").addEventListener("click",()=>{ $("#gamesPanel").classList.add("show"); });
 document.querySelectorAll("[data-game]").forEach(b=>b.addEventListener("click",()=>{ $("#gamesPanel").classList.remove("show"); const id=b.dataset.game; if(id==="shodo"){ if(!entered) enterGame(); else hideMenu(); setTimeout(openShodo,300); } else if(id==="golf"){ if(!entered) enterGame(); else hideMenu(); setTimeout(()=>{ travelTo(TRAVEL.find(t=>t.id==="golf")); setTimeout(golfStart,700); },300); } else if(id==="koi"){ if(!entered) enterGame(); else hideMenu(); toast("Walk to the pond, then tap the water, press F, or flick up on your phone."); } else openGame(id); }));
 

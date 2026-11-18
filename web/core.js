@@ -282,6 +282,8 @@ module.exports = function core(ctx) {
     if (garden && !garden.isDestroyed()) { garden.show(); garden.focus(); return; }
     garden = new BrowserWindow({ width: 1360, height: 860, fullscreen: true, title: 'Sensei Hakuun — The Garden', autoHideMenuBar: true, backgroundColor: '#0b1026', show: false,
       webPreferences: { preload: PRELOAD, backgroundThrottling: true } });
+    // Taiko "live" mode: let the garden hear what the PC is playing (system audio loopback, no picker dialog)
+    try { garden.webContents.session.setDisplayMediaRequestHandler((req, cb) => { electron.desktopCapturer.getSources({ types: ['screen'] }).then(src => cb({ video: src[0], audio: 'loopback' })).catch(() => cb({})); }); } catch (e) { log('loopback', e); }
     garden.loadFile(webPath('garden.html'));
     garden.webContents.on('before-input-event', (e, inp) => { if (inp.type === 'keyDown' && inp.key === 'F11') { garden.setFullScreen(!garden.isFullScreen()); e.preventDefault(); } });
     garden.once('ready-to-show', () => { garden.show(); garden.focus(); });

@@ -1,7 +1,7 @@
 {
- "version": 19,
+ "version": 20,
  "shellApi": 2,
- "notes": "Prettier ground and gravel walkways with border stones, big clouds, rim light, campfire, a real craggy Kumo Peak, deeper water, golf and market spaced apart, hotbar removed.",
+ "notes": "SoundCloud through speaker lanterns in the garden. Taiko now plays any song: pick a file, or Live mode follows whatever your PC is playing. Warmer Night Market at night, tea set, Sensei casts a shadow.",
  "files": [
   "brain-client.js",
   "core.js",
