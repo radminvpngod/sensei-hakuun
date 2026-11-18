@@ -145,7 +145,7 @@ module.exports = function core(ctx) {
   function ensureBrain(show) {
     if (!brain || brain.isDestroyed()) {
       brain = new BrowserWindow({ width: 980, height: 760, title: "Sensei's mind — sign in to claude.ai", show: !!show, autoHideMenuBar: true, backgroundColor: '#0b1026',
-        webPreferences: { partition: 'persist:sensei', backgroundThrottling: true } });
+        webPreferences: { partition: 'persist:sensei', backgroundThrottling: false } });
       stripUA(brain.webContents);
       brain.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\/([a-z0-9-]+\.)*(claude\.ai|anthropic\.com|google\.com|apple\.com)\//.test(url)) return { action: 'allow' }; shell.openExternal(url); return { action: 'deny' }; });
       brain.on('close', e => { if (!quitting) { e.preventDefault(); brain.hide(); } });
@@ -163,8 +163,16 @@ module.exports = function core(ctx) {
   }
   async function signedIn() { try { const c = await session.fromPartition('persist:sensei').cookies.get({ url: 'https://claude.ai', name: 'sessionKey' }); return c.length > 0; } catch (e) { return false; } }
   // the mind page needs one click the first time; press it for him once he is signed in
-  async function autoWake() { for (let i = 0; i < 10; i++) { await sleep(1500); if (!brain || brain.isDestroyed()) return; if (await brainFrame()) return;
+  let waking = false;
+  async function autoWake() { if (waking) return; waking = true; const t0 = Date.now();
+    try { for (let i = 0; i < 90; i++) { await sleep(i < 20 ? 400 : 1000); if (!brain || brain.isDestroyed()) return; if (await brainFrame()) { log('mind: awake in', Date.now() - t0, 'ms'); broadcast('mind', { awake: true }); return; }
       for (const f of brain.webContents.mainFrame.framesInSubtree) { try { await f.executeJavaScript('(()=>{ const b=document.getElementById("sbGo"); if(b&&!window.__clicked){ window.__clicked=1; b.click(); } })()', true); } catch (e) {} } } }
+    finally { waking = false; } }
+  // keep the mind warm: wake it as soon as the app starts (if signed in), and quietly revive it if it ever falls asleep
+  let mindMisses = 0;
+  async function brainWatch() { try { if (!(await signedIn())) return; if (!brain || brain.isDestroyed()) { ensureBrain(false); return; }
+      if (await brainFrame()) { mindMisses = 0; return; } if (waking) return; mindMisses++;
+      if (mindMisses >= 2) { mindMisses = 0; log('mind: asleep, reloading'); brain.loadURL(GARDEN_URL + '#brain'); } else autoWake(); } catch (e) { log('mind watch', e); } }
   async function brainFrame() {
     if (!brain || brain.isDestroyed()) return null;
     for (const f of brain.webContents.mainFrame.framesInSubtree) { try { if (await f.executeJavaScript('!!(window.__sb && window.__sb.ready)')) return f; } catch (e) {} }
@@ -194,7 +202,7 @@ module.exports = function core(ctx) {
       if (q.op === 'list') return await brainJS(`window.__sb.dbList(${JSON.stringify(q.coll)},${JSON.stringify(q.orderBy || null)},${JSON.stringify(q.dir || 'asc')},${+q.limit || 60})`);
     } catch (err) { return { error: err.message }; }
   });
-  ipcMain.handle('brain:status', async () => { const si = await signedIn(); if (!si) return { awake: false, signedIn: false }; ensureBrain(false); let f = null; const t0 = Date.now(); while (!(f = await brainFrame().catch(() => null)) && Date.now() - t0 < 9000) await sleep(700); return { awake: !!f, signedIn: true }; });
+  ipcMain.handle('brain:status', async () => { const si = await signedIn(); if (!si) return { awake: false, signedIn: false }; ensureBrain(false); let f = null; const t0 = Date.now(); while (!(f = await brainFrame().catch(() => null)) && Date.now() - t0 < 4000) await sleep(400); if (!f) autoWake(); return { awake: !!f, signedIn: true, waking: !f }; });
 
   /* ================= windows ================= */
   let overlay = null, palette = null, pairWin = null, garden = null, setWin = null, tray = null, gardenUnloadT = null;
@@ -388,6 +396,7 @@ module.exports = function core(ctx) {
   function notifyRemote() { broadcast('remote', { connected: remotes.size, players: [...remotes].map(r => r.player) }); }
   const VK = { plus: 0xAF, minus: 0xAE, one: 0xB3, two: 0x1B, up: 0x26, down: 0x28, left: 0x25, right: 0x27, enter: 0x0D, tab: 0x09, next: 0xB0, prev: 0xB1 };
   let calibOwner = null, calibTimer = null;
+  let gardenMode = {}; ipcMain.on('garden:mode', (e, m) => { gardenMode = { ...gardenMode, ...(m || {}) }; });
   // while the garden is open, both remotes are locked to the screen it is on
   function gameOpen() { return garden && !garden.isDestroyed() && garden.isVisible() && !garden.isMinimized(); }
   function gameRect() { if (gameOpen()) { if (garden.isFullScreen()) return screen.getDisplayMatching(garden.getBounds()).bounds; return garden.getContentBounds(); } return screen.getPrimaryDisplay().bounds; }
@@ -397,6 +406,7 @@ module.exports = function core(ctx) {
       if (/^(aim|move|down|up|press|joy)$/.test(d.t)) return; }
     // player one's stick and d-pad go straight into the garden while it is open (no fake key presses needed)
     if (gameOpen() && (d.t === 'joy' || ((d.t === 'down' || d.t === 'up') && /^(up|down|left|right)$/.test(d.b)))) { garden.webContents.send('p1', d); return; }
+    if (gameOpen() && gardenMode.golf && (d.t === 'down' || d.t === 'up') && /^(a|b)$/.test(d.b)) { garden.webContents.send('p1', d); return; }
     if (d.t === 'joy') { const gr = gameRect(), b = allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; } const sp = 18; cursor.x = Math.max(b.l, Math.min(b.r, cursor.x + (+d.x || 0) * sp)); cursor.y = Math.max(b.t, Math.min(b.b, cursor.y + (+d.y || 0) * sp)); pointerSeen = Date.now(); return; }
     switch (d.t) {
       case 'move': { const gr = gameRect(), b = gameOpen() ? { l: gr.x, r: gr.x + gr.width - 1, t: gr.y, b: gr.y + gr.height - 1 } : allBounds(); if (!cursor) { const p = screen.getCursorScreenPoint(); cursor = { x: p.x, y: p.y }; }
@@ -499,6 +509,7 @@ module.exports = function core(ctx) {
 
   /* ================= boot ================= */
   createOverlay(); createPalette(); buildTray(); psStart(); startServer(); rescan();
+  setTimeout(brainWatch, 1200); setInterval(brainWatch, 40000);
   app.setLoginItemSettings({ openAtLogin: !!settings.autostart });
   const HOTKEY_ACTIONS = {
     palette: () => togglePalette(),

@@ -1,7 +1,7 @@
 {
- "version": 15,
+ "version": 16,
  "shellApi": 2,
- "notes": "The phone remote now works sideways too.",
+ "notes": "Dry garden fixed, controller golf, 5 new sky islands, Sensei paints, builds and has friends who want to move in. His mind wakes on its own.",
  "files": [
   "brain-client.js",
   "core.js",
