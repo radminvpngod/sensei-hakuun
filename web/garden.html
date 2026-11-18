@@ -108,7 +108,7 @@ form{display:flex;gap:8px;padding:10px 12px calc(env(safe-area-inset-bottom) + 1
 html,body,canvas{cursor:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M4%203%20L24%2015%20L15%2017%20L11%2027%20Z%22%20fill%3D%22%23f4ecd8%22%20stroke%3D%22%232b2420%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22/%3E%3Ccircle%20cx%3D%2213.5%22%20cy%3D%2215%22%20r%3D%222.6%22%20fill%3D%22%23c8452f%22/%3E%3Cpath%20d%3D%22M15%2017%20L22%2025%22%20stroke%3D%22%232b2420%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22/%3E%3C/svg%3E") 4 3,auto}
 .pbtn,button,.ibtn,.shB,.gcard,.rt,#swatches i,#hotbar i,#hotbar b,#lifeTabs b,a,[data-close],.mi,.chip{cursor:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20width%3D%2232%22%20height%3D%2232%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20d%3D%22M4%203%20L24%2015%20L15%2017%20L11%2027%20Z%22%20fill%3D%22%23c8452f%22%20stroke%3D%22%232b2420%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22/%3E%3Ccircle%20cx%3D%2213.5%22%20cy%3D%2215%22%20r%3D%222.6%22%20fill%3D%22%23f4ecd8%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2224%22%20r%3D%225%22%20fill%3D%22none%22%20stroke%3D%22%23f4ecd8%22%20stroke-width%3D%222%22/%3E%3C/svg%3E") 4 3,pointer!important}
 #gbar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 58px);transform:translateX(-50%);display:none;gap:6px;padding:7px 9px;border-radius:18px;background:linear-gradient(rgba(30,26,40,.62),rgba(16,14,24,.7));backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 30px rgba(0,0,0,.35);z-index:6}
-body.ingame #gbar{display:flex}body.busy #gbar{display:none}
+body.ingame.weapons #gbar{display:flex}body.busy #gbar{display:none}
 #gbar .slot{position:relative;width:52px;height:52px;border-radius:13px;display:grid;place-items:center;background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.14),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.12);color:#f4ecd8;font-family:"Shippori Mincho",serif;font-size:22px;transition:transform .12s,background .2s}
 #gbar .slot:hover{transform:translateY(-3px);background:radial-gradient(circle at 50% 30%,rgba(200,69,47,.55),rgba(200,69,47,.2))}#gbar .slot.flash{background:#c8452f}
 #gbar .slot em{position:absolute;left:5px;top:2px;font-size:10px;font-style:normal;opacity:.6;font-family:system-ui}#gbar .slot small{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.06em;opacity:0;white-space:nowrap;transition:opacity .2s;font-family:system-ui}#gbar .slot:hover small{opacity:.85}
@@ -395,17 +395,17 @@ function streamDist(x,z){ let d=1e9; for(let i=0;i<STREAM.length-1;i++) d=Math.m
 const WALK_R=84;
 const SHR={x:0,z:-66,h:12,r:9};                     // Kumo Shrine on its hill (north)
 const VIL={x0:0,x1:0,z0:0,z1:0};                     // (the old village street is gone)
-const SQ={x:20,z:72,r:7};                           // Night Market square (south-east, past the golf green)
+const SQ={x:8,z:76,r:7};                           // Night Market square (south-east, past the golf green)
 const LAKE={x:62,z:22,a:13,b:10};                   // Mirror Lake (east)
 const ISL={x:65,z:21,r:3};                          // island shrine
 const PIER={x0:45,x1:52,z:22,hw:1.1,y:.38};
 const ONS={x:60,z:-48,r:3.6,hill:5};                // Yuki Onsen (north-east, always snowy)
 const MZ={x:-64,z:-12,n:7,cell:4.2};                // Bamboo Maze (west)
 const ORC={x:-40,z:52,r:12};                        // Sakura Orchard (south-west)
-const GOLF={x:30,z:52,w:24,d:16};                   // mini golf green (south-east)
+const GOLF={x:33,z:41,w:24,d:16};                   // mini golf green (south-east)
 const HALL={x:430,z:-430,y:0,w:26,d:20};            // inside Shirokumo Castle
 const SKY={y:150};
-const PEAK={x:-30,z:-72,h:34,r0:7.2,r1:2.6};             // Kumo Peak, the climbing mountain (north-west)                                  // the cloud islands, high above the valley
+const PEAK={x:-30,z:-72,h:34,r0:9.5,r1:3.2};             // Kumo Peak, the climbing mountain (north-west)                                  // the cloud islands, high above the valley
 const MZH=MZ.n*MZ.cell/2;
 const ROADS=[
   [[0,44],[0,48]],
@@ -414,8 +414,9 @@ const ROADS=[
   [[28,-30],[44,-40],[55,-46]],
   [[-26,4],[-42,-6],[-48,-12]],
   [[-12,30],[-30,44]],
-  [[6,44],[18,50]],
-  [[24,60],[SQ.x,SQ.z-SQ.r+1]],
+  [[5,46],[GOLF.x-GOLF.w/2-1.5,GOLF.z+2]],
+  [[GOLF.x-4,GOLF.z+GOLF.d/2+1.5],[26,58],[18,64],[SQ.x+3,SQ.z-SQ.r+1]],
+  [[0,48],[3,60],[SQ.x-2,SQ.z-SQ.r+1]],
 ];
 const lakeE=(x,z)=>((x-LAKE.x)/LAKE.a)**2+((z-LAKE.z)/LAKE.b)**2;
 function roadDist(x,z){ let d=1e9; for(const r of ROADS) for(let i=0;i<r.length-1;i++){ const a=r[i],b=r[i+1]; d=Math.min(d,distSeg(x,z,a[0],a[1],b[0],b[1])); } return d; }
@@ -497,6 +498,11 @@ scene.add(sun,sun.target);
 /* ===================== terrain (low poly) ===================== */
 const TCOL={grassA:C({spring:"#7aa656",summer:"#5f8f45",autumn:"#93924a",winter:"#e6ebf0"}[S]), grassB:C({spring:"#557f3d",summer:"#436f35",autumn:"#77763a",winter:"#c9d3dd"}[S]),
   moss:C(S==="winter"?"#b9c6c4":"#3c5e33"), rock:C("#7c786e"), mud:C("#2a4a4c"), sand:C("#b9a982"), dirt:C(S==="winter"?"#b4ada0":"#a08866"), earth:C("#8a7658"), stone:C("#9b968c"), gravel:C("#cfc8b8"), snow:C("#f3f5f8"), petal:C("#e9b7c6"), green:C("#4f8a3c")};
+function pathMask(){ const N=1024, c=document.createElement("canvas"); c.width=c.height=N; const g=c.getContext("2d"); const P=(x,z)=>[(x+190)/380*N,(z+190)/380*N]; g.fillStyle="#000"; g.fillRect(0,0,N,N);
+  g.filter="blur(1.6px)"; g.strokeStyle="#f00"; g.lineCap=g.lineJoin="round"; g.lineWidth=2.5/380*N; for(const r of ROADS){ g.beginPath(); r.forEach(([x,z],i)=>{ const [px,pz]=P(x,z); i?g.lineTo(px,pz):g.moveTo(px,pz); }); g.stroke(); }
+  g.beginPath(); for(let z=6;z<=44;z+=1){ const [px,pz]=P(0,z); z===6?g.moveTo(px,pz):g.lineTo(px,pz); } g.lineWidth=3/380*N; g.stroke();
+  g.globalCompositeOperation="lighter"; g.fillStyle="#0f0"; const disc=(x,z,r)=>{ const [px,pz]=P(x,z); g.beginPath(); g.arc(px,pz,r/380*N,0,TAU); g.fill(); }; disc(SQ.x,SQ.z,SQ.r-.3); disc(SHR.x,SHR.z,SHR.r-1.5);
+  const t=new THREE.CanvasTexture(c); t.flipY=false; t.minFilter=THREE.LinearMipmapLinearFilter; t.anisotropy=8; return t; }
 function terrainColor(x,z,h,out=new THREE.Color()){
   const n=fbm(x*.08+3,z*.08); out.copy(TCOL.grassA).lerp(TCOL.grassB,n);
   const m2=fbm(x*.03-9,z*.03+4); if(m2>.62) out.lerp(TCOL.moss,(m2-.62)*2.2);
@@ -504,7 +510,7 @@ function terrainColor(x,z,h,out=new THREE.Color()){
   const e=(x/PRX)**2+(z/PRZ)**2; if(e<1.18) out.lerp(e<1?TCOL.mud:TCOL.sand, e<1?.9:.5);
   const le=lakeE(x,z); if(le<1.25) out.lerp(le<.92?TCOL.mud:TCOL.sand, le<.92?.85:.55*(1-smooth(1.05,1.25,le)));
   if (streamDist(x,z)<2.2) out.lerp(TCOL.sand,.45);
-  const rd=roadDist(x,z); if(rd<2.2) out.lerp(TCOL.dirt,(1-smooth(1,2.2,rd))*.85);
+  const rd=roadDist(x,z); if(rd<3) out.lerp(TCOL.dirt,(1-smooth(1,3,rd))*.25);
   if(inVillage(x,z)) out.lerp(TCOL.earth,.7);
   const dq=Math.hypot(x-SQ.x,z-SQ.z); if(dq<SQ.r) out.lerp(TCOL.stone,.85*(1-smooth(SQ.r-1.5,SQ.r,dq)));
   const ds=Math.hypot(x-SHR.x,z-SHR.z); if(ds<SHR.r) out.lerp(TCOL.gravel,.75*(1-smooth(SHR.r-2,SHR.r,ds)));
@@ -521,7 +527,20 @@ function terrainColor(x,z,h,out=new THREE.Color()){
     const slope=Math.abs(H(x+.6,z)-H(x-.6,z))+Math.abs(H(x,z+.6)-H(x,z-.6)); if (slope>1.6) c.lerp(TCOL.rock,clamp((slope-1.6)/1.6,0,1));
     cols.push(c.r,c.g,c.b); }
   g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3)); g.computeVertexNormals();
-  const terrain=new THREE.Mesh(g,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:gm,flatShading:true})); terrain.receiveShadow=true; scene.add(terrain); terrainMesh=terrain;
+  // smooth rolling ground (not faceted), with per-pixel detail and crisp, feathered gravel walkways painted from a path mask
+  const tm=new THREE.MeshToonMaterial({vertexColors:true,gradientMap:gm}); const mask=pathMask();
+  tm.onBeforeCompile=sh=>{ sh.uniforms.uMask={value:mask}; sh.vertexShader=sh.vertexShader.replace("#include <common>","#include <common>\nvarying vec3 vWp;").replace("#include <begin_vertex>","#include <begin_vertex>\nvWp=(modelMatrix*vec4(transformed,1.)).xyz;");
+    sh.fragmentShader=sh.fragmentShader.replace("#include <common>",`#include <common>
+      varying vec3 vWp; uniform sampler2D uMask;
+      float th(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+      float tn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(th(i),th(i+vec2(1,0)),f.x),mix(th(i+vec2(0,1)),th(i+vec2(1,1)),f.x),f.y); }`)
+      .replace("#include <color_fragment>",`#include <color_fragment>
+      { float n1=tn(vWp.xz*.045), n2=tn(vWp.xz*.33), n3=th(floor(vWp.xz*7.)), n4=tn(vWp.xz*1.6);
+        diffuseColor.rgb*=.9+.17*n1+.07*(n2-.5)+.04*(n4-.5);
+        vec4 m=texture2D(uMask,(vWp.xz+190.)/380.); float road=smoothstep(.18,.62,m.r), plaza=smoothstep(.2,.7,m.g);
+        vec3 grav=mix(vec3(.60,.55,.46),vec3(.78,.74,.64),n3)*(.9+.12*n2); vec3 pav=mix(vec3(.55,.53,.5),vec3(.68,.66,.62),th(floor(vWp.xz*1.25)))*(.92+.1*n4);
+        float edge=road*(1.-road)*4.; diffuseColor.rgb=mix(diffuseColor.rgb,grav,road*.95); diffuseColor.rgb=mix(diffuseColor.rgb,pav,plaza*.9); diffuseColor.rgb*=1.-edge*.16; }`); };
+  const terrain=new THREE.Mesh(g,tm); terrain.receiveShadow=true; scene.add(terrain); terrainMesh=terrain;
 }
 
 /* ===================== plant registry (low-poly CC0 Quaternius models, load later) ===================== */
@@ -544,7 +563,8 @@ const waterMat=(flow=0)=>new THREE.ShaderMaterial({transparent:true,depthWrite:f
   fragmentShader:`uniform float uT,uFlow,uNight; uniform vec3 uDeep,uShal,uSky; varying vec3 vW; varying vec2 vUv;
   void main(){ vec2 p = uFlow>.5 ? vec2(vUv.x*4., vUv.y*60.-uT*5.) : vW.xz;
     float w=sin(p.x*1.3+uT*1.1)*.5+sin(p.y*1.7-uT*.9)*.5+sin((p.x+p.y)*2.3+uT*1.7)*.3;
-    vec3 c=mix(uDeep,uShal,.45+.22*w); c=mix(c,uSky,.18);
+    float rr=uFlow>.5?.7:length(vUv-.5)*2.; vec3 c=mix(uDeep*.62,uShal*1.05,clamp(smoothstep(.35,1.02,rr)*.8+.2*(.5+.5*w),0.,1.));
+    float fr=pow(1.-clamp(abs(normalize(cameraPosition-vW).y),0.,1.),2.5); c=mix(c,uSky,.08+fr*.5); c+=vec3(.9,.95,1.)*pow(max(0.,w),6.)*.08*(1.-uNight);
     float sp=pow(max(0.,sin(p.x*7.+uT*2.)*sin(p.y*6.3-uT*1.7)),40.)*(1.-uNight*.75);
     c+=sp*.45; if(uFlow>.5){ c+= smoothstep(.85,1.,sin(vUv.y*90.-uT*9.+sin(vUv.x*9.)*2.))*.25; }
     gl_FragColor=vec4(c, uFlow>.5 ? .82 : .74);
@@ -750,7 +770,7 @@ function buildFluffyGrass(){
 const GINKGO=S==="autumn"?["#f2c23a","#e8b02a","#f7d460"]:MAPLE;
 [[-13,20,1.1],[12,26,1],[-8,-15,1.2],[9,-14,1],[22,-12,1.1],[-26,26,1.2],[27,22,1],[-46,-6,1.1],[44,-10,1.2],[-20,42,1]].forEach(([x,z,s],i)=>{ if(roadDist(x,z)<4.2||distSeg(x,z,21,-26,28.5,-33.5)<4.5) return; mapleTree(x,z,s,i%3===2?GINKGO:MAPLE); });
 [[13,3,1],[-6,26,.9],[7,36,1],[-9,37,1.1],[20,-2,.9],[38,22,1.1],[-28,-10,1],[14,-30,1.2],[-2,-26,1],[48,8,1.2],[-50,30,1.1],[-16,-30,1.1],[52,-28,1.3],[-40,-50,1.2]].forEach(([x,z,s])=>{ if(roadDist(x,z)<4.2||distSeg(x,z,21,-26,28.5,-33.5)<4.5) return; pineTree(x,z,s); });
-const KEEP=[[-13,5.5,5],[PEAK.x,PEAK.z,PEAK.r0+5],[17,15,9],[31,2,11],[CLIFF.x,CLIFF.z,16],[-38,16,13.5],[CASTLE.x,CASTLE.z,13],[SHR.x,SHR.z,SHR.r+4],[ONS.x,ONS.z,9],[ORC.x,ORC.z,ORC.r+2],[ISL.x,ISL.z,ISL.r+.6],[SQ.x,SQ.z,SQ.r+2],[POOL.x,POOL.z,7],[7.5,19.5,3.5],[52,-17,7]];
+const KEEP=[[-13,5.5,5],[PEAK.x,PEAK.z,PEAK.r0+5],[17,15,9],[31,2,11],[CLIFF.x,CLIFF.z,16],[-38,16,13.5],[CASTLE.x,CASTLE.z,13],[SHR.x,SHR.z,SHR.r+4],[ONS.x,ONS.z,9],[ORC.x,ORC.z,ORC.r+2],[ISL.x,ISL.z,ISL.r+.6],[SQ.x,SQ.z,SQ.r+5],[SQ.x-11.5,SQ.z,5],[SQ.x+11.5,SQ.z,5],[POOL.x,POOL.z,7],[9.5,28,4],[52,-17,7]];
 function free(x,z,pad=0){ if(Math.hypot(x,z)>WALK_R+30) return false; if(Math.abs(x)<4.5&&z>6&&z<48) return false;
   if(roadDist(x,z)<2.5+pad) return false; for(const k of KEEP) if(Math.hypot(x-k[0],z-k[1])<k[2]+pad) return false;
   if((x/(PRX+2.5))**2+(z/(PRZ+2.5))**2<1) return false; if(lakeE(x,z)<1.1) return false; if(inVillage(x,z)||inMaze(x,z,3)||inGolf(x,z,2)) return false;
@@ -1484,7 +1504,7 @@ function ringSkyBell(i,bell){ bellSound(); bell.rotation.z=.4; setTimeout(()=>be
   if(bellSeq.length===3){ skyGateOpen=true; skyBridgeMeshes.gate.visible=true; chime(); whisper("A bridge of cloud gathers toward the highest island.",7000); } else toast("The bell's note hangs in the air…"); }
 
 /* ===================== taiko drum & archery range ===================== */
-{ const X=7.5,Z=19.5; const g=new THREE.Group(); g.position.set(X,H(X,Z),Z); g.rotation.y=-.6; scene.add(g);
+{ const X=9.5,Z=28; const g=new THREE.Group(); g.position.set(X,H(X,Z),Z); g.rotation.y=-.9; scene.add(g);
   const wood=toon("#5a3424"), red=toon("#a8382a");
   [-1,1].forEach(s=>{ const l=new THREE.Mesh(new THREE.BoxGeometry(.18,1.6,.18),wood); l.position.set(s*.8,.8,0); l.rotation.z=s*-.15; g.add(l); });
   const drum=new THREE.Mesh(new THREE.CylinderGeometry(.75,.75,1.0,24),red); drum.rotation.z=Math.PI/2; drum.position.y=1.5; g.add(drum);
@@ -1872,7 +1892,7 @@ const GBAR=[["餌","Feed koi",()=>tossFood(.6)],["話","Talk",()=>openChat()],["
 $("#gbar").innerHTML=GBAR.map((g,i)=>`<div class="slot" data-i="${i}"><em>${i+1}</em>${g[0]}<small>${g[1]}</small></div>`).join("");
 function gbarUse(i){ const g=GBAR[i]; if(!g||!entered) return; const el=document.querySelector(`#gbar .slot[data-i="${i}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),180); } g[2](); }
 document.querySelectorAll("#gbar .slot").forEach(e=>e.addEventListener("click",()=>gbarUse(+e.dataset.i)));
-addEventListener("keydown",e=>{ if(document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return; const m=e.code.match(/^Digit([1-8])$/); if(m&&entered&&!MG&&!chatOpen&&!menuOpen&&pmode==="walk") gbarUse(+m[1]-1); });
+addEventListener("keydown",e=>{ if(document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return; const m=e.code.match(/^Digit([1-8])$/); if(m&&document.body.classList.contains("weapons")&&entered&&!MG&&!chatOpen&&!menuOpen&&pmode==="walk") gbarUse(+m[1]-1); });
 setInterval(()=>{ document.body.classList.toggle("ingame",!!entered&&!menuOpen); document.body.classList.toggle("busy",!!MG||chatOpen||pmode!=="walk"||shodoOpen||!!document.querySelector(".panel.show")); },250);
 function photoMode(){ document.body.classList.add("photo"); toast("Photo mode · click or press any key to take the picture"); setTimeout(()=>{ const snap=()=>{ removeEventListener("keydown",snap,true); removeEventListener("pointerdown",snap,true); composer.render(); const url=renderer.domElement.toDataURL("image/png"); document.body.classList.remove("photo");
     const a=document.createElement("a"); a.href=url; a.download=`sensei-garden-${Date.now()}.png`; document.body.appendChild(a); a.click(); a.remove(); toast("Snap. Saved to your downloads."); }; addEventListener("keydown",snap,true); addEventListener("pointerdown",snap,true); },300); }
@@ -2287,7 +2307,7 @@ function frame(now){
 
 /* ===================== boot ===================== */
 applyTime(); initAi(); setInterval(applyTime,30000); requestAnimationFrame(frame); buildFluffyGrass(); loadNature();
-if(location.search.includes("dbg")) window.__dbg={get circles(){return circles;},get boxes(){return boxes;},lakeE,groundY:(x,z)=>groundY(x,z),insideCollider:(x,z,m)=>insideCollider(x,z,m),get zone(){return zone;},get CAMBLOCK(){return CAMBLOCK;},PRX,PRZ,day:()=>{ previewHour=11; applyTime(); },pmode:()=>pmode,get ADV(){return ADV;},adv:{startAt:()=>{ const x=PEAK.x+PEAK.r0+1.2,z=PEAK.z; player.position.set(x,H(x,z),z); startClimb(); }},blk:{set:(x,y,z,m)=>{BKS.map.set(bkey(x,y,z),m); blkRebuild();},toggle:()=>blkToggle(true)},player,golfEnd:()=>golfEnd(),setZone:(...a)=>setZone(...a),get golf(){return golf;},openLife:t=>openLife(t),senseiPaintsToday:()=>senseiPaintsToday(),welcome:(id)=>{ compState().pending=id; welcomeCompanion(id,true); },build:()=>senseiBuildsToday(),SKYI,get LIFE(){return LIFE;},get GAMES(){return GAMES;},get RAKE(){return RAKE;},gradeTest:(ch)=>{ const c=document.createElement('canvas'); c.width=c.height=800; const g=c.getContext('2d'); const out={}; g.fillStyle='#120e0c'; g.font='600 640px "Shippori Mincho",serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(ch,400,430); out.good=localShodo(c,ch); out.good.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.lineWidth=40; g.strokeStyle='#120e0c'; g.beginPath(); g.ellipse(450,350,250,110,-.4,0,6.28); g.moveTo(200,600); g.lineTo(550,420); g.stroke(); out.scribble=localShodo(c,ch); out.scribble.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.font='600 640px "Shippori Mincho",serif'; g.fillText('水',400,430); out.wrongChar=localShodo(c,ch); out.wrongChar.m=shodoMatch(c,ch); return JSON.stringify(out); },p2Set:v=>p2Set(v),openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
+if(location.search.includes("dbg")) window.__dbg={hour:h=>{ previewHour=h; applyTime(); },get discoveries(){return discoveries;},shot:(pos,tgt,w=640,h=360)=>{ const oP=camera.position.clone(), oT=controls.target.clone(); camera.position.set(...pos); camera.lookAt(...tgt); camera.updateMatrixWorld(); composer.render(); const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); const src=renderer.domElement, sw=src.width, sh=src.height, ar=w/h; let cw=sw, ch=sw/ar; if(ch>sh){ ch=sh; cw=sh*ar; } g.drawImage(src,(sw-cw)/2,(sh-ch)/2,cw,ch,0,0,w,h); camera.position.copy(oP); controls.target.copy(oT); camera.lookAt(oT); const d=g.getImageData(0,0,w,h).data; let n=0,sl=0,sl2=0,ss=0,dark=0,blown=0,edge=0; const L=new Float32Array(w*h); for(let i=0;i<w*h;i++){ const r=d[i*4]/255,gg=d[i*4+1]/255,b=d[i*4+2]/255; const l=.299*r+.587*gg+.114*b; L[i]=l; sl+=l; sl2+=l*l; const mx=Math.max(r,gg,b),mn=Math.min(r,gg,b); ss+=mx?(mx-mn)/mx:0; if(l<.06) dark++; if(l>.97) blown++; n++; } for(let y=1;y<h-1;y+=2) for(let x=1;x<w-1;x+=2){ const i=y*w+x; if(Math.abs(L[i+1]-L[i-1])+Math.abs(L[i+w]-L[i-w])>.18) edge++; } const mean=sl/n; return {img:c.toDataURL('image/jpeg',.82),m:{lum:+mean.toFixed(3),contrast:+Math.sqrt(sl2/n-mean*mean).toFixed(3),sat:+(ss/n).toFixed(3),crushed:+(dark/n).toFixed(3),blown:+(blown/n).toFixed(3),busy:+(edge/(n/4)).toFixed(3)}}; },get circles(){return circles;},get boxes(){return boxes;},lakeE,groundY:(x,z)=>groundY(x,z),insideCollider:(x,z,m)=>insideCollider(x,z,m),get zone(){return zone;},get CAMBLOCK(){return CAMBLOCK;},PRX,PRZ,day:()=>{ previewHour=11; applyTime(); },pmode:()=>pmode,get ADV(){return ADV;},adv:{startAt:()=>{ const x=PEAK.x+PEAK.r0+1.2,z=PEAK.z; player.position.set(x,H(x,z),z); startClimb(); }},blk:{set:(x,y,z,m)=>{BKS.map.set(bkey(x,y,z),m); blkRebuild();},toggle:()=>blkToggle(true)},player,golfEnd:()=>golfEnd(),setZone:(...a)=>setZone(...a),get golf(){return golf;},openLife:t=>openLife(t),senseiPaintsToday:()=>senseiPaintsToday(),welcome:(id)=>{ compState().pending=id; welcomeCompanion(id,true); },build:()=>senseiBuildsToday(),SKYI,get LIFE(){return LIFE;},get GAMES(){return GAMES;},get RAKE(){return RAKE;},gradeTest:(ch)=>{ const c=document.createElement('canvas'); c.width=c.height=800; const g=c.getContext('2d'); const out={}; g.fillStyle='#120e0c'; g.font='600 640px "Shippori Mincho",serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(ch,400,430); out.good=localShodo(c,ch); out.good.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.lineWidth=40; g.strokeStyle='#120e0c'; g.beginPath(); g.ellipse(450,350,250,110,-.4,0,6.28); g.moveTo(200,600); g.lineTo(550,420); g.stroke(); out.scribble=localShodo(c,ch); out.scribble.m=shodoMatch(c,ch); g.clearRect(0,0,800,800); g.font='600 640px "Shippori Mincho",serif'; g.fillText('水',400,430); out.wrongChar=localShodo(c,ch); out.wrongChar.m=shodoMatch(c,ch); return JSON.stringify(out); },p2Set:v=>p2Set(v),openGame:id=>openGame(id),mgClose:()=>mgClose(),golfStart:()=>golfStart(),golfShoot:(a,b,c)=>golfShoot(a,b,c),camera,controls,setZone,travelTo,TRAVEL,enterGame:()=>enterGame(),H,store,get natReady(){return natReady;},plantChunks,ai,sensei,openTravel,renderer,scene};
 
 const memReady=loadMemory().then(()=>{ subscribeScrolls(); loadSandArt(); });
 /* ===================== Sensei's own life: his art board, his friends, his own building projects ===================== */
@@ -2489,7 +2509,14 @@ function openLife(tab){ const P=$("#lifePanel"); P.dataset.tab=tab; document.que
     box.insertAdjacentHTML("beforeend",`<p style="font-size:12.5px;opacity:.8">Each day Sensei decides for himself what to add to his world, picks the spot, and builds it over a few hours. Walk up to a project to see how it is going.</p>`+(bl.length?bl.map(b=>{ const p=PROJECTS.find(x=>x.id===b.id); const dn=Date.now()-b.start>=BUILD_MS; return `<p><b>${p.k} ${p.n}</b> · ${dn?"finished":"building…"} · ${b.day}<br><i>“${b.why||p.why}”</i></p>`; }).join(""):"<p>He has not started anything yet.</p>")); }
   P.classList.add("show"); }
 document.querySelectorAll("#lifeTabs b").forEach(b=>b.addEventListener("click",()=>openLife(b.dataset.t)));
-{ for(const r of ROADS) for(let i=0;i<r.length-1;i++){ const [ax,az]=r[i],[bx,bz]=r[i+1]; const L=Math.hypot(bx-ax,bz-az), n=Math.ceil(L/1.05), ux=(bx-ax)/L, uz=(bz-az)/L; for(let k=0;k<=n;k++){ const t=k/n; const x=lerp(ax,bx,t), z=lerp(az,bz,t); for(const o of [-.62,.62]){ pathStone(x+uz*o+rand(-.12,.12)+(k%2?ux*.3:0),z-ux*o+rand(-.12,.12)+(k%2?uz*.3:0),.82); } } } }
+{ // stepping stones down the middle of each gravel walkway, low mossy border rocks that lead the eye along its edges
+  const EDGE=stoneTexMat("#8f8a7e"), MOSS=toon("#6d9a48",{flatShading:true}); const eg=new THREE.DodecahedronGeometry(.42,0); const edges=new THREE.InstancedMesh(eg,EDGE,1600); edges.count=0; edges.castShadow=edges.receiveShadow=true; scene.add(edges); const d=new THREE.Object3D(); let en=0;
+  for(const r of ROADS) for(let i=0;i<r.length-1;i++){ const [ax,az]=r[i],[bx,bz]=r[i+1]; const L=Math.hypot(bx-ax,bz-az), ux=(bx-ax)/L, uz=(bz-az)/L;
+    const n=Math.ceil(L/1.25); for(let k=0;k<=n;k++){ const t=k/n; const x=lerp(ax,bx,t)+rand(-.12,.12), z=lerp(az,bz,t)+rand(-.12,.12); pathStone(x+uz*(k%2?.18:-.18),z-ux*(k%2?.18:-.18),.95); }
+    const m=Math.floor(L/2.3); for(let k=1;k<m;k++){ const t=k/m; for(const o of [-1.75,1.75]){ const x=lerp(ax,bx,t)+uz*o+rand(-.15,.15), z=lerp(az,bz,t)-ux*o+rand(-.15,.15);
+      if(en>=1600||insideCollider(x,z,.6)||streamDist(x,z)<2||lakeE(x,z)<1.15||(x/(PRX+1))**2+(z/(PRZ+1))**2<1) continue; const s2=rand(.55,1.05); d.position.set(x,H(x,z)+.05,z); d.rotation.set(rand(0,.3),rand(0,TAU),rand(0,.3)); d.scale.set(s2*rand(.9,1.3),s2*rand(.45,.7),s2); d.updateMatrix(); edges.setMatrixAt(en++,d.matrix);
+      if(Math.random()<.25){ const mm=new THREE.Mesh(new THREE.SphereGeometry(.3*s2,6,4,0,TAU,0,Math.PI/2),MOSS); mm.scale.y=.35; mm.position.set(x,H(x,z)+.05+.28*s2*.6,z); scene.add(mm); } } } }
+  edges.count=en; edges.instanceMatrix.needsUpdate=true; edges.computeBoundingSphere(); }
 memReady.then(()=>{ const st=compState(); st.arrived.forEach((id,i)=>buildHome(COMPANIONS.find(c=>c.id===id),i)); (store.builds||[]).forEach((b,i)=>placeProject(b,i)); refreshArtBoard(); });
 // the morning scroll can carry Sensei's painting of the day and the result of the readers' vote on what he builds next
 function scrollsToLife(){ store.art=store.art||[]; let ch=false;
@@ -2511,7 +2538,7 @@ const gradePass=new ShaderPass({uniforms:{tDiffuse:{value:null},uSat:{value:1.14
       c=mix(vec3(l),c,uSat); c+=vec3(-.012,.004,.03)*(1.-smoothstep(0.,.45,l)); c*=mix(vec3(1.),vec3(1.05,1.01,.94),smoothstep(.35,1.,l)*uWarm);
       float d=distance(vUv,vec2(.5)); c*=1.-uVig*smoothstep(.38,.9,d); gl_FragColor=vec4(c,t.a); }`});
 { const passes=composer.passes; const out=passes[passes.length-1]; composer.removePass(out); composer.addPass(gradePass); composer.addPass(out); }
-scene.fog.near=26; scene.fog.far=250;
+scene.fog.near=34; scene.fog.far=320;
 
 const PETALS={n:420,pts:null,vel:null};
 { const cv=document.createElement("canvas"); cv.width=cv.height=32; const g=cv.getContext("2d"); g.fillStyle="#fff"; g.beginPath(); g.ellipse(16,16,13,7,.6,0,TAU); g.fill();
@@ -2528,7 +2555,7 @@ function petalFrame(dt){ const P=PETALS.pts; P.visible=zone==="world"; if(!P.vis
 
 // ---------- 2 · old ruins and carved ornaments ----------
 const RUINS=[];
-function ruinSpot(bx,bz,pad=3){ for(let r=0;r<16;r+=1.5) for(let a=0;a<TAU;a+=.5){ const x=bx+Math.cos(a)*r, z=bz+Math.sin(a)*r; if(free(x,z,pad)&&clearOfColliders(x,z,pad*.8)) return [x,z]; } return null; }
+function ruinSpot(bx,bz,pad=3){ for(let r=0;r<16;r+=1.5) for(let a=0;a<TAU;a+=.5){ const x=bx+Math.cos(a)*r, z=bz+Math.sin(a)*r; if(free(x,z,pad)&&clearOfColliders(x,z,pad*.8)&&!discoveries.some(d=>d.r&&Math.hypot(d.x-x,d.z-z)<d.r+pad+2)) return [x,z]; } return null; }
 const RSTONE=toon("#9d9a8e",{flatShading:true}), RDARK=toon("#7a776c",{flatShading:true}), RMOSS=toon("#6d9a48",{flatShading:true}), RGLOW=toon("#f6e7b0",{emissive:new THREE.Color("#ffd27a"),emissiveIntensity:.9});
 function mossCap(g,x,y,z,r){ const m=new THREE.Mesh(new THREE.SphereGeometry(r,7,5,0,TAU,0,Math.PI/2),RMOSS); m.scale.y=.35; m.position.set(x,y,z); g.add(m); }
 function pillar(g,x,z,h,r=.55,broken=true){ const p=new THREE.Mesh(new THREE.CylinderGeometry(r*.92,r,h,8),RSTONE); p.position.set(x,h/2,z); g.add(p); const cap=new THREE.Mesh(new THREE.BoxGeometry(r*2.3,.3,r*2.3),RDARK); cap.position.set(x,.15,z); g.add(cap);
@@ -2579,17 +2606,20 @@ function scaleChime(){ sfx((a,t)=>{ [880,1174.7,1568].forEach((f,i)=>{ const o=a
     const r=new THREE.Mesh(new THREE.CylinderGeometry(.6,2.1,1.3,4),TILE); r.rotation.y=Math.PI/4; r.position.y=6.3; g.add(r); if(big){ const r2=new THREE.Mesh(new THREE.ConeGeometry(1.2,1.1,4),TILE); r2.rotation.y=Math.PI/4; r2.position.y=7.4; g.add(r2); }
     const wm=toon("#2a2a30",{emissive:new THREE.Color("#ffcf70"),emissiveIntensity:0}); windowMats.push(wm); [-1,1].forEach(s=>{ const win=new THREE.Mesh(new THREE.BoxGeometry(.04,.4,.5),wm); win.position.set(s*1.22,5,0); g.add(win); });
     const ban=new THREE.Mesh(new THREE.PlaneGeometry(.5,1.6),toon(pick(["#c23a2a","#efe6d2","#3d5f8a"]),{side:THREE.DoubleSide})); ban.position.set(0,5.3,1.25); g.add(ban); const pole=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2.4,5),DWOOD); pole.position.set(-.27,5.6,1.25); g.add(pole);
-    shadowy(g); addCircle(x,z,2.1); };
+    shadowy(g); circles.push({x,z,r:2.1,part:true}); };
   [[.9,0],[1.6,1],[3.2,0],[4.1,1],[5.1,0]].forEach(([a,b])=>tower(a,!!b));
   gaps.forEach(([c,w])=>{ [c-w-.05,c+w+.05].forEach(a=>tower(a,true)); const x=CASTLE.x+Math.cos(c)*R, z=CASTLE.z+Math.sin(c)*R, y=Math.max(H(x,z),H(x+1,z+1)); const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=-c+Math.PI/2; scene.add(g);
     const span=2*R*Math.sin(w+.05)+.6; const beam=new THREE.Mesh(new THREE.BoxGeometry(span,.7,1.8),DWOOD); beam.position.y=5.4; g.add(beam); const rf=gableRoof(span+1,2.4,1.1,TILE); rf.position.y=5.75; g.add(rf);
     const plq=new THREE.Mesh(new THREE.BoxGeometry(1.6,.6,.08),toon("#d8b26a")); plq.position.set(0,5.4,.95); g.add(plq); shadowy(g); });
-  addBox(CASTLE.x,CASTLE.z,.1,.1,0); }
+  }
 
 // ---------- 5 · Kumo Peak: climb it, then float down under a paper umbrella ----------
-{ const prof=[]; for(let y=0;y<=PEAK.h;y+=1.4) prof.push(new THREE.Vector2(peakR(y)+.2+(hash(y,3)-.5)*.5,y)); prof.push(new THREE.Vector2(3.4,PEAK.h+.1),new THREE.Vector2(0,PEAK.h+.15));
-  const geo=new THREE.LatheGeometry(prof,13); const p=geo.attributes.position; for(let i=0;i<p.count;i++){ const x=p.getX(i),y=p.getY(i),z=p.getZ(i); if(y<PEAK.h-.2){ const n=(hash(Math.round(x*3),Math.round(y*2)+Math.round(z*3)*7)-.5)*.55; p.setX(i,x*(1+n*.12)); p.setZ(i,z*(1+n*.12)); } } geo.computeVertexNormals();
-  const rock=new THREE.Mesh(geo,toon("#8e8778",{flatShading:true})); rock.position.set(PEAK.x,PEAK_BASE-.6,PEAK.z); scene.add(rock); rock.castShadow=rock.receiveShadow=true;
+{ const prof=[]; for(let y=0;y<=PEAK.h;y+=1.1) prof.push(new THREE.Vector2(peakR(y)+.25+(hash(y,3)-.5)*.6+(y<4?(4-y)*.9:0),y)); prof.push(new THREE.Vector2(3.4,PEAK.h+.1),new THREE.Vector2(0,PEAK.h+.15));
+  const geo=new THREE.LatheGeometry(prof,22); const p=geo.attributes.position; for(let i=0;i<p.count;i++){ const x=p.getX(i),y=p.getY(i),z=p.getZ(i); if(y<PEAK.h-.2){ const a=Math.atan2(z,x); const n=(fbm(a*2.2+y*.06,y*.13)-.5)*.5+(hash(Math.round(a*9),Math.round(y*1.2))-.5)*.12; p.setX(i,x*(1+n)); p.setZ(i,z*(1+n)); } } geo.computeVertexNormals();
+  const rock=new THREE.Mesh(geo,stoneTexMat("#958e7f")); rock.material.flatShading=true;
+  // foothill boulders and a snow cap so it reads as a mountain
+  for(let k=0;k<14;k++){ const a=k/14*TAU+rand(-.2,.2), r=PEAK.r0+rand(.5,3.5); const b=new THREE.Mesh(new THREE.DodecahedronGeometry(rand(1.2,2.6),0),stoneTexMat("#8a8476")); b.position.set(PEAK.x+Math.cos(a)*r,PEAK_BASE+rand(-.4,.6),PEAK.z+Math.sin(a)*r); b.scale.y=rand(.5,.85); b.rotation.set(rand(0,1),rand(0,6),0); b.castShadow=b.receiveShadow=true; scene.add(b); }
+  { const cap=new THREE.Mesh(new THREE.ConeGeometry(PEAK.r1+1.2,4,22,1,true),toon("#f4f6fa",{flatShading:true,side:THREE.DoubleSide})); cap.position.set(PEAK.x,PEAK_BASE+PEAK.h-2.2,PEAK.z); cap.scale.set(1.05,1,1.05); cap.visible=S==="winter"; scene.add(cap); } rock.position.set(PEAK.x,PEAK_BASE-.6,PEAK.z); scene.add(rock); rock.castShadow=rock.receiveShadow=true;
   const g=new THREE.Group(); g.position.set(PEAK.x,PEAK_BASE,PEAK.z); scene.add(g);
   for(let k=0;k<22;k++){ const y=rand(2,PEAK.h-2), a=rand(0,TAU), r=peakR(y)+.15; const m=new THREE.Mesh(new THREE.SphereGeometry(rand(.5,1.1),6,4,0,TAU,0,Math.PI/2),RMOSS); m.scale.y=.4; m.position.set(Math.cos(a)*r,y,Math.sin(a)*r); m.lookAt(Math.cos(a)*r*3,y,Math.sin(a)*r*3); m.rotateX(Math.PI/2); g.add(m); }
   PEAK_LEDGES.forEach(ly=>{ const ring=new THREE.Mesh(new THREE.CylinderGeometry(peakR(ly)+1.1,peakR(ly)+.2,.5,13),RDARK); ring.position.y=ly-.25; g.add(ring); });
@@ -2608,7 +2638,7 @@ function startClimb(){ if(pmode!=="walk"||zone!=="world") return; const dx=playe
 function advInput(){ const ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x+rjoy.x+P1J.x+PAD1.x, iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y+P1J.y+PAD1.y; return [clamp(ix,-1,1),clamp(iz,-1,1)]; }
 let advLeapPrev=false;
 function advFrame(dt){
-  petalFrame(dt); scaleFrame(dt); ruinFrame(dt); festFrame(dt); if(ADV.flag) ADV.flag.rotation.y=Math.sin(clock*3)*.25;
+  petalFrame(dt); scaleFrame(dt); cloudFrame(dt); campFrame(dt); ruinFrame(dt); festFrame(dt); if(ADV.flag) ADV.flag.rotation.y=Math.sin(clock*3)*.25;
   if(!entered) return; const [ix,iz]=advInput(); const leap=!!(keys.Space||(navigator.getGamepads&&[...navigator.getGamepads()].some(g=>g&&g.buttons[0]&&g.buttons[0].pressed))); const leapEdge=leap&&!advLeapPrev; advLeapPrev=leap;
   // walk: auto-climb when pushing into the rock; jump off the summit to glide
   if(pmode==="walk"&&zone==="world"){ const dx=player.position.x-PEAK.x, dz=player.position.z-PEAK.z, d=Math.hypot(dx,dz);
@@ -2764,7 +2794,30 @@ async function takePostcard(){ try{ if(!DB||zone!=="world"||MG||!entered) return
     const oldP=camera.position.clone(), oldT=controls.target.clone(); camera.position.set(...cp); camera.lookAt(...ct); composer.render(); const c=document.createElement("canvas"); c.width=640; c.height=360; const g=c.getContext("2d"); const src=renderer.domElement; const sw=src.width, sh=src.height, ar=640/360; let w=sw,h=sw/ar; if(h>sh){ h=sh; w=sh*ar; } g.drawImage(src,(sw-w)/2,(sh-h)/2,w,h,0,0,640,360);
     camera.position.copy(oldP); controls.target.copy(oldT); camera.lookAt(oldT);
     const img=c.toDataURL("image/jpeg",.72); if(img.length<4000) return; store.postcardDay=iso; save(); await DB.doc("postcards/"+iso).set({date:iso,img,caption:`${partOfDay(nowHour())}, ${SEASON_NAME[S]}`,createdAt:Date.now()}); }catch(e){ console.warn("[postcard]",e); } }
-function advOnEnter(){ festBuild(); festGather(); setTimeout(greatTick,15000); setTimeout(takePostcard,40000); setInterval(()=>{ greatTick(); festGather(); },10*60*1000); }
+// ---------- 10 · the wide-world feel: big drifting clouds, soft rim light, a campfire with a cooking pot ----------
+const CLOUDS=[];
+{ const tex=(()=>{ const c=document.createElement("canvas"); c.width=512; c.height=256; const g=c.getContext("2d");
+    for(let i=0;i<46;i++){ const x=rand(70,442), y=rand(70,190)-Math.max(0,140-Math.abs(x-256))*.45, r=rand(30,72); const gr=g.createRadialGradient(x,y,r*.1,x,y,r); gr.addColorStop(0,"rgba(255,255,255,.95)"); gr.addColorStop(.6,"rgba(250,250,252,.7)"); gr.addColorStop(1,"rgba(255,255,255,0)"); g.fillStyle=gr; g.beginPath(); g.arc(x,y,r,0,TAU); g.fill(); }
+    const sh=g.createLinearGradient(0,120,0,256); sh.addColorStop(0,"rgba(0,0,0,0)"); sh.addColorStop(1,"rgba(120,130,160,.35)"); g.globalCompositeOperation="source-atop"; g.fillStyle=sh; g.fillRect(0,0,512,256); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; })();
+  for(let i=0;i<16;i++){ const m=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,fog:false,opacity:.92}); const sp=new THREE.Sprite(m); const a=i/16*TAU+rand(-.2,.2), r=rand(170,250); sp.position.set(Math.cos(a)*r,rand(62,105),Math.sin(a)*r); const sc=rand(70,120); sp.scale.set(sc,sc*.5,1); sp.renderOrder=-1; scene.add(sp); CLOUDS.push({sp,a,r,sp0:rand(.004,.01)}); } }
+function cloudFrame(dt){ const fc=scene.fog.color; const w=new THREE.Color(1,1,1); CLOUDS.forEach(c=>{ c.a+=c.sp0*dt*.1; c.sp.position.x=Math.cos(c.a)*c.r; c.sp.position.z=Math.sin(c.a)*c.r; c.sp.material.color.copy(fc).lerp(w,.5+.2*Math.min(1,fc.r+fc.g)); c.sp.visible=zone==="world"; }); }
+const RIMMED=new WeakSet();
+function addRim(root){ root.traverse(o=>{ const mats=o.isMesh?(Array.isArray(o.material)?o.material:[o.material]):[]; mats.forEach(m=>{ if(!m||!m.isMeshToonMaterial||m.transparent||RIMMED.has(m)||o===terrainMesh) return; RIMMED.add(m); const prev=m.onBeforeCompile;
+    m.onBeforeCompile=(sh,r)=>{ if(prev) prev(sh,r); sh.fragmentShader=sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance+=diffuseColor.rgb*vec3(1.,.95,.85)*.55*pow(1.-clamp(abs(dot(normalize(normal),normalize(vViewPosition))),0.,1.),3.);"); };
+    m.customProgramCacheKey=()=>"rim"+(prev?"w":""); m.needsUpdate=true; }); }); }
+{ const s=ruinSpot(-22,24,2.5); if(s){ const [x,z]=s, y=H(x,z); const g=new THREE.Group(); g.position.set(x,y,z); scene.add(g); const STN=stoneTexMat("#8a857a");
+    for(let k=0;k<9;k++){ const a=k/9*TAU; const st=new THREE.Mesh(new THREE.DodecahedronGeometry(.2,0),STN); st.position.set(Math.cos(a)*.55,.1,Math.sin(a)*.55); st.scale.y=.7; g.add(st); }
+    [0,1.1,2.2].forEach(a=>{ const lg=new THREE.Mesh(new THREE.CylinderGeometry(.07,.08,.8,6),toon("#5a3b26")); lg.rotation.z=Math.PI/2; lg.rotation.y=a; lg.position.y=.12; g.add(lg); });
+    const fm=toon("#ffb040",{emissive:new THREE.Color("#ff7a20"),emissiveIntensity:1.6}); const fl=[]; for(let k=0;k<3;k++){ const f=new THREE.Mesh(new THREE.ConeGeometry(.16-k*.03,.55-k*.1,6),fm); f.position.set(rand(-.08,.08),.35,rand(-.08,.08)); g.add(f); fl.push(f); }
+    const pl=new THREE.PointLight(0xff8a3a,2.2,9,2); pl.position.y=.8; g.add(pl);
+    [0,1,2].forEach(k=>{ const a=k/3*TAU; const lgx=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,1.5,5),toon("#3e2a1d")); lgx.position.set(Math.cos(a)*.42,.7,Math.sin(a)*.42); lgx.lookAt(0,1.45,0); lgx.rotateX(Math.PI/2); g.add(lgx); });
+    const pot=new THREE.Mesh(new THREE.SphereGeometry(.26,12,8,0,TAU,Math.PI*.25,Math.PI*.75),toon("#2b2a2e")); pot.position.y=.78; g.add(pot);
+    for(const [a,r] of [[.5,1.4],[2.6,1.5],[4.4,1.35]]){ const lg=new THREE.Mesh(new THREE.CylinderGeometry(.18,.2,1.1,7),toon("#6a4a32")); lg.rotation.z=Math.PI/2; lg.rotation.y=-a; lg.position.set(Math.cos(a)*r,.18,Math.sin(a)*r); g.add(lg); }
+    shadowy(g); addCircle(x,z,.75); LIFE.fire={fl,pl};
+    addInteract({x:x+1.6,z,r:2.6,k:"炊",label:"Cook something",fn:()=>{ const d=pick([["Grilled river fish","Salt, fire, patience."],["Onigiri","Sensei insists the triangle shape is spiritually important."],["Miso soup","It warms the hands first, then the rest of you."],["Roasted chestnuts","The autumn's best idea."],["Yakitori","Smoke gets in your eyes. Worth it."],["Sweet potato","Wrapped in leaves, buried in the embers, forgotten, remembered."]]); chime(); toast(`You cooked: ${d[0]}. ${d[1]}`); store.meals=(store.meals||0)+1; save(); }});
+    discoveries.push({id:"camp",x,z,r:6,k:"焚火",n:"The Campfire",line:"Every traveller deserves a fire and something bubbling in a pot."}); } }
+function campFrame(dt){ const f=LIFE.fire; if(!f) return; f.fl.forEach((m,i)=>{ m.scale.y=.8+Math.sin(clock*13+i*2)*.18+Math.random()*.08; m.rotation.y+=dt*2; }); f.pl.intensity=2+Math.sin(clock*17)*.35+Math.random()*.25; }
+function advOnEnter(){ setTimeout(()=>addRim(scene),3000); setTimeout(()=>addRim(scene),15000); festBuild(); festGather(); setTimeout(greatTick,15000); setTimeout(takePostcard,40000); setInterval(()=>{ greatTick(); festGather(); },10*60*1000); }
 
 
 /* ===================== shodō: calligraphy ===================== */

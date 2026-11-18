@@ -1,7 +1,7 @@
 {
- "version": 18,
+ "version": 19,
  "shellApi": 2,
- "notes": "Hotbar (1-8), photo mode, realistic lit sand, better zoom, cleaner stone paths, no more falling through the floor or walking into the lake by the pier. Block building retired.",
+ "notes": "Prettier ground and gravel walkways with border stones, big clouds, rim light, campfire, a real craggy Kumo Peak, deeper water, golf and market spaced apart, hotbar removed.",
  "files": [
   "brain-client.js",
   "core.js",
