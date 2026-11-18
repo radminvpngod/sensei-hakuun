@@ -1,7 +1,7 @@
 {
- "version": 17,
+ "version": 18,
  "shellApi": 2,
- "notes": "Kumo Peak climbing + umbrella gliding, castle walls, ruins, koi scales, block building (B), Momiji festival, great works, stone paths, ghost friends, camera no longer clips. Sensei's mind now stays awake.",
+ "notes": "Hotbar (1-8), photo mode, realistic lit sand, better zoom, cleaner stone paths, no more falling through the floor or walking into the lake by the pier. Block building retired.",
  "files": [
   "brain-client.js",
   "core.js",
