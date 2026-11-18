@@ -1,7 +1,7 @@
 {
- "version": 20,
+ "version": 21,
  "shellApi": 2,
- "notes": "SoundCloud through speaker lanterns in the garden. Taiko now plays any song: pick a file, or Live mode follows whatever your PC is playing. Warmer Night Market at night, tea set, Sensei casts a shadow.",
+ "notes": "Koi scales removed.",
  "files": [
   "brain-client.js",
   "core.js",
