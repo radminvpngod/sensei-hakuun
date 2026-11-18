@@ -148,19 +148,23 @@ module.exports = function core(ctx) {
         webPreferences: { partition: 'persist:sensei', backgroundThrottling: false } });
       stripUA(brain.webContents);
       brain.webContents.setWindowOpenHandler(({ url }) => { if (/^https:\/\/([a-z0-9-]+\.)*(claude\.ai|anthropic\.com|google\.com|apple\.com)\//.test(url)) return { action: 'allow' }; shell.openExternal(url); return { action: 'deny' }; });
-      brain.on('close', e => { if (!quitting) { e.preventDefault(); brain.hide(); } });
+      brain.on('close', e => { if (!quitting) { e.preventDefault(); ghostBrain(); } });
+      if (!show) brain.once('ready-to-show', () => ghostBrain());
       // after a sign-in finishes anywhere on claude.ai, come back to Sensei's mind page
       const back = (ev, url) => { try { const u = new URL(url); if (u.hostname.endsWith('claude.ai') && !/^\/(login|magic-link|logout|onboarding|verify)/.test(u.pathname) && !url.startsWith(GARDEN_URL) && brain.__wantMind) { signedIn().then(ok => { if (ok) { brain.__wantMind = false; log('mind: signed in, loading brain page'); brain.loadURL(GARDEN_URL + '#brain'); } }); } } catch (e) {} };
       brain.webContents.on('did-navigate', back); brain.webContents.on('did-navigate-in-page', back);
       brain.webContents.on('did-finish-load', () => { autoWake(); });
       signedIn().then(ok => { if (ok) brain.loadURL(GARDEN_URL + '#brain'); else { brain.__wantMind = true; brain.loadURL('https://claude.ai/login'); if (!show) { /* nothing to wait for until he signs in */ } } });
-      if (show) brain.once('ready-to-show', () => { brain.show(); brain.focus(); });
+      if (show) brain.once('ready-to-show', () => showBrain());
     } else if (show) {
       signedIn().then(ok => { if (!ok) { brain.__wantMind = true; brain.loadURL('https://claude.ai/login'); } });
-      brain.show(); brain.focus();
+      showBrain();
     }
     return brain;
   }
+  // claude.ai only runs the mind page while its window counts as visible, so when hidden it stays "shown" but fully transparent, tiny and off the taskbar
+  function ghostBrain() { if (!brain || brain.isDestroyed()) return; try { brain.setSkipTaskbar(true); brain.setOpacity(0); brain.setIgnoreMouseEvents(true); const d = screen.getPrimaryDisplay().workArea; brain.setBounds({ x: d.x + d.width - 420, y: d.y + d.height - 320, width: 400, height: 300 }); brain.setFocusable(false); if (!brain.isVisible()) brain.showInactive(); brain.__ghost = true; } catch (e) { log('ghost brain', e); } }
+  function showBrain() { if (!brain || brain.isDestroyed()) return; try { brain.setIgnoreMouseEvents(false); brain.setFocusable(true); brain.setSkipTaskbar(false); brain.setOpacity(1); brain.setSize(980, 760); brain.center(); brain.__ghost = false; brain.show(); brain.focus(); } catch (e) { log('show brain', e); } }
   async function signedIn() { try { const c = await session.fromPartition('persist:sensei').cookies.get({ url: 'https://claude.ai', name: 'sessionKey' }); return c.length > 0; } catch (e) { return false; } }
   // the mind page needs one click the first time; press it for him once he is signed in
   let waking = false;

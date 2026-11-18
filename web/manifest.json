@@ -1,7 +1,7 @@
 {
- "version": 16,
+ "version": 17,
  "shellApi": 2,
- "notes": "Dry garden fixed, controller golf, 5 new sky islands, Sensei paints, builds and has friends who want to move in. His mind wakes on its own.",
+ "notes": "Kumo Peak climbing + umbrella gliding, castle walls, ruins, koi scales, block building (B), Momiji festival, great works, stone paths, ghost friends, camera no longer clips. Sensei's mind now stays awake.",
  "files": [
   "brain-client.js",
   "core.js",
