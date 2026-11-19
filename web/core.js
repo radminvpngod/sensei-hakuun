@@ -408,6 +408,9 @@ module.exports = function core(ctx) {
   const VK = { plus: 0xAF, minus: 0xAE, one: 0xB3, two: 0x1B, up: 0x26, down: 0x28, left: 0x25, right: 0x27, enter: 0x0D, tab: 0x09, next: 0xB0, prev: 0xB1 };
   let calibOwner = null, calibTimer = null;
   let gardenMode = {}; ipcMain.on('garden:mode', (e, m) => { gardenMode = { ...gardenMode, ...(m || {}) }; });
+  // mouse capture for the garden's mouse-look, asked for from the main process so it counts as a user gesture
+  ipcMain.on('garden:lock', (e, on) => { try { if (!garden || garden.isDestroyed()) return; if (on && !garden.isFocused()) garden.focus(); garden.webContents.executeJavaScript(on ? 'new Promise((ok,no)=>{ const c=document.getElementById("c"); const r=c.requestPointerLock(); if(r&&r.then) r.then(()=>ok("locked"),err=>no(String(err))); else ok("requested"); })' : 'document.exitPointerLock()', true).then(r => { if (on) log('pointer lock:', r); }).catch(err => log('pointer lock failed:', err && err.message)); } catch (err) { log('pointer lock error', err.message); } });
+  ipcMain.on('garden:dbg', (e, m) => log('garden:', String(m).slice(0, 300)));
   // while the garden is open, both remotes are locked to the screen it is on
   function gameOpen() { return garden && !garden.isDestroyed() && garden.isVisible() && !garden.isMinimized(); }
   function gameRect() { if (gameOpen()) { if (garden.isFullScreen()) return screen.getDisplayMatching(garden.getBounds()).bounds; return garden.getContentBounds(); } return screen.getPrimaryDisplay().bounds; }

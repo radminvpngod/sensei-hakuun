@@ -1,7 +1,7 @@
 {
- "version": 36,
+ "version": 37,
  "shellApi": 2,
- "notes": "Camera fix: dragging always works again; when the mouse can be captured, plain mouse movement turns the view.",
+ "notes": "Mouse capture asked for by the app itself (more reliable on Windows), and failures are written to the log.",
  "files": [
   "brain-client.js",
   "core.js",

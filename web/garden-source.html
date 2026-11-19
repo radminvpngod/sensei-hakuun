@@ -1917,13 +1917,13 @@ const joy={x:0,y:0,id:null}; const joyEl=$("#joy"), knobEl=joyEl.querySelector("
 if (isTouch){ joyEl.style.display="block"; document.body.classList.add("touch","inmenu"); }
 let TOUCHRUN=false;
 const PL={locked:false,failed:false};
-function tryLock(){ if(wantLock()&&!PL.locked&&!PL.failed&&!document.pointerLockElement&&!(PL.lastTry&&performance.now()-PL.lastTry<1500)){ PL.lastTry=performance.now(); try{ const r=canvas.requestPointerLock(); if(r&&r.catch) r.catch(()=>{ PL.fails=(PL.fails||0)+1; if(PL.fails>3) PL.failed=true; }); }catch(e){ PL.failed=true; } } }
+function tryLock(){ if(wantLock()&&!PL.locked&&!PL.failed&&!document.pointerLockElement&&!(PL.lastTry&&performance.now()-PL.lastTry<1500)){ PL.lastTry=performance.now(); if(window.sensei&&window.sensei.send){ window.sensei.send("garden:lock",true); return; } try{ const r=canvas.requestPointerLock(); if(r&&r.catch) r.catch(()=>{ PL.fails=(PL.fails||0)+1; if(PL.fails>3) PL.failed=true; }); }catch(e){ PL.failed=true; } } }
 addEventListener("keydown",e=>{ if(/^(Key[WASD]|Arrow|Space|Shift)/.test(e.code)) tryLock(); });
 addEventListener("mousedown",()=>tryLock());
 function wantLock(){ return entered&&!isTouch&&!menuOpen&&!chatOpen&&!uiBlock()&&!MG&&pmode!=="golf"; }
 canvas.addEventListener("click",()=>{ if(wantLock()&&!PL.locked&&!PL.failed){ try{ const r=canvas.requestPointerLock({unadjustedMovement:true}); if(r&&r.catch) r.catch(()=>{ try{ canvas.requestPointerLock(); }catch(e){ PL.failed=true; controls.enableRotate=true; } }); }catch(e){ PL.failed=true; controls.enableRotate=true; } } });
 document.addEventListener("pointerlockchange",()=>{ PL.locked=document.pointerLockElement===canvas; controls.enableRotate=!PL.locked; document.body.classList.toggle("locked",PL.locked); });
-document.addEventListener("pointerlockerror",()=>{ PL.failed=true; controls.enableRotate=true; });
+document.addEventListener("pointerlockerror",()=>{ PL.fails=(PL.fails||0)+1; if(PL.fails>4) PL.failed=true; controls.enableRotate=true; try{ window.sensei&&window.sensei.send("garden:dbg","pointerlockerror"); }catch(e){} });
 addEventListener("mousemove",e=>{ if(!PL.locked) return; const mx=e.movementX||0, my=e.movementY||0; if(Math.abs(mx)>300||Math.abs(my)>300) return;
   if(pmode==="koi"&&RCK.on&&!RCK.intro){ RCK.yaw-=mx*.0028; return; }
   const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=mx*.0026; sph.phi=clamp(sph.phi+my*.0022,controls.minPolarAngle+.02,controls.maxPolarAngle-.02); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); });
