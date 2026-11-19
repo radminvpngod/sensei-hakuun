@@ -1,3 +1,4 @@
+import { visitorHit, startVisit } from "./visitor.js";
 import * as THREE from "./vendor/three.module.min.js";
 import { buildSensei } from "./sensei-model.js";
 const S = window.sensei || { send(){}, invoke: async()=>({}), on(){} };
@@ -19,7 +20,7 @@ let L = { origin: { x: 0, y: 0 }, rects: [{ x: 0, y: 0, w: screen.availWidth, h:
 let placed = false;
 const pos = { x: screen.availWidth - 220, y: screen.availHeight - 150 }, target = { ...pos };
 let facing = -1, nextWander = 0, clock = 0, last = performance.now(), talking = false, boop = 0, listening = false;
-S.on("layout", l => { L = l; if (!placed) { pos.x = L.primary.x + L.primary.w - 220; pos.y = L.primary.y + L.primary.h - 150; placed = true; } pickTarget(); });
+S.on("layout", l => { L = l; window.__senseiLayout = l; if (!placed) { pos.x = L.primary.x + L.primary.w - 220; pos.y = L.primary.y + L.primary.h - 150; placed = true; } pickTarget(); });
 
 function pickTarget(){
   if (mode === "rest"){ target.x = L.primary.x + L.primary.w - 200; target.y = L.primary.y + L.primary.h - 140; return; }
@@ -40,7 +41,7 @@ const local = () => ({ x: pos.x - L.origin.x, y: pos.y - L.origin.y });
 S.on("hover", h => { hovering = h; document.body.style.cursor = h ? "pointer" : ""; });
 addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 const onSensei = () => { const p = local(); return Math.hypot(mouse.x - p.x, mouse.y - (p.y + bobY)) < 85; };
-addEventListener("mousedown", e => { if (e.target.closest(".mbtn")) return; if (onSensei() || (hovering && !menuOpen)) { boop = 1; toggleMenu(); } else if (menuOpen) toggleMenu(false); });
+addEventListener("mousedown", e => { if (e.target.closest(".mbtn") || e.target.id === "visitor") return; if (onSensei() || (hovering && !menuOpen)) { boop = 1; toggleMenu(); } else if (menuOpen) toggleMenu(false); });
 function toggleMenu(f){ menuOpen = f ?? !menuOpen; $("#menu").classList.toggle("open", menuOpen); if (menuOpen) { layoutMenu(); $("#bubble").classList.remove("show"); bubbleT = 0; } sendHit(true); }
 function layoutMenu(){ const bs = [...document.querySelectorAll(".mbtn")]; const n = bs.length, R = 108;
   bs.forEach((b, i) => { const a = -Math.PI / 2 + (i - (n - 1) / 2) * .62; b.style.left = Math.cos(a) * R + "px"; b.style.top = Math.sin(a) * R + "px"; }); }
@@ -50,6 +51,7 @@ document.querySelectorAll(".mbtn").forEach(b => b.addEventListener("click", () =
   else if (a === "garden") { say("I will meet you by the pond.", 3500); S.send("open", "garden"); }
   else if (a === "palette") S.send("open", "palette");
   else if (a === "settings") S.send("open", "settings");
+  else if (a === "friend") { say("I'll send a friend over.", 3000); setTimeout(() => startVisit(), 1200); }
   else if (a === "mode") { mode = mode === "rest" ? "swim" : "rest"; modeLbl(); S.invoke("setSetting", "overlay", mode); pickTarget(); say(mode === "rest" ? "I will rest here. Call if you need me." : "Ah. Time to stretch the fins.", 3500); }
 }));
 
@@ -197,7 +199,8 @@ async function ask(q){
 /* ---------- loop: full frame rate while moving/talking, 30 fps when idle; only a 460px square is drawn ---------- */
 let acc = 0, bobY = 0, lastHit = "";
 const stage = $("#stage");
-function sendHit(force){ const p = local(); const h = { x: Math.round(p.x), y: Math.round(p.y + bobY), r: menuOpen ? 150 : 82 }; const k = h.x + "," + h.y + "," + h.r; if (force || k !== lastHit) { lastHit = k; S.send("overlay:hit", h); } }
+function sendHit(force){ const p = local(); const h = { x: Math.round(p.x), y: Math.round(p.y + bobY), r: menuOpen ? 150 : 82 }; const v = visitorHit(); const k = h.x + "," + h.y + "," + h.r + (v ? "|" + v.x + "," + v.y : ""); if (force || k !== lastHit) { lastHit = k; S.send("overlay:hit", v ? [h, v] : h); } }
+setInterval(() => sendHit(false), 120);
 function frame(now){
   requestAnimationFrame(frame);
   const moving = Math.hypot(target.x - pos.x, target.y - pos.y) > 2;

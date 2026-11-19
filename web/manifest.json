@@ -1,7 +1,7 @@
 {
- "version": 22,
+ "version": 23,
  "shellApi": 2,
- "notes": "Prettier mini golf (mown stripes, timber rails, bunkers), torii standing on the shrine steps, reeds and stones along Mirror Lake, tatami in the tea house, clearer long views.",
+ "notes": "A friend from the garden now visits your desktop once a day (or tap Sensei \u2192 \u53cb Friend). Click them to say hi; double-click to send them home.",
  "files": [
   "brain-client.js",
   "core.js",
@@ -28,7 +28,8 @@
   "vendor/three.module.min.js",
   "vendor/addons/loaders/GLTFLoader.js",
   "vendor/addons/utils/BufferGeometryUtils.js",
-  "assets/lowpoly.glb"
+  "assets/lowpoly.glb",
+  "visitor.js"
  ],
  "minShell": "0.2.0"
 }

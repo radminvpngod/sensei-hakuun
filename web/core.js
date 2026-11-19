@@ -238,7 +238,7 @@ module.exports = function core(ctx) {
   setInterval(() => {
     if (!overlay || overlay.isDestroyed() || !overlay.isVisible() || !hit) return;
     const c = screen.getCursorScreenPoint(), o = overlay.getBounds();
-    const inside = Math.hypot(c.x - (o.x + hit.x), c.y - (o.y + hit.y)) < hit.r;
+    const inside = (Array.isArray(hit) ? hit : [hit]).some(h => h && Math.hypot(c.x - (o.x + h.x), c.y - (o.y + h.y)) < h.r);
     if (inside !== clickable) { clickable = inside; overlay.setIgnoreMouseEvents(!inside, { forward: true }); overlay.webContents.send('hover', inside); }
   }, 60);
   function applyOnTop() { if (!overlay || overlay.isDestroyed()) return; if (settings.alwaysOnTop) { overlay.setAlwaysOnTop(true, 'screen-saver'); overlay.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }); } else overlay.setAlwaysOnTop(false); }
