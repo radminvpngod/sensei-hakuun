@@ -9,6 +9,7 @@ You are building Gabriel's game in Unreal Engine 5.8 through Epic's Unreal MCP p
 - Core twist: spirit possession. Put your spirit into living things (koi, crows, townspeople, animals) to solve puzzles and reach places. Your body stays behind and can be threatened.
 - Gentle and cozy at first, then properly combat-heavy with Souls-style bosses (ramp like Another Crab's Treasure). Skill tree branches: Spirit · Combat · Movement · Abilities · HP.
 - Map inspiration: Ghost of Tsushima (distant mountains you can actually reach), Breath of the Wild (long treks, climb anything that makes sense).
+- Multiplayer matters: aim for something fun and clippable with friends (inspirations: R.E.P.O., Lethal Company, Soul Knight's quick co-op runs). Keep sessions short and chaotic-friendly; design every system so a second player can join.
 - Later: night expeditions, physics chaos, water-powered ferries across a big lake, proximity voice, Mirror Lake lantern quest into a mirror world, sky islands with real purpose, interiors.
 
 ## Layout notes from Gabriel
