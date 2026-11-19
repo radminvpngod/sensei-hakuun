@@ -1,7 +1,7 @@
 {
- "version": 33,
+ "version": 34,
  "shellApi": 2,
- "notes": "Big cleanup: Mirror Lake mirror removed (likely the black-box flicker) and every pond, lake and pool gets the new clear-to-deep water. Paths are no-build zones and connect to each other (and the Moon Bridge). Houses sit on levelled ground, doors swing inward, real castle entrance, proper paper lanterns, no stacked lanterns, ruins removed. You can look up at the sky, zoom as a koi, swim first person (V), and you're a glowing spirit koi now. Friends don't walk through houses, rocks are solid, climbing camera no longer shakes, sky lanterns don't kill FPS.",
+ "notes": "Mouse-look camera with no cursor (click to play, Esc frees the mouse). Clouds without hard edges, golf flicker fixed and real hole signs, no grass in bunkers, flat archery range, friends' music you can hear, calmer and more natural koi, clearer first person underwater, camera resets properly when you return to your body, Moon Bridge paths connect.",
  "files": [
   "brain-client.js",
   "core.js",
