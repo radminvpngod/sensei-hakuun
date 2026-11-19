@@ -11,6 +11,11 @@ You are building Gabriel's game in Unreal Engine 5.8 through Epic's Unreal MCP p
 - Map inspiration: Ghost of Tsushima (distant mountains you can actually reach), Breath of the Wild (long treks, climb anything that makes sense).
 - Later: night expeditions, physics chaos, water-powered ferries across a big lake, proximity voice, Mirror Lake lantern quest into a mirror world, sky islands with real purpose, interiors.
 
+## Layout notes from Gabriel
+- The castle is its own landmark on its own hill, set apart from the rest of the valley. One main entrance only, reached by crossing a moat on a bridge, so the approach feels legendary.
+- No snow in the starting valley. The snowy onsen belongs in a future snow biome, not next to the castle.
+- The Night Market is a real, normal-sized village, not a tiny cluster.
+
 ## Look
 - Breath of the Wild painterly: cel-shaded characters/foliage, a painterly post-process on top, excellent lighting (Lumen), atmospheric fog. Not photoreal.
 - Water must be clear in the shallows, deep teal in the middle, fish visible.
