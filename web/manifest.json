@@ -1,7 +1,7 @@
 {
- "version": 38,
+ "version": 39,
  "shellApi": 2,
- "notes": "Mouse look, properly: just move the mouse and the camera turns. No clicking, no cursor. If the mouse reaches the screen edge it keeps turning.",
+ "notes": "Mouse up/down no longer inverted.",
  "files": [
   "brain-client.js",
   "core.js",

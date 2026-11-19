@@ -1930,7 +1930,7 @@ document.addEventListener("pointerlockerror",()=>{ PL.fails=(PL.fails||0)+1; if(
 addEventListener("mousemove",e=>{ PL.mx=e.clientX; PL.my=e.clientY; if(!PL.locked&&!(wantLock()||pmode==="koi")) return; if(!PL.locked&&isTouch) return; const mx=e.movementX||0, my=e.movementY||0; if(Math.abs(mx)>300||Math.abs(my)>300) return;
   if(pmode==="koi"&&RCK.on&&!RCK.intro){ RCK.yaw-=mx*.0028; return; }
   PL.ax=(PL.ax||0)+mx; PL.ay=(PL.ay||0)+my; });
-function applyMouseLook(){ const mx=PL.ax||0, my=PL.ay||0; PL.ax=PL.ay=0; if(!mx&&!my) return; const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=mx*.0026; sph.phi=clamp(sph.phi+my*.0022,controls.minPolarAngle+.02,controls.maxPolarAngle-.02); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); }
+function applyMouseLook(){ const mx=PL.ax||0, my=PL.ay||0; PL.ax=PL.ay=0; if(!mx&&!my) return; const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=mx*.0026; sph.phi=clamp(sph.phi-my*.0022,controls.minPolarAngle+.02,controls.maxPolarAngle-.02); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); }
 
 { const tap=(id,fn)=>{ const el=$("#"+id); el.addEventListener("touchstart",e=>{ e.preventDefault(); e.stopPropagation(); el.classList.add("dn"); fn(); },{passive:false}); el.addEventListener("touchend",()=>el.classList.remove("dn")); el.addEventListener("click",e=>{ e.stopPropagation(); fn(); }); };
   tap("tRoll",()=>startRoll()); tap("tRun",()=>{ TOUCHRUN=!TOUCHRUN; $("#tRun").classList.toggle("on",TOUCHRUN); }); tap("tMap",()=>openTravel()); tap("tTalk",()=>openChat()); }
