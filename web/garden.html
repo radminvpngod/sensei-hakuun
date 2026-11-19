@@ -2825,9 +2825,9 @@ memReady.then(()=>{ (store.greatDone||[]).forEach(id=>{ if(!store.great||store.g
 function diaryNote(t){ const d=todayKey(); store.diary=store.diary||[]; store.diary.push({d,t}); if(store.diary.length>60) store.diary.splice(0,store.diary.length-60); save(); }
 async function takePostcard(){ try{ if(!DB||zone!=="world"||MG||!entered) return; const iso=new Date().toLocaleDateString("en-CA",{timeZone:"America/New_York"}); if(store.postcardDay===iso) return;
     const shots=[[[6,9,26],[0,1,0]],[[CASTLE.x-34,26,CASTLE.z+30],[CASTLE.x,8,CASTLE.z]],[[PEAK.x+30,30,PEAK.z+34],[PEAK.x,18,PEAK.z]],[[-20,14,40],[-40,4,52]]]; const [cp,ct]=pick(shots);
-    const oldP=camera.position.clone(), oldT=controls.target.clone(); camera.position.set(...cp); camera.lookAt(...ct); composer.render(); const c=document.createElement("canvas"); c.width=640; c.height=360; const g=c.getContext("2d"); const src=renderer.domElement; const sw=src.width, sh=src.height, ar=640/360; let w=sw,h=sw/ar; if(h>sh){ h=sh; w=sh*ar; } g.drawImage(src,(sw-w)/2,(sh-h)/2,w,h,0,0,640,360);
+    const oldP=camera.position.clone(), oldT=controls.target.clone(); camera.position.set(...cp); camera.lookAt(...ct); composer.render(); const c=document.createElement("canvas"); c.width=480; c.height=270; const g=c.getContext("2d"); const src=renderer.domElement; const sw=src.width, sh=src.height, ar=480/270; let w=sw,h=sw/ar; if(h>sh){ h=sh; w=sh*ar; } g.drawImage(src,(sw-w)/2,(sh-h)/2,w,h,0,0,480,270);
     camera.position.copy(oldP); controls.target.copy(oldT); camera.lookAt(oldT);
-    const img=c.toDataURL("image/jpeg",.72); if(img.length<4000) return; store.postcardDay=iso; save(); await DB.doc("postcards/"+iso).set({date:iso,img,caption:`${partOfDay(nowHour())}, ${SEASON_NAME[S]}`,createdAt:Date.now()}); }catch(e){ console.warn("[postcard]",e); } }
+    const img=c.toDataURL("image/jpeg",.66); if(img.length<4000) return; store.postcardDay=iso; save(); await DB.doc("postcards/"+iso).set({date:iso,img,caption:`${partOfDay(nowHour())}, ${SEASON_NAME[S]}`,createdAt:Date.now()}); }catch(e){ console.warn("[postcard]",e); } }
 // ---------- 10 · the wide-world feel: big drifting clouds, soft rim light, a campfire with a cooking pot ----------
 const CLOUDS=[];
 { const tex=(()=>{ const c=document.createElement("canvas"); c.width=512; c.height=256; const g=c.getContext("2d");
