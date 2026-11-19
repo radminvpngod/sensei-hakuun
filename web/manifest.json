@@ -1,7 +1,7 @@
 {
- "version": 32,
+ "version": 33,
  "shellApi": 2,
- "notes": "Fix: the flickering black box (Mirror Lake reflection now renders separately from the post-processing).",
+ "notes": "Big cleanup: Mirror Lake mirror removed (likely the black-box flicker) and every pond, lake and pool gets the new clear-to-deep water. Paths are no-build zones and connect to each other (and the Moon Bridge). Houses sit on levelled ground, doors swing inward, real castle entrance, proper paper lanterns, no stacked lanterns, ruins removed. You can look up at the sky, zoom as a koi, swim first person (V), and you're a glowing spirit koi now. Friends don't walk through houses, rocks are solid, climbing camera no longer shakes, sky lanterns don't kill FPS.",
  "files": [
   "brain-client.js",
   "core.js",
