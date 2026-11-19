@@ -361,7 +361,9 @@ import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
 
 /* ===================== Sensei's mind (used by the Windows app, opened as #brain) ===================== */
 if(location.hash==="#brain"){ await senseiBrainMode(); throw "sensei-brain-mode"; }
-async function senseiBrainMode(){
+// the desktop app calls this directly in whatever page loads (claude.ai may drop the #brain hash)
+window.__startBrain=()=>senseiBrainMode(true);
+async function senseiBrainMode(quiet){ if(window.__sb&&window.__sb.ready) return; window.__brainOnly=!!quiet;
   document.head.insertAdjacentHTML("beforeend",`<style>body>*:not(#sb){display:none!important} #sb{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:radial-gradient(ellipse at 50% 30%,#24305a,#0b0f22 70%);color:#f4ecd8;text-align:center;padding:30px;font-family:"Zen Kaku Gothic New",system-ui,sans-serif}
   #sb h1{font-family:"Shippori Mincho",serif;font-weight:500;margin:0;font-size:30px} #sb p{max-width:440px;line-height:1.6;opacity:.85;margin:0} #sb button{border:0;border-radius:14px;padding:14px 24px;background:#c8452f;color:#fff;font-size:17px;cursor:pointer;font-family:"Shippori Mincho",serif} #sbS{font-size:13px;opacity:.7}</style>`);
   const box=document.createElement("div"); box.id="sb"; box.innerHTML=`<div style="font-size:64px;font-family:'Shippori Mincho',serif">白</div><h1>Sensei's mind</h1><p>This window connects the Sensei app on your PC to Claude, through your own claude.ai plan. Press the button once and allow the permission it asks for. Then you can close this window: it keeps working quietly in the background.</p><button id="sbGo">Wake Sensei's mind</button><div id="sbS"></div>`;
@@ -2263,6 +2265,7 @@ const angLerp=(a,b,t)=>{ const d=((b-a+Math.PI)%TAU+TAU)%TAU-Math.PI; return a+d
 let lastDiscCheck=0;
 function frame(now){
   if(remoteMode){ requestAnimationFrame(frame); return; }
+  if(window.__brainOnly){ setTimeout(()=>requestAnimationFrame(frame),1000); return; }
   const dt=Math.min(.05,(now-last)/1000); last=now; clock+=dt; tUni.value=clock;
   // ---- player movement ----
   hostFrame();

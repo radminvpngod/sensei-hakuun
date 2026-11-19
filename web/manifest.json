@@ -1,7 +1,7 @@
 {
- "version": 26,
+ "version": 27,
  "shellApi": 2,
- "notes": "Sensei's mind fix: it now presses claude.ai's one-time permission prompt by itself, stays awake when hidden, and if it's ever stuck for a minute the window pops up so you can see why. Settings shows what it's waiting on.",
+ "notes": "Sensei's mind, new approach: claude.ai was dropping the special link the mind page used, so the app now switches the mind on directly inside whatever page loads. No pop-up window.",
  "files": [
   "brain-client.js",
   "core.js",

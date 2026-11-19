@@ -170,11 +170,11 @@ module.exports = function core(ctx) {
   let waking = false;
   async function autoWake() { if (waking) return; waking = true; const t0 = Date.now();
     try { for (let i = 0; i < 90; i++) { await sleep(i < 20 ? 400 : 1000); if (!brain || brain.isDestroyed()) return; if (await brainFrame()) { log('mind: awake in', Date.now() - t0, 'ms'); broadcast('mind', { awake: true }); return; }
-      for (const f of brain.webContents.mainFrame.framesInSubtree) { try { await f.executeJavaScript('(()=>{ const b=document.getElementById("sbGo"); if(b&&!window.__clicked){ window.__clicked=1; b.click(); } })()', true); } catch (e) {} }
+      for (const f of brain.webContents.mainFrame.framesInSubtree) { try { await f.executeJavaScript('(async()=>{ if(typeof window.__startBrain==="function"&&!window.__brainCalled){ window.__brainCalled=1; window.__startBrain(); } const b=document.getElementById("sbGo"); if(b&&!window.__clicked){ window.__clicked=1; b.click(); } })()', true); } catch (e) {} }
       // claude.ai asks once per artifact version whether it may use Claude; that prompt lives on the host page, outside the artifact frame
       try { const hit = await brain.webContents.executeJavaScript(`(()=>{ const ds=[...document.querySelectorAll('[role="dialog"],[role="alertdialog"],[data-state="open"]')]; for(const d of ds){ for(const b of d.querySelectorAll('button')){ const t=(b.innerText||'').trim(); if(/^(always allow|allow always|allow|continue|approve|run|trust|accept|got it|confirm)\\b/i.test(t)&&!b.disabled){ b.click(); return t+' | '+(d.innerText||'').slice(0,160).replace(/\\s+/g,' '); } } } return ''; })()`, true); if (hit) log('mind: pressed host prompt:', hit); } catch (e) {}
       if (i === 25) { const st = await mindStage(); log('mind: still asleep after ~20s, stage:', st); }
-      if (i === 45 && brain.__ghost) { log('mind: stuck, showing the window so he can see what it wants'); broadcast('mind', { awake: false, stuck: true, stage: await mindStage() }); showBrain(); } } }
+      if (i === 45) { log('mind: still asleep after ~45s:', await mindStage()); broadcast('mind', { awake: false, stuck: true }); } } }
     finally { waking = false; } }
   async function mindStage() { if (!brain || brain.isDestroyed()) return 'no window'; let url = ''; try { url = brain.webContents.getURL(); } catch (e) {} for (const f of brain.webContents.mainFrame.framesInSubtree) { try { const st = await f.executeJavaScript('window.__sb ? (window.__sb.ready ? "ready" : (window.__sb.stage||"not ready")) : ""'); if (st) return st + ' @ ' + url; } catch (e) {} } return 'mind page not loaded @ ' + url; }
   // keep the mind warm: wake it as soon as the app starts (if signed in), and quietly revive it if it ever falls asleep
