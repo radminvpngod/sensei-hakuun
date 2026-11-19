@@ -1,7 +1,7 @@
 {
- "version": 35,
+ "version": 36,
  "shellApi": 2,
- "notes": "Black box flicker: found and fixed (a bad pixel from Sensei's ghost shader was being smeared into black blocks by the glow effect). Mouse look now actually works in the app (Windows was blocking mouse capture) and locks as soon as you move, no clicking. No more tilted look-up. Posts, stalls, pillars and lanterns are solid. Koi first person looks out of the koi's eyes.",
+ "notes": "Camera fix: dragging always works again; when the mouse can be captured, plain mouse movement turns the view.",
  "files": [
   "brain-client.js",
   "core.js",
