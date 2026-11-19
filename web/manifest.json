@@ -1,7 +1,7 @@
 {
- "version": 25,
+ "version": 26,
  "shellApi": 2,
- "notes": "The story begins: a prologue scroll unrolls the first time you enter. It tells why Sensei stayed and what sleeps under the castle. You can re-read it at the old story stone at the foot of the castle stairs.",
+ "notes": "Sensei's mind fix: it now presses claude.ai's one-time permission prompt by itself, stays awake when hidden, and if it's ever stuck for a minute the window pops up so you can see why. Settings shows what it's waiting on.",
  "files": [
   "brain-client.js",
   "core.js",

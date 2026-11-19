@@ -122,7 +122,7 @@ addEventListener("keydown", async e => {
   if (!r.ok) { el.textContent = "taken by another app — try another"; setTimeout(render, 1800); }
 });
 S.on("settings", s => { st = s; render(); });
-async function mindCheck(){ document.getElementById("mindStat").textContent = "Checking…"; const r = await S.invoke("brain:status"); document.getElementById("mindDot").classList.toggle("ok", r.awake); document.getElementById("mindStat").textContent = r.awake ? "Awake — connected to claude.ai" : r.signedIn ? "Signed in — waking up on its own…" : "Not signed in yet"; document.getElementById("mind").textContent = r.signedIn ? "Open" : "Sign in"; if (r.signedIn && !r.awake && (mindPolls = (mindPolls || 0) + 1) < 25) setTimeout(mindCheck, 2500); else mindPolls = 0; }
+async function mindCheck(){ const ms=document.getElementById("mindStat"); if(!ms.dataset.seen) ms.textContent = "Checking…"; const r = await S.invoke("brain:status"); document.getElementById("mindDot").classList.toggle("ok", r.awake); ms.dataset.seen=1; document.getElementById("mindStat").textContent = r.awake ? "Awake — connected to claude.ai" : r.signedIn ? ("Signed in — waking up… " + (r.stage ? "(" + r.stage.split(" @ ")[0] + ")" : "")) : "Not signed in yet"; document.getElementById("mind").textContent = r.signedIn ? "Open" : "Sign in"; if (r.signedIn && !r.awake && (mindPolls = (mindPolls || 0) + 1) < 25) setTimeout(mindCheck, 2500); else mindPolls = 0; }
 var mindPolls = 0; if (S.on) S.on("mind", m => { if (m && m.awake) { mindPolls = 0; mindCheck(); } });
 S.invoke("settings").then(s => { st = s; render(); }); mindCheck(); setInterval(mindCheck, 8000);
 </script>

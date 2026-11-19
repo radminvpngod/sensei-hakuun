@@ -367,8 +367,9 @@ async function senseiBrainMode(){
   const box=document.createElement("div"); box.id="sb"; box.innerHTML=`<div style="font-size:64px;font-family:'Shippori Mincho',serif">白</div><h1>Sensei's mind</h1><p>This window connects the Sensei app on your PC to Claude, through your own claude.ai plan. Press the button once and allow the permission it asks for. Then you can close this window: it keeps working quietly in the background.</p><button id="sbGo">Wake Sensei's mind</button><div id="sbS"></div>`;
   document.body.appendChild(box);
   const stat=t=>{ document.getElementById("sbS").textContent=t; };
-  let sample=null, db=null;
-  try{ sample=await claude.use("sample"); }catch(e){} try{ db=await claude.use("db"); }catch(e){}
+  let sample=null, db=null; window.__sb={ready:false,stage:"asking claude.ai for permission"};
+  try{ sample=await Promise.race([claude.use("sample"),new Promise((_,j)=>setTimeout(()=>j(new Error("permission timeout")),45000))]); }catch(e){ window.__sb.stage="sample: "+((e&&e.message)||e); }
+  try{ db=await claude.use("db"); }catch(e){}
   if(!sample){ stat("Claude isn't available in this view. Make sure you are signed in to claude.ai in this window."); }
   const out={};
   const dataToBlob=u=>{ const [h,b]=String(u).split(","); const mime=(h.match(/data:([^;]+)/)||[])[1]||"image/png"; const bin=atob(b); const a=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) a[i]=bin.charCodeAt(i); return new Blob([a],{type:mime}); };
