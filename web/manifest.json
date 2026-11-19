@@ -1,7 +1,7 @@
 {
- "version": 24,
+ "version": 25,
  "shellApi": 2,
- "notes": "Swim as a koi: walk to the pond's east edge and press E. W to swim, A/D to turn, Space/C up and down, V to see your own face, E to climb out. The other koi come over to look at you, and every koi has a face now.",
+ "notes": "The story begins: a prologue scroll unrolls the first time you enter. It tells why Sensei stayed and what sleeps under the castle. You can re-read it at the old story stone at the foot of the castle stairs.",
  "files": [
   "brain-client.js",
   "core.js",
