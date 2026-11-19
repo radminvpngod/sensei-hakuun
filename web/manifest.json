@@ -1,7 +1,7 @@
 {
- "version": 37,
+ "version": 38,
  "shellApi": 2,
- "notes": "Mouse capture asked for by the app itself (more reliable on Windows), and failures are written to the log.",
+ "notes": "Mouse look, properly: just move the mouse and the camera turns. No clicking, no cursor. If the mouse reaches the screen edge it keeps turning.",
  "files": [
   "brain-client.js",
   "core.js",

@@ -36,6 +36,7 @@ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000
 #joy{position:fixed;left:calc(env(safe-area-inset-left) + 26px);bottom:calc(env(safe-area-inset-bottom) + 58px);width:124px;height:124px;border-radius:50%;background:rgba(20,18,30,.28);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:6;display:none;touch-action:none}
 #joy .k{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(244,236,216,.85);box-shadow:0 4px 14px rgba(0,0,0,.3)}
 body.locked #hint{opacity:0!important}
+body.playing #c{cursor:none}
 #tpad{position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 34px);z-index:6;display:none;width:170px;height:170px}
 body.touch #tpad.on{display:block}
 #tpad .tb{position:absolute;display:grid;place-items:center;border-radius:50%;background:rgba(20,18,30,.38);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f4ecd8;font-family:"Shippori Mincho",serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none;transition:transform .08s,background .2s}
@@ -1920,13 +1921,16 @@ const PL={locked:false,failed:false};
 function tryLock(){ if(wantLock()&&!PL.locked&&!PL.failed&&!document.pointerLockElement&&!(PL.lastTry&&performance.now()-PL.lastTry<1500)){ PL.lastTry=performance.now(); if(window.sensei&&window.sensei.send){ window.sensei.send("garden:lock",true); return; } try{ const r=canvas.requestPointerLock(); if(r&&r.catch) r.catch(()=>{ PL.fails=(PL.fails||0)+1; if(PL.fails>3) PL.failed=true; }); }catch(e){ PL.failed=true; } } }
 addEventListener("keydown",e=>{ if(/^(Key[WASD]|Arrow|Space|Shift)/.test(e.code)) tryLock(); });
 addEventListener("mousedown",()=>tryLock());
+function edgeTurn(){ const now=performance.now(), dt=Math.min(.05,(now-(PL.et||now))/1000); PL.et=now; if(PL.locked||isTouch||PL.mx===undefined||!(wantLock()||pmode==="koi")) return; const W=innerWidth, Hh=innerHeight, m=Math.min(80,W*.06); let ex=0, ey=0; if(PL.mx<m) ex=-(1-PL.mx/m); else if(PL.mx>W-m) ex=(PL.mx-(W-m))/m; if(PL.my<m) ey=-(1-PL.my/m); else if(PL.my>Hh-m) ey=(PL.my-(Hh-m))/m; if(!ex&&!ey) return;
+  if(pmode==="koi"&&RCK.on){ RCK.yaw-=ex*dt*2.2; return; } PL.ax=(PL.ax||0)+ex*dt*920; PL.ay=(PL.ay||0)+ey*dt*640; }
 function wantLock(){ return entered&&!isTouch&&!menuOpen&&!chatOpen&&!uiBlock()&&!MG&&pmode!=="golf"; }
 canvas.addEventListener("click",()=>{ if(wantLock()&&!PL.locked&&!PL.failed){ try{ const r=canvas.requestPointerLock({unadjustedMovement:true}); if(r&&r.catch) r.catch(()=>{ try{ canvas.requestPointerLock(); }catch(e){ PL.failed=true; controls.enableRotate=true; } }); }catch(e){ PL.failed=true; controls.enableRotate=true; } } });
 document.addEventListener("pointerlockchange",()=>{ PL.locked=document.pointerLockElement===canvas; controls.enableRotate=!PL.locked; document.body.classList.toggle("locked",PL.locked); });
 document.addEventListener("pointerlockerror",()=>{ PL.fails=(PL.fails||0)+1; if(PL.fails>4) PL.failed=true; controls.enableRotate=true; try{ window.sensei&&window.sensei.send("garden:dbg","pointerlockerror"); }catch(e){} });
-addEventListener("mousemove",e=>{ if(!PL.locked) return; const mx=e.movementX||0, my=e.movementY||0; if(Math.abs(mx)>300||Math.abs(my)>300) return;
+addEventListener("mousemove",e=>{ PL.mx=e.clientX; PL.my=e.clientY; if(!PL.locked&&!(wantLock()||pmode==="koi")) return; if(!PL.locked&&isTouch) return; const mx=e.movementX||0, my=e.movementY||0; if(Math.abs(mx)>300||Math.abs(my)>300) return;
   if(pmode==="koi"&&RCK.on&&!RCK.intro){ RCK.yaw-=mx*.0028; return; }
-  const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=mx*.0026; sph.phi=clamp(sph.phi+my*.0022,controls.minPolarAngle+.02,controls.maxPolarAngle-.02); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); });
+  PL.ax=(PL.ax||0)+mx; PL.ay=(PL.ay||0)+my; });
+function applyMouseLook(){ const mx=PL.ax||0, my=PL.ay||0; PL.ax=PL.ay=0; if(!mx&&!my) return; const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=mx*.0026; sph.phi=clamp(sph.phi+my*.0022,controls.minPolarAngle+.02,controls.maxPolarAngle-.02); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); }
 
 { const tap=(id,fn)=>{ const el=$("#"+id); el.addEventListener("touchstart",e=>{ e.preventDefault(); e.stopPropagation(); el.classList.add("dn"); fn(); },{passive:false}); el.addEventListener("touchend",()=>el.classList.remove("dn")); el.addEventListener("click",e=>{ e.stopPropagation(); fn(); }); };
   tap("tRoll",()=>startRoll()); tap("tRun",()=>{ TOUCHRUN=!TOUCHRUN; $("#tRun").classList.toggle("on",TOUCHRUN); }); tap("tMap",()=>openTravel()); tap("tTalk",()=>openChat()); }
@@ -1952,7 +1956,7 @@ function showWhisper(msg,ms){ whisperBusy=true; whisperCur=msg; $("#whisperT").t
 $("#whisper").addEventListener("click",()=>{ $("#whisper").classList.remove("show"); openChat(); });
 let discT; function discover(d){ $("#discK").textContent=d.k; $("#discN").textContent=d.n; $("#disc").classList.add("show"); clearTimeout(discT); discT=setTimeout(()=>$("#disc").classList.remove("show"),3200);
   setTimeout(()=>{ whisper(d.line,9000); speak(d.line); },1800); chime(); }
-$("#hint").textContent = isTouch ? "Joystick to walk · 転 to roll · drag to look · 話 to talk to Sensei" : "Click to play · mouse to look · WASD walk · Shift run · Space roll · E interact · Esc frees the mouse";
+$("#hint").textContent = isTouch ? "Joystick to walk · 転 to roll · drag to look · 話 to talk to Sensei" : "Move the mouse to look · WASD walk · Shift run · Space roll · E interact";
 
 /* ===================== audio: music + ambience ===================== */
 let actx=null, master=null, musicBus=null, soundOn=false, wfGain=null, crickGain=null, musicTimer=null, fluteTimer=null, crickTimer=null;
@@ -2217,7 +2221,7 @@ addInteract({sensei:true,k:"話",label:"Talk",r:7,fn:()=>openChat()});
 addInteract({pond:true,k:"餌",label:"Feed koi",r:1,fn:()=>tossFood(.55)});
 function updateNearest(){ nearest=null; let bd=1e9;
   for(const it of interacts){ if((it.zone||"world")!==zone||(it.when&&!it.when())) continue; if(zone==="world"&&pmode!=="walk"&&!it.when&&!it.sensei) continue; const x=it.sensei?sensei.position.x:it.x, z=it.sensei?sensei.position.z:it.z; let d=Math.hypot(player.position.x-x,player.position.z-z); if(it.pond){ d=((player.position.x/(PRX+3.2))**2+(player.position.z/(PRZ+3.2))**2<1)?.9:99; } if(d<it.r && d<bd+(it.sensei?3:0)){ bd=d; nearest=it; } }
-  const a=$("#act"); if(nearest&&entered&&!chatOpen){ $("#actK").textContent=nearest.k; $("#actT").textContent=nearest.label+(isTouch?"":" · E"); a.classList.add("show"); } else a.classList.remove("show"); if(PL.locked&&!wantLock()&&!["koi","climb","glide","fall"].includes(pmode)) document.exitPointerLock(); if(isTouch) $("#tpad").classList.toggle("on",entered&&!menuOpen&&!chatOpen&&pmode==="walk"&&!MG&&zone!=="sky"); }
+  const a=$("#act"); if(nearest&&entered&&!chatOpen){ $("#actK").textContent=nearest.k; $("#actT").textContent=nearest.label+(isTouch?"":" · E"); a.classList.add("show"); } else a.classList.remove("show"); document.body.classList.toggle("playing",wantLock()||pmode==="koi"); edgeTurn(); if(PL.locked&&!wantLock()&&!["koi","climb","glide","fall"].includes(pmode)) document.exitPointerLock(); if(isTouch) $("#tpad").classList.toggle("on",entered&&!menuOpen&&!chatOpen&&pmode==="walk"&&!MG&&zone!=="sky"); }
 
 // ---- prologue: the story opening scroll ----
 const PROLOGUE=[
@@ -2478,6 +2482,7 @@ function frame(now){
   cloak.scale.x=cloak.scale.z=1+(moving?Math.sin(walkPh*2)*.03:0); scarfTail.rotation.x=.3+(moving?.5+Math.sin(walkPh*2)*.15:Math.sin(clock*1.5)*.05);
   // ---- camera follow ----
   if(CAMFIX.free&&entered&&pmode!=="golf"&&!advMode) camera.position.copy(CAMFIX.free);
+  if(entered&&pmode!=="golf"&&!advMode) applyMouseLook(); else { PL.ax=PL.ay=0; }
   if(entered&&pmode!=="golf"){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); if(P2.on&&pmode==="walk"){ tgt.add(P2.g.position).multiplyScalar(.5); tgt.y+=.85; const sep=P2.g.position.distanceTo(player.position); const want=clamp(9+sep*.9,9,26); const off=camera.position.clone().sub(controls.target); const L=off.length(); if(L<want-.3) camera.position.copy(controls.target).addScaledVector(off.normalize(),lerp(L,want,.05)); } const delta=tgt.clone().sub(controls.target); controls.target.add(delta); camera.position.add(delta); }
   if(pmode!=="golf"&&pmode!=="koi"&&pmode!=="climb"&&pmode!=="fall") controls.update();
   advCam(dt); koiCam(dt);
