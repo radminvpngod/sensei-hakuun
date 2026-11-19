@@ -1,7 +1,7 @@
 {
- "version": 31,
+ "version": 32,
  "shellApi": 2,
- "notes": "Phone layout: touch buttons for roll, run, map and talking to Sensei; a clean menu with no overlapping clock; smaller top bar and map on narrow screens.",
+ "notes": "Fix: the flickering black box (Mirror Lake reflection now renders separately from the post-processing).",
  "files": [
   "brain-client.js",
   "core.js",
