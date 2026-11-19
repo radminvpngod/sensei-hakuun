@@ -1,7 +1,7 @@
 {
- "version": 21,
+ "version": 22,
  "shellApi": 2,
- "notes": "Koi scales removed.",
+ "notes": "Prettier mini golf (mown stripes, timber rails, bunkers), torii standing on the shrine steps, reeds and stones along Mirror Lake, tatami in the tea house, clearer long views.",
  "files": [
   "brain-client.js",
   "core.js",
