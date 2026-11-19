@@ -1,7 +1,7 @@
 {
- "version": 27,
+ "version": 28,
  "shellApi": 2,
- "notes": "Sensei's mind, new approach: claude.ai was dropping the special link the mind page used, so the app now switches the mind on directly inside whatever page loads. No pop-up window.",
+ "notes": "Checkpoints: two lanterns on the grass, dark until you light them (they catch fire with a swirl of embers). Travel pulls you into a black hole, then a loading scroll. Buildings sit on stone foundations, the castle stands on a proper hill, doors swing open on hinges, koi don't merge, and swimming as a koi pulls your soul out of your body. Dive down to find what the koi keep on the bottom.",
  "files": [
   "brain-client.js",
   "core.js",
