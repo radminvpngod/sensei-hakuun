@@ -29,8 +29,8 @@ module.exports = function core(ctx) {
   function broadcast(ch, data) { BrowserWindow.getAllWindows().forEach(w => { if (!w.isDestroyed()) w.webContents.send(ch, data); }); }
 
   // microphone for Sensei's ears (local pages only)
-  session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb(['media', 'audioCapture', 'microphone'].includes(perm) && /^file:/.test(wc.getURL())));
-  session.defaultSession.setPermissionCheckHandler((wc, perm) => ['media', 'audioCapture', 'microphone'].includes(perm));
+  session.defaultSession.setPermissionRequestHandler((wc, perm, cb) => cb((['media', 'audioCapture', 'microphone'].includes(perm) && /^file:/.test(wc.getURL())) || ['pointerLock', 'fullscreen'].includes(perm)));
+  session.defaultSession.setPermissionCheckHandler((wc, perm) => ['media', 'audioCapture', 'microphone', 'pointerLock', 'fullscreen'].includes(perm));
 
   /* ================= downloads ================= */
   function download(url, dest, onProgress, redirects = 6) {

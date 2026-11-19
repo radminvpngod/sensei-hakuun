@@ -1,7 +1,7 @@
 {
- "version": 34,
+ "version": 35,
  "shellApi": 2,
- "notes": "Mouse-look camera with no cursor (click to play, Esc frees the mouse). Clouds without hard edges, golf flicker fixed and real hole signs, no grass in bunkers, flat archery range, friends' music you can hear, calmer and more natural koi, clearer first person underwater, camera resets properly when you return to your body, Moon Bridge paths connect.",
+ "notes": "Black box flicker: found and fixed (a bad pixel from Sensei's ghost shader was being smeared into black blocks by the glow effect). Mouse look now actually works in the app (Windows was blocking mouse capture) and locks as soon as you move, no clicking. No more tilted look-up. Posts, stalls, pillars and lanterns are solid. Koi first person looks out of the koi's eyes.",
  "files": [
   "brain-client.js",
   "core.js",
