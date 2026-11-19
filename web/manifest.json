@@ -1,7 +1,7 @@
 {
- "version": 29,
+ "version": 30,
  "shellApi": 2,
- "notes": "Dodge roll: Space (when nothing's nearby to interact with) or tap B on a controller. Your character now acts out interactions: bows, sits under the blossoms, soaks in the onsen, leans in to read, nods when talking. Mirror Lake is a real mirror now and fills right up to its banks. Fixed the flickering stripes at mini golf and removed the gold diamond ruins.",
+ "notes": "Dodge roll: Space (when nothing's nearby to interact with) or tap B on a controller. Your character now acts out interactions: bows, sits under the blossoms, soaks in the onsen, leans in to read, nods when talking. Mirror Lake is a real mirror now and fills right up to its banks. Fixed the flickering stripes at mini golf and removed the gold diamond ruins. (Also: arriving at a lantern never drops you inside something.)",
  "files": [
   "brain-client.js",
   "core.js",
