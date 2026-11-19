@@ -17,6 +17,10 @@ You are building Gabriel's game in Unreal Engine 5.8 through Epic's Unreal MCP p
 - No snow in the starting valley. The snowy onsen belongs in a future snow biome, not next to the castle.
 - The Night Market is a real, normal-sized village, not a tiny cluster.
 
+## North star: fun and clippability
+- Every feature is judged by two questions: is it fun to play with friends, and does it create moments worth clipping (possessing a friend's enemy, trolling a friend's sleeping body, physics chaos)?
+- Ship a complete, polished version with a reason to keep playing (progression, skill tree, unlocks, new villages), then put it in front of YouTubers and streamers.
+
 ## Look
 - Breath of the Wild painterly: cel-shaded characters/foliage, a painterly post-process on top, excellent lighting (Lumen), atmospheric fog. Not photoreal.
 - Water must be clear in the shallows, deep teal in the middle, fish visible.
