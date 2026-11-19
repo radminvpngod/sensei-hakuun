@@ -1,7 +1,7 @@
 {
- "version": 30,
+ "version": 31,
  "shellApi": 2,
- "notes": "Dodge roll: Space (when nothing's nearby to interact with) or tap B on a controller. Your character now acts out interactions: bows, sits under the blossoms, soaks in the onsen, leans in to read, nods when talking. Mirror Lake is a real mirror now and fills right up to its banks. Fixed the flickering stripes at mini golf and removed the gold diamond ruins. (Also: arriving at a lantern never drops you inside something.)",
+ "notes": "Phone layout: touch buttons for roll, run, map and talking to Sensei; a clean menu with no overlapping clock; smaller top bar and map on narrow screens.",
  "files": [
   "brain-client.js",
   "core.js",

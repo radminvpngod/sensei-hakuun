@@ -35,6 +35,19 @@ background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #joy{position:fixed;left:calc(env(safe-area-inset-left) + 26px);bottom:calc(env(safe-area-inset-bottom) + 58px);width:124px;height:124px;border-radius:50%;background:rgba(20,18,30,.28);border:1px solid rgba(255,255,255,.2);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:6;display:none;touch-action:none}
 #joy .k{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(244,236,216,.85);box-shadow:0 4px 14px rgba(0,0,0,.3)}
+#tpad{position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 34px);z-index:6;display:none;width:170px;height:170px}
+body.touch #tpad.on{display:block}
+#tpad .tb{position:absolute;display:grid;place-items:center;border-radius:50%;background:rgba(20,18,30,.38);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#f4ecd8;font-family:"Shippori Mincho",serif;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none;transition:transform .08s,background .2s}
+#tpad .tb small{position:absolute;bottom:-17px;font:600 9px/1 system-ui;letter-spacing:.12em;opacity:.7;text-transform:uppercase;white-space:nowrap}
+#tpad .tb:active,#tpad .tb.dn{transform:scale(.9);background:rgba(200,69,47,.55)}
+#tpad #tRoll{width:76px;height:76px;right:6px;bottom:8px;font-size:30px;background:rgba(200,69,47,.42)}
+#tpad #tRun{width:52px;height:52px;right:96px;bottom:2px;font-size:20px}#tpad #tRun.on{background:rgba(232,180,90,.5)}
+#tpad #tMap{width:46px;height:46px;right:100px;bottom:76px;font-size:18px}
+#tpad #tTalk{width:52px;height:52px;right:18px;bottom:104px;font-size:20px}
+body.touch #act{bottom:calc(env(safe-area-inset-bottom) + 210px)!important}
+body.touch.inmenu .hud,body.touch.inmenu #joy,body.touch.inmenu #mini,body.touch.inmenu #tpad{display:none!important}
+body.touch #miPair{display:none}
+@media (max-width:600px){#clock{padding:8px 11px}#clock .t{font-size:17px}#clock .s{font-size:10.5px}.hud .ibtn{width:38px;height:38px;font-size:16px}#mini{width:104px!important;height:104px!important}#title .mi{padding:13px 16px}}
 #act{position:fixed;right:calc(env(safe-area-inset-right) + 26px);bottom:calc(env(safe-area-inset-bottom) + 74px);z-index:6;display:flex;flex-direction:column;align-items:center;gap:6px;opacity:0;pointer-events:none;transition:opacity .3s;cursor:pointer}
 #act.show{opacity:1;pointer-events:auto}
 #act .b{width:76px;height:76px;border-radius:50%;background:var(--vermillion);display:grid;place-items:center;font-family:"Shippori Mincho",serif;font-size:28px;box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 0 0 3px rgba(255,255,255,.25)}
@@ -236,6 +249,7 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
 <div id="toast"></div>
 <div id="joy"><div class="k"></div></div>
 <div id="act"><div class="b" id="actK">話</div><div class="t" id="actT">Talk</div></div>
+<div id="tpad"><div class="tb" id="tRoll">転<small>Roll</small></div><div class="tb" id="tRun">走<small>Run</small></div><div class="tb" id="tMap">地<small>Map</small></div><div class="tb" id="tTalk">話<small>Sensei</small></div></div>
 <div id="chat" aria-hidden="true">
   <div class="chead">
     <div class="seal">白</div>
@@ -403,7 +417,7 @@ const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
 const smooth = (a,b,x) => { const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
 const lerp = (a,b,t) => a+(b-a)*t;
 const C = h => new THREE.Color(h);
-const isTouch = matchMedia("(pointer:coarse)").matches;
+const isTouch = matchMedia("(pointer:coarse)").matches||/[?&]touch/.test(location.search);
 
 /* ===================== time & season ===================== */
 let previewHour=null, previewIdx=-1, entered=false;
@@ -1857,7 +1871,10 @@ const keys={};
 addEventListener("keydown",e=>{ if(document.activeElement===$("#inp")) return; keys[e.code]=true; if(e.code==="KeyE"||e.code==="Space"){ e.preventDefault(); if(shodoOpen||pmode==="golf") return; if(e.code==="Space"&&!e.repeat&&(!nearest||ROLL.t>=0)&&pmode==="walk"){ startRoll(); return; } doInteract(); } if(e.code==="KeyF"&&entered&&!uiBlock()) tossFood(.6); if(e.code==="KeyM"&&entered&&!chatOpen){ const tp=$("#travelPanel"); tp.classList.contains("show")?tp.classList.remove("show"):openTravel(); } if(e.code==="Escape"&&pmode==="golf"){ e.preventDefault(); golfEnd(); return; } if(e.code==="Escape"){ if(chatOpen){ e.preventDefault(); closeChat(); } else if(entered){ e.preventDefault(); menuOpen?hideMenu():showMenu(); } } });
 addEventListener("keyup",e=>{ keys[e.code]=false; });
 const joy={x:0,y:0,id:null}; const joyEl=$("#joy"), knobEl=joyEl.querySelector(".k");
-if (isTouch) joyEl.style.display="block";
+if (isTouch){ joyEl.style.display="block"; document.body.classList.add("touch","inmenu"); }
+let TOUCHRUN=false;
+{ const tap=(id,fn)=>{ const el=$("#"+id); el.addEventListener("touchstart",e=>{ e.preventDefault(); e.stopPropagation(); el.classList.add("dn"); fn(); },{passive:false}); el.addEventListener("touchend",()=>el.classList.remove("dn")); el.addEventListener("click",e=>{ e.stopPropagation(); fn(); }); };
+  tap("tRoll",()=>startRoll()); tap("tRun",()=>{ TOUCHRUN=!TOUCHRUN; $("#tRun").classList.toggle("on",TOUCHRUN); }); tap("tMap",()=>openTravel()); tap("tTalk",()=>openChat()); }
 joyEl.addEventListener("pointerdown",e=>{ joy.id=e.pointerId; joyEl.setPointerCapture(e.pointerId); moveJoy(e); e.stopPropagation(); });
 joyEl.addEventListener("pointermove",e=>{ if(e.pointerId===joy.id) moveJoy(e); });
 const endJoy=e=>{ if(e.pointerId!==joy.id) return; joy.id=null; joy.x=joy.y=0; knobEl.style.transform=""; };
@@ -1880,7 +1897,7 @@ function showWhisper(msg,ms){ whisperBusy=true; whisperCur=msg; $("#whisperT").t
 $("#whisper").addEventListener("click",()=>{ $("#whisper").classList.remove("show"); openChat(); });
 let discT; function discover(d){ $("#discK").textContent=d.k; $("#discN").textContent=d.n; $("#disc").classList.add("show"); clearTimeout(discT); discT=setTimeout(()=>$("#disc").classList.remove("show"),3200);
   setTimeout(()=>{ whisper(d.line,9000); speak(d.line); },1800); chime(); }
-$("#hint").textContent = isTouch ? "Joystick to walk · drag to look · tap Sensei to talk" : "WASD to walk · Shift to run · Space to roll · drag to look · E to interact";
+$("#hint").textContent = isTouch ? "Joystick to walk · 転 to roll · drag to look · 話 to talk to Sensei" : "WASD to walk · Shift to run · Space to roll · drag to look · E to interact";
 
 /* ===================== audio: music + ambience ===================== */
 let actx=null, master=null, musicBus=null, soundOn=false, wfGain=null, crickGain=null, musicTimer=null, fluteTimer=null, crickTimer=null;
@@ -2145,7 +2162,7 @@ addInteract({sensei:true,k:"話",label:"Talk",r:7,fn:()=>openChat()});
 addInteract({pond:true,k:"餌",label:"Feed koi",r:1,fn:()=>tossFood(.55)});
 function updateNearest(){ nearest=null; let bd=1e9;
   for(const it of interacts){ if((it.zone||"world")!==zone||(it.when&&!it.when())) continue; if(zone==="world"&&pmode!=="walk"&&!it.when&&!it.sensei) continue; const x=it.sensei?sensei.position.x:it.x, z=it.sensei?sensei.position.z:it.z; let d=Math.hypot(player.position.x-x,player.position.z-z); if(it.pond){ d=((player.position.x/(PRX+3.2))**2+(player.position.z/(PRZ+3.2))**2<1)?.9:99; } if(d<it.r && d<bd+(it.sensei?3:0)){ bd=d; nearest=it; } }
-  const a=$("#act"); if(nearest&&entered&&!chatOpen){ $("#actK").textContent=nearest.k; $("#actT").textContent=nearest.label+(isTouch?"":" · E"); a.classList.add("show"); } else a.classList.remove("show"); }
+  const a=$("#act"); if(nearest&&entered&&!chatOpen){ $("#actK").textContent=nearest.k; $("#actT").textContent=nearest.label+(isTouch?"":" · E"); a.classList.add("show"); } else a.classList.remove("show"); if(isTouch) $("#tpad").classList.toggle("on",entered&&!menuOpen&&!chatOpen&&pmode==="walk"&&!MG&&zone!=="sky"); }
 
 // ---- prologue: the story opening scroll ----
 const PROLOGUE=[
@@ -2391,7 +2408,7 @@ function frame(now){
       if(POSE.kind) poseEnd();
       const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
       let mx=(rx*ix - fwd.x*iz), mz=(rz*ix - fwd.z*iz); const ml=Math.hypot(mx,mz); mx/=ml; mz/=ml;
-      const run=keys.ShiftLeft||keys.ShiftRight||Math.hypot(joy.x,joy.y)>.92||Math.hypot(rjoy.x,rjoy.y)>.92||Math.hypot(P1J.x,P1J.y)>.92||PAD1.run; const sp=(pmode==="boat"?4.4:run?9:5)*mag; speedNow=lerp(speedNow,sp,dt*8);
+      const run=TOUCHRUN||keys.ShiftLeft||keys.ShiftRight||Math.hypot(joy.x,joy.y)>.92||Math.hypot(rjoy.x,rjoy.y)>.92||Math.hypot(P1J.x,P1J.y)>.92||PAD1.run; const sp=(pmode==="boat"?4.4:run?9:5)*mag; speedNow=lerp(speedNow,sp,dt*8);
       const old=player.position.clone(); const np={x:old.x+mx*speedNow*dt, z:old.z+mz*speedNow*dt}; collide(np);
       player.position.x=np.x; player.position.z=np.z; player.rotation.y=angLerp(player.rotation.y,Math.atan2(mx,mz),Math.min(1,dt*12));
       walkPh+=dt*speedNow*2.2;
@@ -3628,8 +3645,8 @@ document.querySelectorAll("[data-game]").forEach(b=>b.addEventListener("click",(
 
 /* ===================== main menu ===================== */
 let menuOpen=true, lastReply="", firstEnter=true;
-function showMenu(){ menuOpen=true; $("#hint").style.opacity=0; $("#title").classList.remove("gone"); $("#miEnterT").textContent=entered?"Return to the Garden":"Enter the Garden"; closeChat(); hostPush(); }
-function hideMenu(){ menuOpen=false; $("#hint").style.opacity=chatOpen?0:1; $("#title").classList.add("gone"); ["pairPanel","setPanel"].forEach(id=>$("#"+id).classList.remove("show")); hostPush(); }
+function showMenu(){ menuOpen=true; document.body.classList.add("inmenu"); $("#hint").style.opacity=0; $("#title").classList.remove("gone"); $("#miEnterT").textContent=entered?"Return to the Garden":"Enter the Garden"; closeChat(); hostPush(); }
+function hideMenu(){ menuOpen=false; document.body.classList.remove("inmenu"); $("#hint").style.opacity=chatOpen?0:1; $("#title").classList.add("gone"); ["pairPanel","setPanel"].forEach(id=>$("#"+id).classList.remove("show")); hostPush(); }
 async function enterGame(){
   setTimeout(function tryBank(){ if(busy||chatOpen||MG){ setTimeout(tryBank,60000); return; } refreshBank(); },150000);
   hideMenu(); controls.autoRotate=false; if(!window.sensei){ try{ const el=document.documentElement; if(!document.fullscreenElement&&el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }catch(e){} }
