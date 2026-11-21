@@ -37,3 +37,16 @@ You are building Gabriel's game in Unreal Engine 5.8 through Epic's Unreal MCP p
 
 ## Reference
 **Use LAYOUT.md and valley_map.jpg for the valley layout** (extracted from the playtested browser prototype, with Gabriel's changes). The prototype source (web/garden-source.html in the GitHub repo) is huge; don't read it unless you need specific story text or feature details, and then search it rather than reading it whole.
+
+## Carry over every prototype feature (rebuild them properly; nothing gets dropped)
+Gabriel playtested all of these in the browser prototype. Rebuild each one at Unreal quality, using real skeletal animation (Game Animation Sample / motion matching) instead of the prototype's code-driven poses. Track progress against this list in BUILD_LOG.md.
+- Movement: BotW mouse look (no cursor), walk/run, dodge roll, climbing anything sensible, gliding, swimming.
+- Poses/actions: bow, sit, soak, read, strike, offer, nod (when a prompt says "bow", the character bows).
+- Koi: calm burst-and-glide swimming, forked tails that bend, no clipping, spirit koi with a trail. Possession intro: your soul flies out of your body into the fish. Koi views: chase cam, face cam, eye-camera first person with an underwater look, scroll to zoom. Pond treasures, including the sword in the stone.
+- Sensei: floats over the pond, talks in his voice (calm, dry, no exclamation marks), teaches the questline, paints on his art board.
+- Checkpoints: pairs of stone lanterns, unlit until you light them, with an ember ignite animation. Fast travel: get pulled into a swirling black hole, then a loading screen.
+- Doors: real hinges, open inward with a spring, never pass through anything. The castle has one gatehouse entrance.
+- Water: clear shallows, deep teal middle, foam at the edges, visible fish; the waterfall and stream.
+- Minigames: kyudo, taiko, sand raking, calligraphy, bonsai, tea ceremony, ikebana, mini golf, climbing Kumo Peak.
+- World life: friends who move into the valley, festivals on real dates, chochin lantern strings, sky lanterns, a day/night cycle and seasons, ambient music.
+- Later areas from the prototype: sky islands (give them a real purpose), the Mirror Lake lantern quest, the castle interior hall.
