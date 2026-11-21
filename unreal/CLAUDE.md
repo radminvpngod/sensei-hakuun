@@ -36,4 +36,4 @@ You are building Gabriel's game in Unreal Engine 5.8 through Epic's Unreal MCP p
 8. Nothing "random and incoherent": every prop has a reason to be where it is.
 
 ## Reference
-The browser prototype lives in ../web/garden-source.html (three.js). Use it for layout, story text and feature ideas, not for code.
+**Use LAYOUT.md and valley_map.jpg for the valley layout** (extracted from the playtested browser prototype, with Gabriel's changes). The prototype source (web/garden-source.html in the GitHub repo) is huge; don't read it unless you need specific story text or feature details, and then search it rather than reading it whole.
