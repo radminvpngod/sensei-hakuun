@@ -50,3 +50,8 @@ Gabriel playtested all of these in the browser prototype. Rebuild each one at Un
 - Minigames: kyudo, taiko, sand raking, calligraphy, bonsai, tea ceremony, ikebana, mini golf, climbing Kumo Peak.
 - World life: friends who move into the valley, festivals on real dates, chochin lantern strings, sky lanterns, a day/night cycle and seasons, ambient music.
 - Later areas from the prototype: sky islands (give them a real purpose), the Mirror Lake lantern quest, the castle interior hall.
+
+## Idea backlog (from Gabriel, not scheduled yet)
+- Kazahana mornings: on a clear day during Shōsetsu (late Nov), a few slow flakes drift down from the sky islands. Catch one with the calligraphy brush and it leaves a single white stroke that can't be made any other way. Seven caught flakes and Sensei paints a snow scroll for the art board.
+- Friends who tend the garden: a friend NPC with a shovel and an unhurried walk/idle blend works the garden while you're away (Mesh2Motion-style remix of walk + idle).
+- Phone remote with a small real 3D pond (Pixi3D beta, glTF, toon materials) for the companion app later.
