@@ -231,7 +231,7 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
 #prologue .seal.in{opacity:.85;transform:rotate(-6deg) scale(1)}
 #prologue .nav{position:absolute;left:0;right:0;bottom:calc(15vh - 40px);text-align:center;font-size:12px;letter-spacing:.2em;color:rgba(255,255,255,.55)}
 </style>
-<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js","three/addons/":"./vendor/addons/"}}</script>
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -273,6 +273,7 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
     <div class="mi" id="miGames"><span class="k">遊</span>Games</div>
     <div class="mi" id="miScrolls"><span class="k">巻</span>Scroll Library</div>
     <div class="mi" id="miSettings"><span class="k">設</span>Settings</div>
+    <div class="mi" id="miStyle"><span class="k">紙</span><span id="miStyleT">Try Paper Samurai (WIP)</span></div>
     <div class="mi" id="miPair"><span class="k">繋</span>Connect a phone remote</div>
   </div>
   <div class="ver">CHAPTER I · THE GARDEN</div>
@@ -375,6 +376,7 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
     <div class="rbtns"><div class="rb a" data-b="a">A</div><div class="rb" data-b="b">B</div><div class="rb" data-b="talk">話</div><div class="rb" data-b="home">⌂</div></div></div>
 </div>
 
+<script src="brain-client.js"></script>
 <script type="module">
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -421,6 +423,7 @@ const smooth = (a,b,x) => { const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); 
 const lerp = (a,b,t) => a+(b-a)*t;
 const C = h => new THREE.Color(h);
 const isTouch = matchMedia("(pointer:coarse)").matches||/[?&]touch/.test(location.search);
+const PAPER = /[?&]paper/.test(location.search) || (()=>{ try{ return localStorage.getItem("sh_style")==="paper"; }catch(e){ return false; } })();
 
 /* ===================== time & season ===================== */
 let previewHour=null, previewIdx=-1, entered=false;
@@ -530,6 +533,26 @@ composer.addPass(new ShaderPass({uniforms:{tDiffuse:{value:null}},vertexShader:"
   fragmentShader:"uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ vec4 c=texture2D(tDiffuse,vUv); if(any(isnan(c))||any(isinf(c))) c=vec4(0.,0.,0.,1.); gl_FragColor=clamp(c,0.,64.); }"}));
 const bloom=new UnrealBloomPass(new THREE.Vector2(256,256),.3,.5,.9); composer.addPass(bloom);
 composer.addPass(new OutputPass());
+// Paper Samurai: ink outlines from colour edges + warm paper grain
+const paperPass=new ShaderPass({uniforms:{tDiffuse:{value:null},time:{value:0}},vertexShader:"varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
+  fragmentShader:`uniform sampler2D tDiffuse; uniform float time; varying vec2 vUv;
+  float lum(vec3 c){ return dot(c,vec3(.299,.587,.114)); }
+  float hash(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+  float vn(vec2 p){ vec2 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y); }
+  void main(){ vec2 ts=1./vec2(textureSize(tDiffuse,0)); vec4 c=texture2D(tDiffuse,vUv);
+    float tl=lum(texture2D(tDiffuse,vUv+ts*vec2(-1.5,1.5)).rgb), t=lum(texture2D(tDiffuse,vUv+ts*vec2(0.,1.5)).rgb), tr=lum(texture2D(tDiffuse,vUv+ts*vec2(1.5,1.5)).rgb);
+    float l=lum(texture2D(tDiffuse,vUv+ts*vec2(-1.5,0.)).rgb), r=lum(texture2D(tDiffuse,vUv+ts*vec2(1.5,0.)).rgb);
+    float bl=lum(texture2D(tDiffuse,vUv+ts*vec2(-1.5,-1.5)).rgb), b=lum(texture2D(tDiffuse,vUv+ts*vec2(0.,-1.5)).rgb), br=lum(texture2D(tDiffuse,vUv+ts*vec2(1.5,-1.5)).rgb);
+    float gx=-tl-2.*l-bl+tr+2.*r+br, gy=-tl-2.*t-tr+bl+2.*b+br; float e=sqrt(gx*gx+gy*gy);
+    float ink=smoothstep(.28,.7,e);
+    vec3 col=c.rgb; col=mix(col,col*vec3(.30,.26,.30),ink*.65);
+    col=floor(col*10.+.5)/10.*.35+col*.65;                       /* gentle flat-colour banding */
+    vec2 px=gl_FragCoord.xy; float g=vn(px*.35)*.6+vn(px*1.3)*.4; float fib=vn(vec2(px.x*.08,px.y*1.9));
+    col*=.93+.07*g; col+=vec3(.012,.010,.004)*fib;
+    col=mix(col,col*vec3(1.04,1.0,.93)+vec3(.02,.015,0.),.6);    /* warm paper */
+    vec2 q=vUv-.5; col*=1.-dot(q,q)*.35;
+    gl_FragColor=vec4(col,c.a); }`});
+paperPass.enabled=PAPER; composer.addPass(paperPass); if(PAPER){ bloom.strength=.12; }
 
 const gm=new THREE.DataTexture(new Uint8Array([105,105,105,255,170,170,170,255,225,225,225,255,255,255,255,255]),4,1,THREE.RGBAFormat);
 gm.minFilter=gm.magFilter=THREE.NearestFilter; gm.needsUpdate=true;
@@ -1811,6 +1834,124 @@ const legs=[-1,1].map(s=>{ const g=new THREE.Group(); g.position.set(s*.15,.5,0)
 const pUpper=new THREE.Group(); pUpper.position.y=.95; pRig.add(pUpper); [torso,hood,hoodTip,face,scarf,scarfTail,...pRig.children.filter(o=>o.isMesh&&o.geometry.type==="SphereGeometry"&&o!==hood)].forEach(o=>{ pRig.remove(o); o.position.y-=.95; pUpper.add(o); });
 shadowy(player,true,false);
 const START=new THREE.Vector3(0,0,46); player.position.set(START.x,H(START.x,START.z),START.z); player.rotation.y=Math.PI;
+/* ===================== PAPER SAMURAI (experimental art style) ===================== */
+// Flat paper-cutout characters with a white paper border that flip like Paper Mario, plus an ink + paper-grain look.
+const PAPERX={ix:0,iz:1,mag:0,face:1,sx:1,back:false,ft:0,step:0};
+function paperInput(ix,iz,mag){ PAPERX.mag=mag; if(mag>.08){ if(Math.abs(ix)>.25) PAPERX.face=ix>0?1:-1; if(Math.abs(iz)>.3) PAPERX.back=iz<0; } }
+function paperCut(w,h,draw,border=10){
+  const a=document.createElement("canvas"); a.width=w; a.height=h; const g=a.getContext("2d"); draw(g,w,h);
+  const c=document.createElement("canvas"); c.width=w; c.height=h; const o=c.getContext("2d");
+  // paper border: the silhouette dilated, filled white, with a soft grey shadow edge
+  for(let i=0;i<24;i++){ const t=i/24*Math.PI*2; o.drawImage(a,Math.cos(t)*border,Math.sin(t)*border+2); }
+  o.globalCompositeOperation="source-in"; o.fillStyle="#cfc7b8"; o.fillRect(0,0,w,h); o.globalCompositeOperation="source-over";
+  const b=document.createElement("canvas"); b.width=w; b.height=h; const bg=b.getContext("2d");
+  for(let i=0;i<24;i++){ const t=i/24*Math.PI*2; bg.drawImage(a,Math.cos(t)*border,Math.sin(t)*border); }
+  bg.globalCompositeOperation="source-in"; bg.fillStyle="#fffdf6"; bg.fillRect(0,0,w,h);
+  o.drawImage(b,0,0); o.drawImage(a,0,0);
+  // faint paper fibres over the whole cutout
+  o.globalCompositeOperation="source-atop"; for(let i=0;i<260;i++){ o.fillStyle=`rgba(${Math.random()<.5?255:120},${Math.random()<.5?250:110},230,${Math.random()*.06})`; o.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*3,1); }
+  o.globalCompositeOperation="source-over";
+  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t;
+}
+const rr=(g,x,y,w,h,r)=>{ g.beginPath(); g.roundRect(x,y,w,h,r); };
+function drawSamurai(g,W,H,back,step){
+  const cx=W/2, s=W/256; g.save(); g.scale(s,s); const X=128;
+  const ink="#1d1a22";
+  // legs + sandals
+  const lo=step?10:0;
+  [[-1,lo],[1,-lo]].forEach(([d,o])=>{ g.fillStyle="#232a3d"; rr(g,X+d*26-14,250+o*.4,28,48-o*.6,12); g.fill(); g.fillStyle="#6b4a2c"; rr(g,X+d*26-17,290-o*.2,34,12,6); g.fill(); });
+  // hakama (wide trousers)
+  g.fillStyle="#2e3a5c"; g.beginPath(); g.moveTo(X-50,262); g.lineTo(X-36,178); g.lineTo(X+36,178); g.lineTo(X+50,262); g.quadraticCurveTo(X,270,X-50,262); g.fill();
+  g.strokeStyle="#22294a"; g.lineWidth=3; [-18,0,18].forEach(d=>{ g.beginPath(); g.moveTo(X+d*.8,184); g.lineTo(X+d*1.2,258); g.stroke(); });
+  // kimono top
+  g.fillStyle="#3c5a8c"; rr(g,X-44,138,88,58,22); g.fill();
+  // arms
+  g.fillStyle="#3c5a8c"; rr(g,X-62,144,26,52,13); g.fill(); rr(g,X+36,144,26,52,13); g.fill();
+  g.fillStyle="#f3cfae"; g.beginPath(); g.arc(X-49,198,10,0,7); g.arc(X+49,198,10,0,7); g.fill();
+  if(!back){ g.fillStyle="#f4ecd8"; g.beginPath(); g.moveTo(X-18,140); g.lineTo(X,176); g.lineTo(X+18,140); g.closePath(); g.fill(); g.strokeStyle="#c8452f"; g.lineWidth=5; g.beginPath(); g.moveTo(X-16,140); g.lineTo(X,172); g.lineTo(X+16,140); g.stroke(); }
+  // obi sash
+  g.fillStyle="#c8452f"; rr(g,X-46,176,92,16,6); g.fill(); g.fillStyle="#e8c25a"; rr(g,X-6,177,12,14,3); g.fill();
+  // katana: on the hip from the front, across the back from behind
+  g.save(); if(back){ g.translate(X,170); g.rotate(-.75); } else { g.translate(X+40,186); g.rotate(-.35); }
+  g.fillStyle="#2a2028"; rr(g,-70,-6,110,12,5); g.fill(); g.fillStyle="#e8c25a"; rr(g,38,-11,8,22,3); g.fill(); g.fillStyle="#6e2b2b"; rr(g,46,-5,40,10,4); g.fill(); g.restore();
+  // scarf tail
+  g.fillStyle="#c8452f"; g.beginPath(); g.moveTo(X+18,132); g.quadraticCurveTo(X+58,126,X+70,step?150:142); g.lineTo(X+60,156); g.quadraticCurveTo(X+44,140,X+16,146); g.fill();
+  // head
+  g.fillStyle=back?"#2a2026":"#f6d9bb"; g.beginPath(); g.ellipse(X,100,44,42,0,0,7); g.fill();
+  if(!back){ g.fillStyle="#2a2026"; g.beginPath(); g.ellipse(X,80,44,24,0,Math.PI,0); g.fill(); // fringe
+    g.fillStyle=ink; [-1,1].forEach(d=>{ g.beginPath(); g.ellipse(X+d*16,104,6,9,0,0,7); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(X+d*16+2,100,2.4,0,7); g.fill(); g.fillStyle=ink; });
+    g.fillStyle="rgba(232,120,110,.45)"; g.beginPath(); g.ellipse(X-30,118,9,5,0,0,7); g.ellipse(X+30,118,9,5,0,0,7); g.fill();
+    g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); g.arc(X,118,6,.2,Math.PI-.2); g.stroke(); }
+  else { g.fillStyle="#1d161b"; g.beginPath(); g.arc(X,70,12,0,7); g.fill(); }
+  // red scarf around the neck
+  g.fillStyle="#c8452f"; rr(g,X-36,128,72,16,8); g.fill();
+  // kasa (straw hat)
+  g.fillStyle="#d9b56b"; g.beginPath(); g.moveTo(X-96,72); g.quadraticCurveTo(X,6,X+96,72); g.quadraticCurveTo(X,58,X-96,72); g.fill();
+  g.strokeStyle="#b48a44"; g.lineWidth=3; for(let i=-3;i<=3;i++){ g.beginPath(); g.moveTo(X+i*8,26); g.lineTo(X+i*28,68); g.stroke(); }
+  g.fillStyle="#8a6232"; g.beginPath(); g.ellipse(X,64,96,7,0,0,7); g.fill();
+  g.restore();
+}
+function drawSensei(g,W,H){
+  const s=W/320; g.save(); g.scale(s,s);
+  // wispy tail
+  g.fillStyle="rgba(170,225,255,.85)"; [[-1,0],[0,1],[1,.6]].forEach(([k,o])=>{ g.beginPath(); g.moveTo(96,120); g.quadraticCurveTo(50,100+k*30,8,96+k*44); g.quadraticCurveTo(46,118+k*12,96,132); g.fill(); });
+  // body
+  g.fillStyle="#f2fbff"; g.beginPath(); g.ellipse(170,124,88,46,0,0,7); g.fill();
+  g.fillStyle="#ffcfc4"; g.beginPath(); g.ellipse(150,104,26,12,-.2,0,7); g.ellipse(196,140,20,9,.2,0,7); g.fill();
+  g.save(); g.beginPath(); g.ellipse(170,124,88,46,0,0,7); g.clip(); g.fillStyle="#7d9ad6"; [128,164].forEach(x=>{ g.beginPath(); g.moveTo(x-7,60); g.quadraticCurveTo(x+6,124,x-7,190); g.lineTo(x+7,190); g.quadraticCurveTo(x+20,124,x+7,60); g.fill(); }); g.restore();
+  // fins
+  g.fillStyle="rgba(190,232,255,.9)"; g.beginPath(); g.moveTo(170,166); g.quadraticCurveTo(150,198,130,192); g.quadraticCurveTo(150,178,160,164); g.fill();
+  // eye + smile
+  g.fillStyle="#1d1a22"; g.beginPath(); g.ellipse(226,114,7,9,0,0,7); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(228,110,2.5,0,7); g.fill();
+  g.strokeStyle="#1d1a22"; g.lineWidth=3; g.beginPath(); g.arc(240,130,9,.3,Math.PI-.6); g.stroke();
+  g.fillStyle="rgba(232,120,110,.45)"; g.beginPath(); g.ellipse(214,134,9,5,0,0,7); g.fill();
+  // whiskers
+  g.strokeStyle="#9fbcd8"; g.lineWidth=3; g.beginPath(); g.moveTo(252,128); g.quadraticCurveTo(280,140,290,170); g.moveTo(250,124); g.quadraticCurveTo(284,118,300,132); g.stroke();
+  // straw hat
+  g.fillStyle="#d9b56b"; g.beginPath(); g.moveTo(140,86); g.quadraticCurveTo(200,18,262,80); g.quadraticCurveTo(200,70,140,86); g.fill();
+  g.strokeStyle="#b48a44"; g.lineWidth=3; for(let i=-3;i<=3;i++){ g.beginPath(); g.moveTo(201+i*5,40); g.lineTo(201+i*17,78); g.stroke(); }
+  g.fillStyle="#8a6232"; g.beginPath(); g.ellipse(201,80,62,5,-.1,0,7); g.fill();
+  g.restore();
+}
+const PAPERSP={};
+function paperSprite(texs,w,h,yOff=0){
+  const geo=new THREE.PlaneGeometry(w,h); geo.translate(0,h/2+yOff,0);
+  const m=new THREE.MeshBasicMaterial({map:texs[0],transparent:true,alphaTest:.45,side:THREE.DoubleSide});
+  const mesh=new THREE.Mesh(geo,m); mesh.castShadow=true;
+  mesh.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:texs[0],alphaTest:.45});
+  mesh.userData.texs=texs; scene.add(mesh); return mesh;
+}
+function paperSetTex(m,t){ if(m.material.map!==t){ m.material.map=t; m.customDepthMaterial.map=t; m.material.needsUpdate=true; m.customDepthMaterial.needsUpdate=true; } }
+function hideFromCamera(root){ root.traverse(o=>{ if(o.isMesh||o.isPoints||o.isLine||o.isSprite) o.layers.set(5); }); }
+if(PAPER){
+  const S_=(b,st)=>paperCut(256,320,(g,w,h)=>drawSamurai(g,w,h,b,st),9);
+  PAPERSP.p=paperSprite([S_(false,0),S_(false,1),S_(true,0),S_(true,1)],1.8,2.25,-.03);
+  PAPERSP.s=paperSprite([paperCut(320,220,drawSensei,8)],3.6,2.48,-1.25); PAPERSP.s.castShadow=false;
+  hideFromCamera(pRig); hideFromCamera(sRig);
+  document.title="Paper Samurai (WIP)";
+}
+const _pv=new THREE.Vector3(), _pv2=new THREE.Vector3(); let _sPrev=null, _sFace=1, _sSx=1;
+function paperTick(dt){
+  if(!PAPER) return;
+  const yaw=Math.atan2(camera.position.x-controls.target.x, camera.position.z-controls.target.z);
+  // player
+  const p=PAPERSP.p; const P=PAPERX; const moving=P.mag>.08||ROLL.t>=0;
+  p.visible=pmode!=="koi"||true; p.position.copy(player.position); p.rotation.set(0,yaw,0);
+  P.ft+=dt; if(moving&&P.ft>.14){ P.ft=0; P.step^=1; } if(!moving) P.step=0;
+  paperSetTex(p,p.userData.texs[(P.back?2:0)+P.step]);
+  P.sx+=Math.sign(P.face-P.sx)*Math.min(Math.abs(P.face-P.sx),dt*11);   // the paper flip
+  const bob=moving?Math.abs(Math.sin(clock*13))*.07:0, breathe=moving?1:1+Math.sin(clock*2.2)*.012;
+  p.scale.set(P.sx||.001, breathe, 1); p.position.y+=bob;
+  p.rotation.z=ROLL.t>=0?-P.face*(ROLL.t/ROLL_T)*Math.PI*2:0;
+  if(ROLL.t>=0) p.position.y+=.35;
+  p.visible=!(typeof POSE!=="undefined"&&POSE.kind==="soak");
+  // sensei: face the way he drifts, relative to the camera
+  const s=PAPERSP.s; sensei.getWorldPosition(_pv); s.position.copy(_pv); s.rotation.set(0,yaw,0);
+  if(_sPrev){ const dx=_pv.x-_sPrev.x, dz=_pv.z-_sPrev.z; const right=Math.cos(yaw)*dx - Math.sin(yaw)*dz; if(Math.abs(right)>.004) _sFace=right>0?1:-1; } _sPrev=(_sPrev||new THREE.Vector3()).copy(_pv);
+  _sSx+=Math.sign(_sFace-_sSx)*Math.min(Math.abs(_sFace-_sSx),dt*6);
+  s.scale.set(_sSx||.001,1+Math.sin(clock*1.7)*.02,1); s.visible=sensei.visible;
+}
+
 
 /* ===================== Sensei's own life ===================== */
 const GATE={x:CASTLE.x-7.5,z:CASTLE.z+7};
@@ -2457,12 +2598,14 @@ function frame(now){
   const dt=Math.min(.05,(now-last)/1000); last=now; clock+=dt; tUni.value=clock;
   // ---- player movement ----
   hostFrame();
+  if(PAPER) paperTick(dt);
   padPoll(dt); golfFrame(dt); skyFxFrame(dt); lifeFrame(dt); advFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   const advMode=pmode==="climb"||pmode==="fall"||pmode==="glide"||pmode==="koi";
   if(entered&&!chatOpen&&!uiBlock()&&pmode!=="golf"&&!advMode&&!TRAVELING&&!(RCK.intro)){
     let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x+rjoy.x+P1J.x+PAD1.x;
     let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y+P1J.y+PAD1.y;
     const mag=Math.min(1,Math.hypot(ix,iz));
+    if(PAPER) paperInput(ix,iz,mag);
     if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
       if(POSE.kind) poseEnd();
       const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
@@ -3756,6 +3899,8 @@ $("#miEnter").addEventListener("click",()=>enterGame());
 $("#miScrolls").addEventListener("click",()=>openScrolls());
 $("#miTalk").addEventListener("click",async()=>{ await enterGame(); setTimeout(()=>{ openChat(); toast("Sensei drifts over to you."); },400); });
 $("#miSettings").addEventListener("click",()=>{ refreshSettings(); $("#setPanel").classList.add("show"); });
+$("#miStyle").addEventListener("click",()=>{ try{ localStorage.setItem("sh_style",PAPER?"3d":"paper"); }catch(e){} const u=new URL(location.href); u.searchParams.delete("paper"); location.replace(u.toString()); });
+if(PAPER){ $("#miStyleT").textContent="Back to the 3D garden"; const h=$("#title h1"); if(h) h.textContent="Paper Samurai"; const sb=$("#title .sub"); if(sb) sb.textContent="紙の侍 · EXPERIMENTAL · WORK IN PROGRESS"; const k=$("#title .kanji"); if(k) k.textContent="紙"; }
 $("#miPair").addEventListener("click",()=>{ if(window.sensei){ window.sensei.send("open","pair"); return; } initAudio(); $("#pairPanel").classList.add("show"); hostInit(); });
 // when the window is hidden (the app closes it to the tray) the garden freezes: no sound, no speech
 let wasSound=false; document.addEventListener("visibilitychange",()=>{ if(document.hidden){ wasSound=soundOn; if(soundOn) stopSound(); stopSpeaking(); if(window.senseiVoice) senseiVoice.stop(); } else if(wasSound){ startSound(); wasSound=false; } });
