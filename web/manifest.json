@@ -1,7 +1,7 @@
 {
-  "version": 42,
+  "version": 43,
   "shellApi": 2,
-  "notes": "Starter valley cleaned up (no lake, maze, orchard, Kumo Peak, minigames, boat, golf, onsen); castle sealed; possession locked to the story; mouse no longer spins; dev edits save to the cloud; English-only hotbar.",
+  "notes": "New region: the Snowy Pass. Walk out the east side of the valley, up a snowy gorge past a camp, a frozen creek and the Frozen Falls, to Yukimura village, Yuki Onsen and the Summit Shrine.",
   "files": [
     "brain-client.js",
     "core.js",
