@@ -1,7 +1,7 @@
 {
-  "version": 41,
+  "version": 42,
   "shellApi": 2,
-  "notes": "Paper koi and paper villagers; forward roll; lantern black hole; babble voice; camera resets smoothly; tab out opens the menu; simpler menu; dev editor (F2).",
+  "notes": "Starter valley cleaned up (no lake, maze, orchard, Kumo Peak, minigames, boat, golf, onsen); castle sealed; possession locked to the story; mouse no longer spins; dev edits save to the cloud; English-only hotbar.",
   "files": [
     "brain-client.js",
     "core.js",

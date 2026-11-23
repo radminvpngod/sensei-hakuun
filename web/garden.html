@@ -236,7 +236,7 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
 <body>
 <canvas id="c"></canvas>
 <div class="grain"></div><div class="vignette"></div>
-<style>#miTalk,#miGames,#miScrolls,#miStyle,#miPair,#miRemote,#voiceBtn,#lifeBtn,#scrollBtn,#soundBtn{display:none!important}</style>
+<style>#miTalk,#miGames,#miScrolls,#miStyle,#miPair,#miRemote,#voiceBtn,#lifeBtn,#scrollBtn,#soundBtn,#actK{display:none!important}</style>
 <div class="hud">
   <div class="card" id="clock"><div class="t" id="clockT">--:--</div><div class="s" id="clockS"></div><div class="s" id="sStat" style="margin-top:4px;opacity:.95;color:#d9f2ff"></div></div>
   <div class="btns">
@@ -480,12 +480,7 @@ const MZH=MZ.n*MZ.cell/2;
 const ROADS=[
   [[0,44],[0,48]],
   [[-6,-17],[0,-40],[0,-57]],
-  [[22,10],[40,16],[45,22]],
-  [[28,-30],[44,-40],[55,-46]],
-  [[-26,4],[-42,-6],[-48,-12]],
-  [[-12,30],[-30,44]],
-  [[5,46],[GOLF.x-GOLF.w/2-1.5,GOLF.z+2]],
-  [[GOLF.x-4,GOLF.z+GOLF.d/2+1.5],[26,58],[18,64],[SQ.x+3,SQ.z-SQ.r+1]],
+  // (v42) roads to the lake, onsen, maze, orchard and golf removed with those places
   [[0,48],[3,60],[SQ.x-2,SQ.z-SQ.r+1]],
 ];
 const lakeE=(x,z)=>((x-LAKE.x)/LAKE.a)**2+((z-LAKE.z)/LAKE.b)**2;
@@ -503,14 +498,12 @@ function H0(x,z){
   h += 5.4*(1-smooth(19.5,31,Math.hypot(x-CASTLE.x,z-CASTLE.z)));
   h += 15*(1-smooth(9,15,Math.hypot(x-CLIFF.x,z-CLIFF.z)));
   const ds=Math.hypot(x-SHR.x,z-SHR.z); h += SHR.h*(1-smooth(SHR.r,SHR.r+17,ds));
-  const dO=Math.hypot(x-ONS.x,z-ONS.z); h += ONS.hill*(1-smooth(7,18,dO)); if(dO<ONS.r+1) h -= 1.1*(1-smooth(ONS.r-.8,ONS.r+1,dO));
+  // (v42) the onsen hill moved to the Snowy Pass
   if(inVillage(x,z)||Math.hypot(x-SQ.x,z-SQ.z)<SQ.r+3){ h=lerp(h,.15,.85); }
   else { const vx=Math.max(VIL.x0-x,x-VIL.x1,0), vz=Math.max(VIL.z0-z,z-VIL.z1,0); const vd=Math.hypot(vx,vz); if(vd<8) h=lerp(.15,h,smooth(0,8,vd)); }
-  if(inMaze(x,z,4)){ const mx=Math.max(Math.abs(x-MZ.x)-MZH,Math.abs(z-MZ.z)-MZH,0); h=lerp(.3,h,smooth(0,4,mx)); }
-  if(inGolf(x,z,4)){ const gx=Math.max(Math.abs(x-GOLF.x)-GOLF.w/2,Math.abs(z-GOLF.z)-GOLF.d/2,0); h=lerp(.2,h,smooth(0,4,gx)); }
   const sd=streamDist(x,z); if (sd<1.8) h -= .5*(1-sd/1.8);
   const pd=Math.hypot(x-POOL.x,z-POOL.z); if (pd<5) h -= 1.0*(1-smooth(2.5,5,pd));
-  const le=lakeE(x,z); if(le<1.6){ h=lerp(-2.2,h,smooth(.78,1.25,le)); const di=Math.hypot(x-ISL.x,z-ISL.z); if(di<ISL.r+2) h=Math.max(h,lerp(.8,-2.2,smooth(ISL.r*.6,ISL.r+1.6,di))); }
+  // (v42) Mirror Lake removed from the starter valley
   const e=(x/PRX)**2+(z/PRZ)**2; if (e<1.4) h=lerp(-1.7,h,smooth(.72,1.12,e));
   return h;
 }
@@ -730,19 +723,19 @@ function terrainColor(x,z,h,out=new THREE.Color()){
   const m2=fbm(x*.03-9,z*.03+4); if(m2>.62) out.lerp(TCOL.moss,(m2-.62)*2.2);
   if (h>14) out.lerp(TCOL.snow,clamp((h-14)/10,0,1)*(S==="summer"?.4:.9));
   const e=(x/PRX)**2+(z/PRZ)**2; if(e<1.18) out.lerp(e<1?TCOL.mud:TCOL.sand, e<1?.9:.5);
-  const le=lakeE(x,z); if(le<1.25) out.lerp(le<.92?TCOL.mud:TCOL.sand, le<.92?.85:.55*(1-smooth(1.05,1.25,le)));
+  
   if (streamDist(x,z)<2.2) out.lerp(TCOL.sand,.45);
   const rd=roadDist(x,z); if(rd<3) out.lerp(TCOL.dirt,(1-smooth(1,3,rd))*.25);
   if(inVillage(x,z)) out.lerp(TCOL.earth,.7);
   const dq=Math.hypot(x-SQ.x,z-SQ.z); if(dq<SQ.r) out.lerp(TCOL.stone,.85*(1-smooth(SQ.r-1.5,SQ.r,dq)));
   const ds=Math.hypot(x-SHR.x,z-SHR.z); if(ds<SHR.r) out.lerp(TCOL.gravel,.75*(1-smooth(SHR.r-2,SHR.r,ds)));
-  const dO=Math.hypot(x-ONS.x,z-ONS.z); if(dO<14) out.lerp(TCOL.snow,1-smooth(8,14,dO));
-  const dr=Math.hypot(x-ORC.x,z-ORC.z); if(dr<ORC.r+4) out.lerp(TCOL.petal,.3*(1-smooth(ORC.r-4,ORC.r+4,dr)));
-  if(inMaze(x,z)) out.lerp(TCOL.moss,.55);
-  if(inGolf(x,z,1)) out.lerp(TCOL.green,.5);
+
+
+
+
   return out; }
 [[47,-20,4.5],[57,-14,2.6]].forEach(([fx,fz,fr])=>{ let y=0; for(let k=0;k<8;k++) y+=H(fx+Math.cos(k/8*TAU)*fr,fz+Math.sin(k/8*TAU)*fr); FLATS.push({x:fx,z:fz,r:fr,y:y/8}); });
-{ const hx=ONS.x+6.6, hz=ONS.z-2; let y=0; for(let a=0;a<8;a++) y+=H(hx+Math.cos(a/8*TAU)*3,hz+Math.sin(a/8*TAU)*3); FLATS.push({x:hx,z:hz,r:3.6,y:y/8}); }
+// (v42) onsen hut flat removed with the onsen
 {
   const SIZE=380, SEG=210;
   const g=new THREE.PlaneGeometry(SIZE,SIZE,SEG,SEG); g.rotateX(-Math.PI/2);
@@ -2116,7 +2109,7 @@ const PL={locked:false,failed:false};
 function tryLock(){ if(wantLock()&&!PL.locked&&!PL.failed&&!document.pointerLockElement&&!(PL.lastTry&&performance.now()-PL.lastTry<1500)){ PL.lastTry=performance.now(); if(window.sensei&&window.sensei.send){ window.sensei.send("garden:lock",true); return; } try{ const r=canvas.requestPointerLock(); if(r&&r.catch) r.catch(()=>{ PL.fails=(PL.fails||0)+1; if(PL.fails>3) PL.failed=true; }); }catch(e){ PL.failed=true; } } }
 addEventListener("keydown",e=>{ if(/^(Key[WASD]|Arrow|Space|Shift)/.test(e.code)) tryLock(); });
 addEventListener("mousedown",()=>tryLock());
-function edgeTurn(){ const now=performance.now(), dt=Math.min(.05,(now-(PL.et||now))/1000); PL.et=now; if(PL.locked||isTouch||PL.mx===undefined||!(wantLock()||pmode==="koi")) return; const W=innerWidth, Hh=innerHeight, m=Math.min(80,W*.06); let ex=0, ey=0; if(PL.mx<m) ex=-(1-PL.mx/m); else if(PL.mx>W-m) ex=(PL.mx-(W-m))/m; if(PL.my<m) ey=-(1-PL.my/m); else if(PL.my>Hh-m) ey=(PL.my-(Hh-m))/m; if(!ex&&!ey) return;
+function edgeTurn(){ return;  const now=performance.now(), dt=Math.min(.05,(now-(PL.et||now))/1000); PL.et=now; if(PL.locked||isTouch||PL.mx===undefined||!(wantLock()||pmode==="koi")) return; const W=innerWidth, Hh=innerHeight, m=Math.min(80,W*.06); let ex=0, ey=0; if(PL.mx<m) ex=-(1-PL.mx/m); else if(PL.mx>W-m) ex=(PL.mx-(W-m))/m; if(PL.my<m) ey=-(1-PL.my/m); else if(PL.my>Hh-m) ey=(PL.my-(Hh-m))/m; if(!ex&&!ey) return;
   if(pmode==="koi"&&RCK.on){ RCK.yaw-=ex*dt*2.2; return; } PL.ax=(PL.ax||0)+ex*dt*920; PL.ay=(PL.ay||0)+ey*dt*640; }
 function wantLock(){ return !(typeof DEV!=="undefined"&&DEV.on)&&entered&&!isTouch&&!menuOpen&&!chatOpen&&!uiBlock()&&!MG&&pmode!=="golf"; }
 canvas.addEventListener("click",()=>{ if(wantLock()&&!PL.locked&&!PL.failed){ try{ const r=canvas.requestPointerLock({unadjustedMovement:true}); if(r&&r.catch) r.catch(()=>{ try{ canvas.requestPointerLock(); }catch(e){ PL.failed=true; controls.enableRotate=true; } }); }catch(e){ PL.failed=true; controls.enableRotate=true; } } });
@@ -2293,7 +2286,7 @@ async function speak(text){ if(!voiceOn||voiceDenied) return; const t=cleanForSp
 function stopSpeaking(){ if(tts) tts.stop().catch(()=>{}); if(webOK) speechSynthesis.cancel(); speaking=false; ghostStop(); }
 $("#lifeBtn").addEventListener("click",()=>openLife("art"));
 // ---- the hotbar: everything one key away ----
-const GBAR=[["餌","Feed koi",()=>tossFood(.6)],["話","Talk",()=>openChat()],["地","Map",()=>openTravel()],["遊","Games",()=>$("#gamesPanel").classList.add("show")],["画","Sensei's life",()=>openLife("art")],["写","Photo",()=>photoMode()],["巻","Scrolls",()=>openScrolls()],["設","Menu",()=>showMenu()]];
+const GBAR=[["","Feed koi",()=>tossFood(.6)],["","Talk",()=>openChat()],["","Map",()=>openTravel()],["","Photo",()=>photoMode()],["","Menu",()=>showMenu()]];
 $("#gbar").innerHTML=GBAR.map((g,i)=>`<div class="slot" data-i="${i}"><em>${i+1}</em>${g[0]}<small>${g[1]}</small></div>`).join("");
 function gbarUse(i){ const g=GBAR[i]; if(!g||!entered) return; const el=document.querySelector(`#gbar .slot[data-i="${i}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),180); } g[2](); }
 document.querySelectorAll("#gbar .slot").forEach(e=>e.addEventListener("click",()=>gbarUse(+e.dataset.i)));
@@ -2781,6 +2774,43 @@ function frame(now){
 }
 
 /* ===================== boot ===================== */
+
+/* ===================== STARTER TOWN CLEAN-UP (v42) ===================== */
+// Features cut from the starter valley for now. Some come back later in their own regions (onsen -> Snowy Pass, golf -> Kaeru's paid dream course).
+const CUT_ZONES=[
+  {id:"lake",  test:(x,z)=>((x-LAKE.x)/(LAKE.a+6))**2+((z-LAKE.z)/(LAKE.b+6))**2<1 || (x>PIER.x0-3&&x<LAKE.x&&Math.abs(z-PIER.z)<4)},
+  {id:"maze",  test:(x,z)=>Math.abs(x-MZ.x)<MZH+3&&Math.abs(z-MZ.z)<MZH+3},
+  {id:"orchard",test:(x,z)=>Math.hypot(x-ORC.x,z-ORC.z)<ORC.r+3},
+  {id:"golf",  test:(x,z)=>Math.abs(x-GOLF.x)<GOLF.w/2+2.5&&Math.abs(z-GOLF.z)<GOLF.d/2+2.5},
+  {id:"onsen", test:(x,z)=>Math.hypot(x-ONS.x,z-ONS.z)<ONS.r+9},
+  {id:"peak",  test:(x,z)=>Math.hypot(x-PEAK.x,z-PEAK.z)<PEAK.r0+4},
+  {id:"kyudo", test:(x,z)=>distSeg(x,z,47,-20,57,-14)<3.2},
+  {id:"taiko", test:(x,z)=>Math.hypot(x-9.5,z-28)<3},
+];
+const inCut=(x,z)=>CUT_ZONES.some(c=>c.test(x,z));
+const CUT_LABELS=/^(Archery|Drum|Rake|Calligraphy|Play mini golf|Board the boat|Row out onto the lake|Step onto the pier|Land on the island|Pray at the island shrine|Swim as a koi|Climb Kumo Peak|Climb back down|Ring the summit bell|Soak in the hot spring|Sit beneath the blossoms)$/;
+const _cb=new THREE.Box3(), _cv=new THREE.Vector3(), _cm=new THREE.Matrix4();
+function cutWalk(o){ for(let i=o.children.length-1;i>=0;i--){ const c=o.children[i]; if(c.isCamera||c.isLight&&!c.parent) continue;
+    if(c.isInstancedMesh){ let n=0; for(let k=0;k<c.count;k++){ c.getMatrixAt(k,_cm); _cv.setFromMatrixPosition(_cm).applyMatrix4(c.matrixWorld); if(inCut(_cv.x,_cv.z)){ _cm.makeScale(0,0,0); c.setMatrixAt(k,_cm); n++; } } if(n){ c.instanceMatrix.needsUpdate=true; c.computeBoundingSphere(); } continue; }
+    c.updateWorldMatrix(true,false); _cv.setFromMatrixPosition(c.matrixWorld);
+    if(c.userData.paper||c===terrainMesh) continue;
+    const inside=inCut(_cv.x,_cv.z);
+    if(inside){ _cb.setFromObject(c); const sz=_cb.isEmpty()?0:Math.max(_cb.max.x-_cb.min.x,_cb.max.z-_cb.min.z);
+      // the whole thing sits in a cut zone (and isn't something huge like the terrain): remove it
+      if(sz<70){ o.remove(c); continue; } }
+    if(c.children.length) cutWalk(c); } }
+function starterCleanup(){
+  try{ cutWalk(scene); }catch(e){ console.warn("[cut]",e); }
+  for(let i=circles.length-1;i>=0;i--){ const c=circles[i]; if(!c.sky&&inCut(c.x,c.z)) circles.splice(i,1); }
+  for(let i=boxes.length-1;i>=0;i--){ const b=boxes[i]; if(inCut(b.x,b.z)) boxes.splice(i,1); }
+  for(let i=interacts.length-1;i>=0;i--){ const it=interacts[i]; let lab=""; try{ lab=it.label; }catch(e){} if(CUT_LABELS.test(lab)||(it.zone!=="sky"&&inCut(it.x,it.z))) interacts.splice(i,1); }
+  try{ for(let i=TRAVEL.length-1;i>=0;i--){ const t=TRAVEL[i]; if(inCut(t.x,t.z)||/^(lake|onsen|maze|golf|peak|orchard)$/.test(t.id)){ t.pair&&t.pair.forEach(L=>L.parent&&L.parent.remove(L)); TRAVEL.splice(i,1); } } }catch(e){}
+  try{ for(let i=ACTS.length-1;i>=0;i--){ const v=new THREE.Vector3(); ACTS[i].pos(0,v); if(inCut(v.x,v.z)) ACTS.splice(i,1); } }catch(e){}
+  // the castle is sealed until the story opens it
+  for(const it of interacts){ let lab=""; try{ lab=it.label; }catch(e){} if(lab==="Enter the castle"){ Object.defineProperty(it,"label",{value:"The castle gate is sealed",writable:true}); it.k="封"; it.fn=()=>toast("The great gate is sealed. Sensei says it will open when the story calls for it."); } }
+}
+
+
 applyTime(); initAi(); setInterval(applyTime,30000); requestAnimationFrame(frame); try{ worldTidy(); }catch(e){ console.warn(e); } setTimeout(()=>{ try{ autoColliders(); }catch(e){ console.warn('autoColliders',e); } },0); buildFluffyGrass(); loadNature();
 // tidy pass: anything small standing on stairs is moved off to the side, onto the grass
 function worldTidy(){ const box=new THREE.Box3(), sz=new THREE.Vector3(); for(const o of scene.children){ if(!o.visible||o.isLight||o.isSprite||o.isPoints||o.isInstancedMesh||o===player||o.userData.air||o.userData.stair) continue; box.setFromObject(o); if(box.isEmpty()) continue; box.getSize(sz); if(sz.x>3.2||sz.z>3.2||sz.y<.3) continue; const cx=(box.min.x+box.max.x)/2, cz=(box.min.z+box.max.z)/2; if(!onStairs(cx,cz)) continue;
@@ -3424,7 +3454,7 @@ const SOUL=(()=>{ const g=new THREE.Group(); const core=new THREE.Sprite(new THR
 function soulAt(p){ SOUL.g.position.copy(p); SOUL.hist.unshift(p.clone()); if(SOUL.hist.length>30) SOUL.hist.pop(); SOUL.tr.forEach((t,i)=>{ const h=SOUL.hist[Math.min(SOUL.hist.length-1,i*3)]; if(h){ t.position.copy(h); t.visible=true; } }); }
 function soulHide(){ SOUL.g.visible=false; SOUL.tr.forEach(t=>t.visible=false); SOUL.hist.length=0; }
 function soulFly(from,to,dur,lift,onDone){ SOUL.g.visible=true; const mid=from.clone().lerp(to,.5); mid.y=Math.max(from.y,to.y)+lift; RCK.intro={t:0,dur,from,mid,to,onDone}; }
-function startKoi(){ if(pmode!=="walk") return; pmode="koi"; RCK.on=true; RCK.g.visible=true; RCK.g.position.set(PRX-1.6,RCK.y,1); RCK.yaw=Math.PI; RCK.face=false; RCK.view=0;
+function startKoi(){ if(pmode!=="walk") return; if(!unlocked("koi")){ toast("Sensei has not taught you to leave your body yet."); return; } pmode="koi"; RCK.on=true; RCK.g.visible=true; RCK.g.position.set(PRX-1.6,RCK.y,1); RCK.yaw=Math.PI; RCK.face=false; RCK.view=0;
   RCK.cam=null; const from=player.position.clone(); from.y+=1.1; soulFly(from,RCK.g.position.clone(),1.9,2.6,()=>{ for(let i=0;i<3;i++) setTimeout(()=>addRipple({x:RCK.g.position.x,z:RCK.g.position.z},-.2,.6+i*.3),i*160); soulHide(); RCK.wake=1; climbHud(true);
   $("#climbHud").innerHTML=`<b>鯉 Swimming</b><br><span>W / stick to swim · A-D turn · Space up · C down (dive to the bottom) · V camera (chase / face / first person) · E / Esc to return to your body</span>`; toast("You're a spirit koi now. V changes the view (first person too). Dive down: the koi keep things on the bottom."); }); }
 function endKoi(){ if(RCK.intro) return; climbHud(false); const from=RCK.g.position.clone(); const to=player.position.clone(); to.y+=1.1; soulFly(from,to,1.3,2,()=>{ soulHide(); RCK.on=false; RCK.cam=null; RCK.g.visible=false; pmode="walk"; uwFx(false); const p=player.position, f=player.rotation.y; controls.target.set(p.x,p.y+1.2,p.z); camera.position.set(p.x-Math.sin(f)*6.5,p.y+3.4,p.z-Math.cos(f)*6.5); resize(); controls.update(); }); }
@@ -3969,12 +3999,19 @@ const devUI=document.createElement("div"); devUI.id="devUI";
 devUI.innerHTML=`<style>#devUI{position:fixed;left:12px;top:12px;z-index:80;background:rgba(14,16,30,.9);color:#f4ecd8;font:13px/1.45 system-ui,sans-serif;padding:10px 12px;border-radius:10px;display:none;width:300px;box-shadow:0 6px 24px rgba(0,0,0,.4)}
 #devUI b{color:#e8c25a}#devUI .r{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#devUI button{background:#2a3264;color:#f4ecd8;border:0;border-radius:6px;padding:5px 8px;font:12px system-ui;cursor:pointer}#devUI button:hover{background:#c8452f}#devUI button.on{background:#e8c25a;color:#14182e}#devUI .h{opacity:.65;font-size:11.5px;margin-top:8px}
 body.dev,body.dev *{cursor:auto!important}body.dev canvas{cursor:crosshair!important}</style>
-<div><b>DEV MODE</b> · <span id="devSel">click an object</span></div>
+<div><b>DEV MODE</b> · <span id="devSel">click an object</span></div><div style="font-size:11.5px;opacity:.8">Cloud: <span id="devCloud">checking…</span></div>
 <div class="r"><button data-m="translate" class="on">1 Move</button><button data-m="rotate">2 Rotate</button><button data-m="scale">3 Scale</button><button id="devDup">Duplicate</button><button id="devDel">Delete</button><button id="devSnap">Snap to ground</button><button id="devUndo">Undo</button></div>
 <div class="r"><button id="devExport">Export edits</button><button id="devReset">Reset all edits</button><button id="devClose">Close (F2)</button></div>
 <div class="h">WASD still walks. Drag the coloured arrows/rings to edit. Hold Shift while dragging to snap. Edits save automatically.</div>`;
 document.body.appendChild(devUI);
-function devSave(){ try{ localStorage.setItem("sh_dev_ops",JSON.stringify(DEV.ops)); }catch(e){} }
+function devSave(){ const when=Date.now(); try{ localStorage.setItem("sh_dev_ops",JSON.stringify(DEV.ops)); localStorage.setItem("sh_dev_when",String(when)); }catch(e){}
+  devCloudSet("saving…"); try{ if(typeof DB!=="undefined"&&DB) DB.doc("dev/edits").set({ops:DEV.ops,when}).then(()=>devCloudSet("saved to the cloud ✓")).catch(()=>devCloudSet("cloud offline: saved on this PC")); else devCloudSet("cloud offline: saved on this PC"); }catch(e){ devCloudSet("cloud offline: saved on this PC"); } }
+function devCloudSet(t){ const el=document.getElementById("devCloud"); if(el) el.textContent=t; }
+// pull edits made on another computer (or before a reinstall) from the cloud
+let devCloudTries=0; const devCloudPoll=setInterval(async()=>{ if(++devCloudTries>40) return clearInterval(devCloudPoll); if(typeof DB==="undefined"||!DB) return; clearInterval(devCloudPoll);
+  try{ const snap=await DB.doc("dev/edits").get(); const localWhen=+(localStorage.getItem("sh_dev_when")||0);
+    if(snap&&snap.exists){ const d=snap.data(); if((d.when||0)>localWhen&&Array.isArray(d.ops)){ DEV.ops=d.ops; DEV.done.clear(); try{ localStorage.setItem("sh_dev_ops",JSON.stringify(DEV.ops)); localStorage.setItem("sh_dev_when",String(d.when)); }catch(e){} devApplyAll(); } devCloudSet("synced with the cloud ✓"); }
+    else if(DEV.ops.length){ DB.doc("dev/edits").set({ops:DEV.ops,when:localWhen||Date.now()}).then(()=>devCloudSet("saved to the cloud ✓")).catch(()=>{}); } else devCloudSet("connected to the cloud ✓"); }catch(e){ devCloudSet("cloud offline: saved on this PC"); } },1500);
 function devVisible(o){ for(let p=o;p;p=p.parent){ if(!p.visible) return false; } return true; }
 function devSize(o){ devBox.setFromObject(o); return devBox.isEmpty()?0:devBox.getSize(devV).length(); }
 function devKey(o){ if(o.userData.devKey) return o.userData.devKey; o.updateWorldMatrix(true,false); const p=new THREE.Vector3().setFromMatrixPosition(o.matrixWorld); return o.userData.devKey=`${o.type}|${o.name||""}|${o.children.length}|${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`; }
@@ -3986,12 +4023,12 @@ function devColliders(oldP,newP,r,mode){ const out={c:[],b:[]}; const near=(x,z)
   for(let i=boxes.length-1;i>=0;i--){ const b=boxes[i]; if(!near(b.x,b.z)) continue; if(mode==="del"){ out.b.push(boxes.splice(i,1)[0]); } else if(mode==="dup"){ boxes.push({...b,x:b.x+newP.x-oldP.x,z:b.z+newP.z-oldP.z}); } else { b.x+=newP.x-oldP.x; b.z+=newP.z-oldP.z; } } return out; }
 function devTargetWorld(){ if(DEV.inst){ const {im,id}=DEV.inst; im.getMatrixAt(id,devM); return devM.clone().premultiply(im.matrixWorld); } DEV.sel.updateWorldMatrix(true,false); return DEV.sel.matrixWorld.clone(); }
 function devLocalMatrix(){ if(DEV.inst){ const {im,id}=DEV.inst; im.getMatrixAt(id,devM); return devM.clone(); } DEV.sel.updateMatrix(); return DEV.sel.matrix.clone(); }
-function devSetLocal(target,m){ if(target.inst){ const {im,id}=target.inst; im.setMatrixAt(id,m); im.instanceMatrix.needsUpdate=true; im.boundingSphere=null; im.boundingBox=null; } else { m.decompose(target.obj.position,target.obj.quaternion,target.obj.scale); target.obj.updateMatrixWorld(true); } }
+function devSetLocal(target,m){ if(target.inst){ const {im,id}=target.inst; im.setMatrixAt(id,m); im.instanceMatrix.needsUpdate=true; im.computeBoundingSphere(); im.boundingBox=null; } else { m.decompose(target.obj.position,target.obj.quaternion,target.obj.scale); target.obj.updateMatrixWorld(true); } }
 function devCurKey(){ return DEV.inst?devKey(DEV.inst.im)+"#"+DEV.inst.id:devKey(DEV.sel); }
 function devSelect(obj,inst){ DEV.sel=obj; DEV.inst=inst||null; if(!obj){ devTC.detach(); $("#devSel").textContent="click an object"; return; }
   DEV.proxy.matrix.copy(devTargetWorld()); DEV.proxy.matrix.decompose(DEV.proxy.position,DEV.proxy.quaternion,DEV.proxy.scale); DEV.proxy.updateMatrixWorld(true); devTC.attach(DEV.proxy);
   const nm=inst?`${inst.im.name||"tree/plant"} #${inst.id}`:(obj.name||obj.type); $("#devSel").textContent=nm.slice(0,40); }
-function devApplyProxy(){ const w=DEV.proxy.matrixWorld.clone(); if(DEV.inst){ const {im,id}=DEV.inst; const l=w.premultiply(im.matrixWorld.clone().invert()); im.setMatrixAt(id,l); im.instanceMatrix.needsUpdate=true; im.boundingSphere=null; im.boundingBox=null; }
+function devApplyProxy(){ const w=DEV.proxy.matrixWorld.clone(); if(DEV.inst){ const {im,id}=DEV.inst; const l=w.premultiply(im.matrixWorld.clone().invert()); im.setMatrixAt(id,l); im.instanceMatrix.needsUpdate=true; im.computeBoundingSphere(); im.boundingBox=null; }
   else { const par=DEV.sel.parent; par.updateWorldMatrix(true,false); const l=w.premultiply(par.matrixWorld.clone().invert()); l.decompose(DEV.sel.position,DEV.sel.quaternion,DEV.sel.scale); DEV.sel.updateMatrixWorld(true); } }
 devTC.addEventListener("dragging-changed",e=>{ controls.enabled=!e.value; if(!DEV.sel) return;
   if(e.value){ DEV.pre={m:devLocalMatrix(),p:new THREE.Vector3().setFromMatrixPosition(devTargetWorld())}; }
@@ -4179,6 +4216,9 @@ $("#rJoin").addEventListener("click",async()=>{ const code=$("#rCode").value.rep
 }
 document.querySelectorAll(".rb").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); b.classList.add("down"); setTimeout(()=>b.classList.remove("down"),130); cEmit({b:b.dataset.b}); }));
 $("#rForm").addEventListener("submit",e=>{ e.preventDefault(); const t=$("#rInp").value.trim(); if(!t) return; $("#rInp").value=""; cEmit({say:t}); $("#rInp").blur(); });
+
+// run the starter-town clean-up after every part of the world has been built
+try{ starterCleanup(); }catch(e){ console.warn("[cut]",e); } [2500,9000,20000].forEach(ms=>setTimeout(()=>{ try{ cutWalk(scene); for(let i=circles.length-1;i>=0;i--){ const c=circles[i]; if(!c.sky&&inCut(c.x,c.z)) circles.splice(i,1); } }catch(e){} },ms));
 </script>
 </body>
 </html>
