@@ -1,7 +1,7 @@
 {
-  "version": 43,
+  "version": 44,
   "shellApi": 2,
-  "notes": "New region: the Snowy Pass. Walk out the east side of the valley, up a snowy gorge past a camp, a frozen creek and the Frozen Falls, to Yukimura village, Yuki Onsen and the Summit Shrine.",
+  "notes": "Dialogue with choices; Kaeru gets his house and farm; road + signpost to the Snowy Pass; sky islands, dry garden and speakers removed; castle gates stay shut; pond edge sealed; loading screen on launch; fixed world layout so dev edits stick; dev edits also saved to Documents (OneDrive).",
   "files": [
     "brain-client.js",
     "core.js",

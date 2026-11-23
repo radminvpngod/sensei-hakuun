@@ -4,6 +4,8 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 **Expandable map → Powers & skill tree → Fighting → Mobs & bosses → Story.**
 
 ## Map
+- **A ring of peaceful towns around the map first**; bosses and mobs come later.
+- Sky islands removed in v44; they come back later as a storyline sky town / sky dungeon.
 - Shirokumo Castle is sealed until the story opens it. Later: better interior and better door/entry animation.
 - Minigames (kyudo, taiko, raking, calligraphy, bonsai, tea, ikebana) and boats come back spread across the map, not all in the starter town.
 - Regions to build: Snowy Pass (first, with the onsen), underwater Atlantis, sky town, underground cave town, mountain town.
@@ -31,3 +33,11 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 
 ## UI
 - All English, bare bones. The top-right kanji buttons and extra menu items are hidden for now (v41).
+
+## Snowy Pass ideas (Gabriel, 2026-11-23)
+- Biome NPCs: penguins. Spirit-possess a penguin for a quest/secret: belly-slide movement, smaller size, waddle into a penguin home too small for your normal body, find a chest with a piece of the Snow clothing set.
+- Snow minigames with the locals, for money: ice hockey, snowboarding / skiing down the hill, sledding.
+
+## Home & shops
+- The music speaker is a shop item you buy for your home village.
+- Animal Crossing-style decorations to customise your home village (later).

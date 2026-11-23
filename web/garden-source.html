@@ -419,7 +419,9 @@ async function senseiBrainMode(quiet){ if(window.__sb&&window.__sb.ready) return
 }
 
 const $ = s => document.querySelector(s);
-const rand = (a,b) => a + Math.random()*(b-a);
+// the world is laid out from a fixed seed, so every tree and rock is in the same place on every launch (dev edits depend on it)
+let _seed=20261123>>>0; const srand=()=>{ _seed=(_seed+0x6D2B79F5)|0; let t=Math.imul(_seed^(_seed>>>15),1|_seed); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; };
+const rand = (a,b) => a + srand()*(b-a);
 const TAU = Math.PI*2;
 const clamp = (x,a,b) => Math.max(a,Math.min(b,x));
 const smooth = (a,b,x) => { const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
@@ -481,13 +483,14 @@ const ROADS=[
   [[0,44],[0,48]],
   [[-6,-17],[0,-40],[0,-57]],
   // (v42) roads to the lake, onsen, maze, orchard and golf removed with those places
+  [[11,3.5],[30,5],[52,3],[66,2.5],[78,2]],   // (v44) east road to the Snowy Pass
   [[0,48],[3,60],[SQ.x-2,SQ.z-SQ.r+1]],
 ];
 const lakeE=(x,z)=>((x-LAKE.x)/LAKE.a)**2+((z-LAKE.z)/LAKE.b)**2;
 function roadDist(x,z){ let d=1e9; for(const r of ROADS) for(let i=0;i<r.length-1;i++){ const a=r[i],b=r[i+1]; d=Math.min(d,distSeg(x,z,a[0],a[1],b[0],b[1])); } return d; }
 const inVillage=(x,z)=>x>VIL.x0&&x<VIL.x1&&z>VIL.z0&&z<VIL.z1;
 const inMaze=(x,z,p=0)=>Math.abs(x-MZ.x)<MZH+p&&Math.abs(z-MZ.z)<MZH+p;
-const inGolf=(x,z,p=0)=>Math.abs(x-GOLF.x)<GOLF.w/2+p&&Math.abs(z-GOLF.z)<GOLF.d/2+p;
+const inGolf=(x,z,p=0)=>false; /* (v44) golf course removed; grass is back */
 let zone="world", pmode="walk";
 const FLATS=[], BUNKERS=[];
 function H(x,z){ let h0=H0(x,z); for(const f of FLATS){ const d=Math.hypot(x-f.x,z-f.z); if(d<f.r+4) h0=lerp(f.y,h0,smooth(f.r,f.r+4,d)); } return h0; }
@@ -797,12 +800,12 @@ function terrainColor(x,z,h,out=new THREE.Color()){
 
 /* ===================== plant registry (low-poly CC0 Quaternius models, load later) ===================== */
 const PLANTS={}; const plantChunks=[]; let natReady=false;
-const pick=a=>a[Math.floor(Math.random()*a.length)];
+const pick=a=>a[Math.floor(srand()*a.length)];
 const NAT_H={CommonTree:6.2,PineTree:8,BirchTree:7,Willow:6,CommonTree_Dead:5.5};
 const MAPLE=S==="spring"?["#f4b9c9","#f7cad7","#eea5bb","#fbe0e8"]:S==="summer"?["#5f8e48","#6d9a50","#4f7d3f","#7aa65a"]:S==="autumn"?["#d24a2a","#e2763a","#c43c28","#eea04a"]:[null];
 const SAKURA=["#f4b9c9","#f7cad7","#eea5bb","#fbe0e8","#f2a9c0"];
 const SEAS=S==="winter"?"_Snow":S==="autumn"?"_Autumn":"";
-const r15=()=>1+Math.floor(Math.random()*5);
+const r15=()=>1+Math.floor(srand()*5);
 function plant(name,x,z,s=1,o={}){ (PLANTS[name]||(PLANTS[name]=[])).push({x,y:o.y??H(x,z),z,ry:o.ry??rand(0,TAU),s,tint:o.tint||null}); }
 function mapleTree(x,z,s=1,cols=MAPLE){ if(lakeE(x,z)<1.45) return; const t=pick(cols); plant(S==="winter"?"CommonTree_Snow_"+r15():"CommonTree_"+r15(),x,z,s,{tint:t}); addCircle(x,z,.6*s); }
 function pineTree(x,z,s=1){ plant("PineTree"+(S==="winter"?"_Snow":"")+"_"+r15(),x,z,s); addCircle(x,z,.55*s); }
@@ -1654,7 +1657,7 @@ function makeSpirit(o){ const g=new THREE.Group(); const rig=new THREE.Group(); 
   if(o.hat){ const h=new THREE.Mesh(new THREE.CylinderGeometry(.3,.32,.14,8),F(o.hat)); h.position.y=.34; head.add(h); }
   const arms=[-1,1].map(s=>{ const a=new THREE.Group(); a.position.set(s*.34,1.22,0); const m=new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,.6,6),F(o.robe)); m.position.y=-.28; a.add(m); const hd=new THREE.Mesh(new THREE.SphereGeometry(.08,6,4),F(o.fur)); hd.position.y=-.6; a.add(hd); a.rotation.z=s*.2; rig.add(a); return a; });
   if(o.tail){ const t=new THREE.Mesh(new THREE.ConeGeometry(.2,.8,6),F(o.fur)); t.rotation.x=-1.9; t.position.set(0,.5,-.5); rig.add(t); const tip=new THREE.Mesh(new THREE.ConeGeometry(.12,.25,6),F(o.tip||"#ffffff")); tip.rotation.x=-1.9; tip.position.set(0,.36,-.86); rig.add(tip); }
-  shadowy(g); scene.add(g);
+  shadowy(g); scene.add(g); g.userData.keep=true;
   const npc={g,rig,head,arms,face:o.face||0,bow:0,ph:rand(0,TAU),name:o.name,lines:o.lines||[]}; NPCS.push(npc); if(PAPER) paperNpc(npc,o); return npc; }
 function placeSpirit(n,x,z,face){ n.g.position.set(x,H(x,z),z); n.face=face; n.g.rotation.y=face; addCircle(x,z,.45); }
 function npcBow(n){ n.bow=1.6; }
@@ -1669,7 +1672,7 @@ placeSpirit(teaKeeper,SQ.x-5.9,SQ.z-5.2,Math.PI*.75);
 const ramenCook=makeSpirit({name:"Tanuki-san",kind:"tanuki",fur:"#7a5a3e",muzzle:"#d8c3a2",patch:"#3a2a1e",robe:"#2f3d55",sash:"#f4ead2",apron:"#f4ead2",hat:"#f4ead2"});
 placeSpirit(ramenCook,SQ.x+6.4,SQ.z-4.6,-Math.PI*.75);
 const golfFrog=makeSpirit({name:"Kaeru",kind:"frog",fur:"#6fa04a",muzzle:"#cfe39a",robe:"#3a6a3a",sash:"#e9c46a",hat:"#e9c46a"});
-placeSpirit(golfFrog,GOLF.x-GOLF.w/2-1.2,GOLF.z-1.2,Math.PI/2);
+placeSpirit(golfFrog,GOLF.x-6,GOLF.z+1,Math.PI*.15);
 const drummer=makeSpirit({name:"Taro",fur:"#e9d7b9",muzzle:"#f6ead2",robe:"#1f3d63",sash:"#c23a2a",mask:"#1f1d22",hat:"#c23a2a"});
 placeSpirit(drummer,SQ.x-2.6,SQ.z+2.6,Math.PI*.75);
 addInteract({x:SQ.x-2.6,z:SQ.z+2.6,r:2.4,k:"太",label:"Talk to Taro",fn:()=>npcSay(drummer,"taro")});
@@ -1684,7 +1687,7 @@ const GOLFY=.26; const HOLES=[]; const golf={hole:0,strokes:0,total:[],ball:null
   const green=new THREE.MeshToonMaterial({map:gtx,gradientMap:gm}), rail=toon("#6a4a32"), cupM=new THREE.MeshBasicMaterial({color:0x111111});
   const base=new THREE.Mesh(new THREE.BoxGeometry(GOLF.w+1.4,.34,GOLF.d+1.4),stoneTexMat("#9c968a")); base.position.set(GOLF.x,.05,GOLF.z); base.receiveShadow=true; scene.add(base);
   const fringe=new THREE.Mesh(new THREE.BoxGeometry(GOLF.w+.6,.06,GOLF.d+.6),toon("#4f7f3c")); fringe.position.set(GOLF.x,.215,GOLF.z); fringe.receiveShadow=true; scene.add(fringe);
-  [[-GOLF.w/2-3.2,-GOLF.d/2+2,1.8],[GOLF.w/2+3,GOLF.d/2-3,2.2],[GOLF.w/2-4,-GOLF.d/2-3,1.6]].forEach(([dx,dz,r])=>{ const x=GOLF.x+dx, z=GOLF.z+dz; BUNKERS.push([x,z,r]); const b=new THREE.Mesh(new THREE.CircleGeometry(r,20),toon("#e6d6a8")); b.rotation.x=-Math.PI/2; b.scale.set(1,1.4,1); b.position.set(x,H(x,z)+.03,z); b.receiveShadow=true; scene.add(b);
+  /* (v44) bunkers removed with the golf course */ [].forEach(([dx,dz,r])=>{ const x=GOLF.x+dx, z=GOLF.z+dz; BUNKERS.push([x,z,r]); const b=new THREE.Mesh(new THREE.CircleGeometry(r,20),toon("#e6d6a8")); b.rotation.x=-Math.PI/2; b.scale.set(1,1.4,1); b.position.set(x,H(x,z)+.03,z); b.receiveShadow=true; scene.add(b);
     const lip=new THREE.Mesh(new THREE.TorusGeometry(r,.08,4,24),toon("#4f7f3c")); lip.rotation.x=-Math.PI/2; lip.scale.set(1,1.4,1); lip.position.set(x,H(x,z)+.05,z); scene.add(lip); });
   lanes.forEach((lz,i)=>{ const h={i,z:lz,x0:GOLF.x-L/2,x1:GOLF.x+L/2,hw:Wd/2,tee:{x:GOLF.x-L/2+1.4,z:lz},cup:{x:GOLF.x+L/2-1.6,z:lz+(i===1?1:0)},obs:[],par:[2,3,3][i],walls:[]};
     const g=new THREE.Mesh(new THREE.BoxGeometry(L,.2,Wd),green); g.material.map.repeat&&0; g.position.set(GOLF.x,GOLFY-.1,lz); g.receiveShadow=true; scene.add(g);
@@ -2321,7 +2324,7 @@ async function speak(text){ if(!voiceOn||voiceDenied) return; const t=cleanForSp
 function stopSpeaking(){ if(tts) tts.stop().catch(()=>{}); if(webOK) speechSynthesis.cancel(); speaking=false; ghostStop(); }
 $("#lifeBtn").addEventListener("click",()=>openLife("art"));
 // ---- the hotbar: everything one key away ----
-const GBAR=[["","Feed koi",()=>tossFood(.6)],["","Talk",()=>openChat()],["","Map",()=>openTravel()],["","Photo",()=>photoMode()],["","Menu",()=>showMenu()]];
+const GBAR=[["","Feed koi",()=>tossFood(.6)],["","Talk",()=>talkSensei()],["","Map",()=>openTravel()],["","Photo",()=>photoMode()],["","Menu",()=>showMenu()]];
 $("#gbar").innerHTML=GBAR.map((g,i)=>`<div class="slot" data-i="${i}"><em>${i+1}</em>${g[0]}<small>${g[1]}</small></div>`).join("");
 function gbarUse(i){ const g=GBAR[i]; if(!g||!entered) return; const el=document.querySelector(`#gbar .slot[data-i="${i}"]`); if(el){ el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),180); } g[2](); }
 document.querySelectorAll("#gbar .slot").forEach(e=>e.addEventListener("click",()=>gbarUse(+e.dataset.i)));
@@ -2440,7 +2443,7 @@ $("#clock").addEventListener("click",()=>{ previewIdx++; if(previewIdx>=PREVIEWS
 
 /* ===================== interaction ===================== */
 let nearest=null;
-addInteract({sensei:true,k:"話",label:"Talk",r:7,fn:()=>openChat()});
+addInteract({sensei:true,k:"話",label:"Talk",r:7,fn:()=>talkSensei()});
 addInteract({pond:true,k:"餌",label:"Feed koi",r:1,fn:()=>tossFood(.55)});
 function updateNearest(){ nearest=null; let bd=1e9;
   for(const it of interacts){ if((it.zone||"world")!==zone||(it.when&&!it.when())) continue; if(zone==="world"&&pmode!=="walk"&&!it.when&&!it.sensei) continue; const x=it.sensei?sensei.position.x:it.x, z=it.sensei?sensei.position.z:it.z; let d=Math.hypot(player.position.x-x,player.position.z-z); if(it.pond){ d=((player.position.x/(PRX+3.2))**2+(player.position.z/(PRZ+3.2))**2<1)?.9:99; } if(d<it.r && d<bd+(it.sensei?3:0)){ bd=d; nearest=it; } }
@@ -2929,6 +2932,48 @@ function passFrame(dt){ const x=player.position.x, a=PASS_SNOW(x);
   for(const s of PASSFX.steam){ s.t+=dt; const u=(s.t%4)/4; s.s.position.set(s.x+Math.sin(s.t*1.3+s.x)*1.6,s.y+.3+u*4,s.z+Math.cos(s.t*1.1)*1.6); s.s.scale.setScalar(1.2+u*3); s.s.material.opacity=.32*Math.sin(Math.PI*u)*(Math.hypot(x-s.x,player.position.z-s.z)<60?1:0); }
   if(PASSFX.fire){ PASSFX.fire.scale.set(1+Math.sin(clock*9)*.12,1+Math.sin(clock*7.3)*.2,1+Math.cos(clock*8.1)*.12); } }
 
+
+/* ===================== HOME TOWN ADDITIONS (v44): Kaeru's house and farm, the way to the Snowy Pass, the pond seal ===================== */
+{
+  const keep=o=>{ o.userData.keep=true; o.traverse(k=>k.userData.keep=true); return o; };
+  const T=(c,o={})=>toon(c,o);
+  // Kaeru's farm, where the golf course used to be
+  const fx=GOLF.x+1, fz=GOLF.z-1, fy=H(fx,fz);
+  const farm=keep(new THREE.Group()); farm.position.set(fx,fy,fz); scene.add(farm);
+  const soil=T("#6b4a32"), soilD=T("#5a3d28"), leaf=T("#4f8a3a"), leafL=T("#7ab04a");
+  for(let r=0;r<5;r++){ const row=new THREE.Mesh(new THREE.BoxGeometry(9,.25,.9),r%2?soil:soilD); row.position.set(0,.06,-4+r*1.6); farm.add(row);
+    for(let k=0;k<8;k++){ const kind=(r+k)%3; let m;
+      if(kind===0){ m=new THREE.Mesh(new THREE.SphereGeometry(.28,7,5),leaf); m.scale.set(1,.7,1); m.position.set(-3.9+k*1.1,.3,-4+r*1.6); }
+      else if(kind===1){ m=new THREE.Mesh(new THREE.ConeGeometry(.16,.55,5),leafL); m.position.set(-3.9+k*1.1,.42,-4+r*1.6); }
+      else { m=new THREE.Mesh(new THREE.SphereGeometry(.22,7,5),T("#e8e0d0")); m.position.set(-3.9+k*1.1,.22,-4+r*1.6); const t=new THREE.Mesh(new THREE.ConeGeometry(.12,.4,4),leafL); t.position.set(-3.9+k*1.1,.52,-4+r*1.6); farm.add(t); }
+      farm.add(m); } }
+  const pumpkin=new THREE.Mesh(new THREE.SphereGeometry(.6,10,7),T("#e0882a")); pumpkin.scale.set(1.2,.8,1.2); pumpkin.position.set(5.6,.45,2.4); farm.add(pumpkin);
+  // fence around the field
+  const post=T("#8a6242"); for(let a=0;a<28;a++){ const t=a/28, side=Math.floor(t*4), u=(t*4)%1; const px=[-5.5+u*11,5.5,5.5-u*11,-5.5][side], pz=[-5.4,-5.4+u*10.4,5,5-u*10.4][side]; if(side===2&&u>.4&&u<.6) continue; const p=new THREE.Mesh(new THREE.BoxGeometry(.12,.8,.12),post); p.position.set(px,.4,pz); farm.add(p); }
+  // scarecrow in a straw hat
+  const sc=new THREE.Group(); sc.position.set(-2,0,.8); farm.add(sc); const pole=new THREE.Mesh(new THREE.BoxGeometry(.1,2,.1),post); pole.position.y=1; sc.add(pole); const arm=new THREE.Mesh(new THREE.BoxGeometry(1.4,.08,.08),post); arm.position.y=1.5; sc.add(arm);
+  const coat=new THREE.Mesh(new THREE.BoxGeometry(.6,.7,.3),T("#3c5a8c")); coat.position.y=1.35; sc.add(coat); const hd=new THREE.Mesh(new THREE.SphereGeometry(.22,8,6),T("#e9dcc0")); hd.position.y=1.95; sc.add(hd); const hat=new THREE.Mesh(new THREE.ConeGeometry(.5,.28,12),T("#d9b56b")); hat.position.y=2.18; sc.add(hat);
+  shadowy(farm); addBox(fx,fz-.2,5.5,5.2,0);
+  // Kaeru's house: a round-roofed green cottage by the field
+  const hx=GOLF.x+10, hz=GOLF.z+3, hy=H(hx,hz); const hs=keep(new THREE.Group()); hs.position.set(hx,hy,hz); hs.rotation.y=-Math.PI/2; scene.add(hs);
+  const walls=new THREE.Mesh(new THREE.CylinderGeometry(2.4,2.5,2.4,16),T("#efe6cf")); walls.position.y=1.2; hs.add(walls);
+  const roof=new THREE.Mesh(new THREE.SphereGeometry(2.9,16,10,0,Math.PI*2,0,Math.PI/2),T("#5f9a4a")); roof.scale.y=.75; roof.position.y=2.3; hs.add(roof);
+  [-1,1].forEach(s=>{ const eye=new THREE.Mesh(new THREE.SphereGeometry(.45,10,8),T("#5f9a4a")); eye.position.set(s*1,4.1,.9); hs.add(eye); const pu=new THREE.Mesh(new THREE.SphereGeometry(.2,8,6),T("#1d1a22")); pu.position.set(s*1,4.15,1.3); hs.add(pu); });
+  const door=new THREE.Mesh(new THREE.BoxGeometry(1,1.7,.1),T("#8a6242")); door.position.set(0,.95,2.45); hs.add(door);
+  const win=new THREE.Mesh(new THREE.CircleGeometry(.35,14),new THREE.MeshToonMaterial({color:"#ffd27a",emissive:new THREE.Color("#ffb24a"),emissiveIntensity:.6,gradientMap:gm})); win.position.set(1.4,1.5,2.05); win.rotation.y=.5; hs.add(win);
+  shadowy(hs); addCircle(hx,hz,2.6);
+  // a signpost pointing to the Snowy Pass where the east road leaves the pond
+  { const x=16,z=7.2,y=H(x,z); const sg=keep(new THREE.Group()); sg.position.set(x,y,z); sg.rotation.y=-Math.PI/2+.25; scene.add(sg);
+    const p=new THREE.Mesh(new THREE.BoxGeometry(.16,2.2,.16),T("#5a3a28")); p.position.y=1.1; sg.add(p);
+    const cv=document.createElement("canvas"); cv.width=512; cv.height=160; const k=cv.getContext("2d"); const draw=()=>{ k.fillStyle="#e9dcc0"; k.fillRect(0,0,512,160); k.strokeStyle="#5a3a28"; k.lineWidth=12; k.strokeRect(6,6,500,148); k.fillStyle="#2b2420"; k.font='700 62px "Shippori Mincho",serif'; k.textAlign="center"; k.fillText("Snowy Pass  →",256,102); }; draw();
+    const tx=new THREE.CanvasTexture(cv); tx.colorSpace=THREE.SRGBColorSpace; document.fonts&&document.fonts.ready.then(()=>{ draw(); tx.needsUpdate=true; });
+    const b=new THREE.Mesh(new THREE.BoxGeometry(1.9,.6,.08),[T("#5a3a28"),T("#5a3a28"),T("#5a3a28"),T("#5a3a28"),new THREE.MeshToonMaterial({map:tx,gradientMap:gm}),new THREE.MeshToonMaterial({map:tx,gradientMap:gm})]); b.position.set(.5,1.9,0); sg.add(b); shadowy(sg); addCircle(x,z,.25); }
+  // the pond basin gets a stone liner so you can never see under the ground at its edge
+  { const ring=new THREE.Mesh(new THREE.CylinderGeometry(1,1,2.3,72,1,true),T("#4a4a52",{side:THREE.DoubleSide})); ring.scale.set(PRX*1.03,1,PRZ*1.03); ring.position.set(0,-.95,0); keep(ring); scene.add(ring);
+    const floor=new THREE.Mesh(new THREE.CircleGeometry(1,48),T("#3a4a4a")); floor.rotation.x=-Math.PI/2; floor.scale.set(PRX*1.04,PRZ*1.04,1); floor.position.y=-1.9; keep(floor); scene.add(floor); }
+  AREAS.unshift({id:"kaeru",k:"",n:"Kaeru's Farm",test:(x,z)=>Math.abs(x-GOLF.x-3)<11&&Math.abs(z-GOLF.z)<8});
+}
+
 /* ===================== boot ===================== */
 
 /* ===================== STARTER TOWN CLEAN-UP (v42) ===================== */
@@ -2942,6 +2987,8 @@ const CUT_ZONES=[
   {id:"peak",  test:(x,z)=>Math.hypot(x-PEAK.x,z-PEAK.z)<PEAK.r0+4},
   {id:"kyudo", test:(x,z)=>distSeg(x,z,47,-20,57,-14)<3.2},
   {id:"taiko", test:(x,z)=>Math.hypot(x-9.5,z-28)<3},
+  {id:"drygarden", test:(x,z)=>Math.hypot(x-31,z-2)<10.5},
+  {id:"cloudstair", test:(x,z)=>Math.hypot(x-(SHR.x-6.5),z-(SHR.z+3))<4.2},
   {id:"trail", test:(x,z)=>x>70&&x<200&&passTrailDist(x,z)<4.8},
 ];
 const inCut=(x,z)=>CUT_ZONES.some(c=>c.test(x,z));
@@ -2951,6 +2998,8 @@ function cutWalk(o){ for(let i=o.children.length-1;i>=0;i--){ const c=o.children
     if(c.isInstancedMesh){ let n=0; for(let k=0;k<c.count;k++){ c.getMatrixAt(k,_cm); _cv.setFromMatrixPosition(_cm).applyMatrix4(c.matrixWorld); if(inCut(_cv.x,_cv.z)){ _cm.makeScale(0,0,0); c.setMatrixAt(k,_cm); n++; } } if(n){ c.instanceMatrix.needsUpdate=true; c.computeBoundingSphere(); } continue; }
     c.updateWorldMatrix(true,false); _cv.setFromMatrixPosition(c.matrixWorld);
     if(c.userData.paper||c.userData.keep||c===terrainMesh) continue;
+    if(_cv.y>SKY.y-45){ o.remove(c); continue; }                       // (v44) sky islands removed for now
+    if(c.isMesh&&!c.children.length&&c.geometry){ if(!c.geometry.boundingBox) c.geometry.computeBoundingBox(); _cb.copy(c.geometry.boundingBox).applyMatrix4(c.matrixWorld); if(!_cb.isEmpty()) _cb.getCenter(_cv); }
     const inside=inCut(_cv.x,_cv.z);
     if(inside){ _cb.setFromObject(c); const sz=_cb.isEmpty()?0:Math.max(_cb.max.x-_cb.min.x,_cb.max.z-_cb.min.z);
       // the whole thing sits in a cut zone (and isn't something huge like the terrain): remove it
@@ -2960,9 +3009,15 @@ function starterCleanup(){
   try{ cutWalk(scene); }catch(e){ console.warn("[cut]",e); }
   for(let i=circles.length-1;i>=0;i--){ const c=circles[i]; if(!c.sky&&inCut(c.x,c.z)) circles.splice(i,1); }
   for(let i=boxes.length-1;i>=0;i--){ const b=boxes[i]; if(inCut(b.x,b.z)) boxes.splice(i,1); }
-  for(let i=interacts.length-1;i>=0;i--){ const it=interacts[i]; let lab=""; try{ lab=it.label; }catch(e){} if(!it.keep&&(CUT_LABELS.test(lab)||(it.zone!=="sky"&&inCut(it.x,it.z)))) interacts.splice(i,1); }
+  for(let i=interacts.length-1;i>=0;i--){ const it=interacts[i]; let lab=""; try{ lab=it.label; }catch(e){} if(!it.keep&&!/^Talk to /.test(lab)&&(CUT_LABELS.test(lab)||it.zone==="sky"||lab==="Climb the cloud stair"||lab==="Music speaker"||inCut(it.x,it.z))) interacts.splice(i,1); }
   try{ for(let i=TRAVEL.length-1;i>=0;i--){ const t=TRAVEL[i]; if(inCut(t.x,t.z)||/^(lake|onsen|maze|golf|peak|orchard)$/.test(t.id)){ t.pair&&t.pair.forEach(L=>L.parent&&L.parent.remove(L)); TRAVEL.splice(i,1); } } }catch(e){}
   try{ for(let i=ACTS.length-1;i>=0;i--){ const v=new THREE.Vector3(); ACTS[i].pos(0,v); if(inCut(v.x,v.z)) ACTS.splice(i,1); } }catch(e){}
+  for(let i=AREAS.length-1;i>=0;i--) if(AREAS[i].id==="sky") AREAS.splice(i,1);
+  const TALKS={"Order tea":()=>talkNpc(teaKeeper,{name:"Okitsune",fox:true,fur:"#f4efe6",muzzle:"#ffffff",robe:"#b23a2c",sash:"#f2d27a",mask:"#d23a2a",tail:true},NPC_TREES.okitsune),
+    "Order ramen":()=>talkNpc(ramenCook,{name:"Tanuki-san",kind:"tanuki",fur:"#7a5a3e",muzzle:"#d8c3a2",patch:"#3a2a1e",robe:"#2f3d55",sash:"#f4ead2",apron:"#f4ead2"},NPC_TREES.tanuki),
+    "Talk to Kaeru":()=>talkNpc(golfFrog,{name:"Kaeru",kind:"frog",fur:"#6fa04a",muzzle:"#cfe39a",robe:"#3a6a3a",sash:"#e9c46a",hat:"#e9c46a"},NPC_TREES.kaeru),
+    "Talk to Taro":()=>talkNpc(drummer,{name:"Taro",fur:"#e9d7b9",muzzle:"#f6ead2",robe:"#1f3d63",sash:"#c23a2a",mask:"#1f1d22",hat:"#c23a2a"},NPC_TREES.taro)};
+  for(const it of interacts){ let lab=""; try{ lab=it.label; }catch(e){} if(TALKS[lab]){ it.fn=TALKS[lab]; if(lab.startsWith("Order")) Object.defineProperty(it,"label",{value:"Talk to "+(lab==="Order tea"?"Okitsune":"Tanuki-san"),writable:true}); } }
   // the castle is sealed until the story opens it
   for(const it of interacts){ let lab=""; try{ lab=it.label; }catch(e){} if(lab==="Enter the castle"){ Object.defineProperty(it,"label",{value:"The castle gate is sealed",writable:true}); it.k="封"; it.fn=()=>toast("The great gate is sealed. Sensei says it will open when the story calls for it."); } }
 }
@@ -3299,7 +3354,7 @@ function scaleChime(){ sfx((a,t)=>{ [880,1174.7,1568].forEach((f,i)=>{ const o=a
   gaps.forEach(([c,w])=>{ [c-w-.05,c+w+.05].forEach(a=>tower(a,true)); const x=CASTLE.x+Math.cos(c)*R, z=CASTLE.z+Math.sin(c)*R, y=Math.max(H(x,z),H(x+1,z+1)); const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=-c+Math.PI/2; scene.add(g);
     const span=2*R*Math.sin(w+.05)+.6; const beam=new THREE.Mesh(new THREE.BoxGeometry(span,.7,1.8),DWOOD); beam.position.y=5.4; g.add(beam); const rf=gableRoof(span+1,2.4,1.1,TILE); rf.position.y=5.75; g.add(rf);
     const plq=new THREE.Mesh(new THREE.BoxGeometry(1.6,.6,.08),toon("#d8b26a")); plq.position.set(0,5.4,.95); g.add(plq); shadowy(g);
-    const lw=span/2-.35, GD=toon("#5a3a22"); hingeDoor(g,{x:-span/2+.35,y:0,z:0,w:lw,h:5.05,t:.3,mat:GD,side:1,ang:-1.3,auto:9,heavy:2.2,studs:true}); hingeDoor(g,{x:span/2-.35,y:0,z:0,w:lw,h:5.05,t:.3,mat:GD,side:-1,ang:-1.3,auto:9,heavy:2.2,studs:true}); });
+    const lw=span/2-.35, GD=toon("#5a3a22"); hingeDoor(g,{x:-span/2+.35,y:0,z:0,w:lw,h:5.05,t:.3,mat:GD,side:1,ang:-1.3,auto:0,heavy:2.2,studs:true}); hingeDoor(g,{x:span/2-.35,y:0,z:0,w:lw,h:5.05,t:.3,mat:GD,side:-1,ang:-1.3,auto:0,heavy:2.2,studs:true}); });
   }
 
 // ---------- 5 · Kumo Peak: climb it, then float down under a paper umbrella ----------
@@ -3509,7 +3564,7 @@ function campFrame(dt){ const f=LIFE.fire; if(!f) return; f.fl.forEach((m,i)=>{ 
 /* ===================== MUSIC: SoundCloud speakers in the garden + Taiko that charts any song ===================== */
 const MUS={sc:null,url:"",playing:false,speakers:[],vol:0,live:null};
 // two speaker lanterns: one on the tea house veranda path, one in the Night Market
-[[9.2,12.6],[SQ.x+5.5,SQ.z+3]].forEach(([x,z])=>{ [x,z]=grassSpot(x,z,undefined,undefined,1.2); const y=H(x,z); const g=new THREE.Group(); g.position.set(x,y,z); scene.add(g);
+/* (v44) speakers become a shop item later */ [].forEach(([x,z])=>{ [x,z]=grassSpot(x,z,undefined,undefined,1.2); const y=H(x,z); const g=new THREE.Group(); g.position.set(x,y,z); scene.add(g);
   const base=new THREE.Mesh(new THREE.CylinderGeometry(.42,.5,.3,8),stoneTexMat("#8f8a7e")); base.position.y=.15; g.add(base);
   const post=new THREE.Mesh(new THREE.BoxGeometry(.32,1.1,.32),DWOOD); post.position.y=.85; g.add(post);
   const box=new THREE.Mesh(new THREE.BoxGeometry(.85,.85,.7),toon("#5a3b26")); box.position.y=1.8; g.add(box);
@@ -3647,7 +3702,7 @@ function advOnEnter(){ setTimeout(()=>addRim(scene),3000); setTimeout(()=>addRim
 /* ===================== shodō: calligraphy ===================== */
 const KANJI=[["永","EI · ETERNITY"],["心","KOKORO · HEART"],["道","MICHI · THE WAY"],["空","SORA · SKY, EMPTINESS"],["水","MIZU · WATER"],["夢","YUME · DREAM"],["和","WA · HARMONY"],["力","CHIKARA · STRENGTH"],["山","YAMA · MOUNTAIN"],["川","KAWA · RIVER"],["鯉","KOI · CARP"],["雲","KUMO · CLOUD"],["静","SHIZUKA · STILLNESS"],["龍","RYŪ · DRAGON"],["花","HANA · FLOWER"],["人","HITO · PERSON"]];
 let shodoOpen=false, shIdx=0, shGuide=true, shInk=0; const shC=$("#shC"), shX=shC.getContext("2d");
-function uiBlock(){ return menuOpen||shodoOpen||!!MG||!!document.querySelector(".panel.show"); }
+function uiBlock(){ return menuOpen||shodoOpen||!!MG||!!document.querySelector(".panel.show")||(typeof DLG!=="undefined"&&DLG.open); }
 function shSet(i){ shIdx=(i+KANJI.length)%KANJI.length; const [k,m]=KANJI[shIdx]; $("#shK").textContent=k; $("#shGuide").textContent=k; $("#shM").textContent=m; const best=(store.shodo||{})[k]; $("#shScore").textContent=best?`Best: ${best}/10`:""; shClear(); }
 function shClear(){ shX.clearRect(0,0,800,800); shInk=0; $("#shFb").textContent="Write the character with your finger, mouse or phone remote. Confident strokes."; }
 function openShodo(){ shodoOpen=true; $("#shodo").classList.add("show"); closeChat(); shSet(shIdx); hostPush(); }
@@ -4144,10 +4199,82 @@ $("#miScrolls").addEventListener("click",()=>openScrolls());
 $("#miTalk").addEventListener("click",async()=>{ await enterGame(); setTimeout(()=>{ openChat(); toast("Sensei drifts over to you."); },400); });
 $("#miSettings").addEventListener("click",()=>{ refreshSettings(); $("#setPanel").classList.add("show"); });
 
+
+/* ===================== DIALOGUE: speech bubble with portrait and answers you choose (BotW / Tsushima style) ===================== */
+const DLG={open:false,node:null,tree:null,who:null,i:0,typing:0,full:"",sel:0,pitch:1};
+const dlgEl=document.createElement("div"); dlgEl.id="dlg";
+dlgEl.innerHTML=`<style>
+#dlg{position:fixed;left:50%;bottom:4.5vh;transform:translateX(-50%) translateY(12px);width:min(760px,92vw);z-index:70;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;font-family:"Shippori Mincho",Georgia,serif}
+#dlg.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+#dlg .card{display:flex;gap:16px;align-items:flex-start;background:#f4ecd8;color:#2b2420;border:3px solid #2b2420;border-radius:16px;padding:14px 18px 14px 14px;box-shadow:0 6px 0 rgba(0,0,0,.25),0 14px 34px rgba(0,0,0,.35)}
+#dlg .pt{width:92px;height:112px;flex:none;border-radius:12px;background:#e6dcc4 center/contain no-repeat;border:2px solid #2b2420}
+#dlg .nm{display:inline-block;background:#c8452f;color:#fff8ec;font:700 14px/1 system-ui,sans-serif;letter-spacing:.06em;padding:5px 10px;border-radius:8px;margin-bottom:6px}
+#dlg .tx{font-size:19px;line-height:1.45;min-height:56px}
+#dlg .ch{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+#dlg .ch button{all:unset;cursor:pointer;background:#fffaf0;border:2px solid #2b2420;border-radius:22px;padding:7px 14px;font:600 15px system-ui,sans-serif;color:#2b2420}
+#dlg .ch button.on,#dlg .ch button:hover{background:#2b2420;color:#f4ecd8}
+#dlg .ch button b{opacity:.55;margin-right:8px}
+#dlg .more{position:absolute;right:18px;bottom:10px;font:700 14px system-ui;animation:dlgb 1s steps(1) infinite}
+@keyframes dlgb{50%{opacity:0}}
+</style><div class="card"><div class="pt"></div><div style="flex:1;position:relative"><div class="nm"></div><div class="tx"></div><div class="ch"></div><div class="more">▼</div></div></div>`;
+document.body.appendChild(dlgEl);
+const PORTRAITS={};
+function portraitOf(key,draw,w,h){ if(!PORTRAITS[key]){ try{ PORTRAITS[key]=paperCanvas(w,h,draw,6).toDataURL(); }catch(e){ PORTRAITS[key]=""; } } return PORTRAITS[key]; }
+function dlgStart(who,tree,start="start"){ DLG.open=true; DLG.who=who; DLG.tree=tree; dlgEl.querySelector(".nm").textContent=who.name; dlgEl.querySelector(".pt").style.backgroundImage=who.portrait?`url(${who.portrait})`:"none"; DLG.pitch=who.pitch||1; dlgEl.classList.add("show"); try{ document.exitPointerLock(); }catch(e){} dlgGo(start); }
+function dlgGo(id){ if(!id||id==="end"){ return dlgClose(); } const n=typeof DLG.tree[id]==="function"?DLG.tree[id]():DLG.tree[id]; if(!n) return dlgClose(); DLG.node=n; DLG.i=0; if(n.fx) try{ n.fx(); }catch(e){} dlgLine(); }
+function dlgLine(){ const n=DLG.node, says=[].concat(n.say||[]); const line=says[DLG.i]; DLG.full=typeof line==="function"?line():line; DLG.typing=0; dlgEl.querySelector(".ch").innerHTML=""; dlgEl.querySelector(".more").style.display="none"; try{ babble(DLG.full,DLG.pitch); }catch(e){} }
+function dlgShowChoices(){ const n=DLG.node, says=[].concat(n.say||[]); const box=dlgEl.querySelector(".ch"); const more=dlgEl.querySelector(".more");
+  if(DLG.i<says.length-1){ more.style.display="block"; return; }
+  const ch=(n.choices||[{t:"Goodbye.",go:"end"}]); DLG.sel=0; more.style.display="none";
+  box.innerHTML=ch.map((c,k)=>`<button data-k="${k}" class="${k===0?"on":""}"><b>${k+1}</b>${c.t}</button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>dlgPick(+b.dataset.k)); }
+function dlgPick(k){ const ch=DLG.node.choices||[{t:"Goodbye.",go:"end"}]; const c=ch[k]; if(!c) return; if(c.fx) try{ c.fx(); }catch(e){} dlgGo(c.go||"end"); }
+function dlgAdvance(){ if(!DLG.open) return; const tx=dlgEl.querySelector(".tx"); if(DLG.typing<DLG.full.length){ DLG.typing=DLG.full.length; tx.textContent=DLG.full; dlgShowChoices(); return; }
+  const says=[].concat(DLG.node.say||[]); if(DLG.i<says.length-1){ DLG.i++; dlgLine(); return; } const btns=dlgEl.querySelectorAll(".ch button"); if(btns.length) dlgPick(DLG.sel); }
+function dlgClose(){ DLG.open=false; dlgEl.classList.remove("show"); }
+function dlgFrame(dt){ if(!DLG.open||DLG.typing>=DLG.full.length) return; DLG.typing=Math.min(DLG.full.length,DLG.typing+dt*48); dlgEl.querySelector(".tx").textContent=DLG.full.slice(0,Math.floor(DLG.typing)); if(DLG.typing>=DLG.full.length) dlgShowChoices(); }
+addEventListener("keydown",e=>{ if(!DLG.open) return; const k=e.code; let hit=true; const btns=[...dlgEl.querySelectorAll(".ch button")];
+  if(/^Digit[1-6]$/.test(k)&&btns.length){ dlgPick(+k.slice(5)-1); }
+  else if((k==="ArrowDown"||k==="KeyS")&&btns.length){ DLG.sel=(DLG.sel+1)%btns.length; btns.forEach((b,i)=>b.classList.toggle("on",i===DLG.sel)); }
+  else if((k==="ArrowUp"||k==="KeyW")&&btns.length){ DLG.sel=(DLG.sel+btns.length-1)%btns.length; btns.forEach((b,i)=>b.classList.toggle("on",i===DLG.sel)); }
+  else if(k==="KeyE"||k==="Space"||k==="Enter") dlgAdvance(); else if(k==="Escape") dlgClose(); else hit=false;
+  if(hit){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
+dlgEl.addEventListener("click",e=>{ if(!e.target.closest("button")) dlgAdvance(); });
+setInterval(()=>{ if(DLG.open) dlgFrame(.05); },50);
+
+// ---- who says what ----
+const senseiWho=()=>({name:"Sensei Hakuun",pitch:1,portrait:portraitOf("sensei",drawSensei,320,220)});
+const npcWho=(n,o)=>({name:n.name,pitch:1.45,portrait:portraitOf("npc:"+n.name,(g,w,h)=>drawAnimal(g,w,h,o),256,320)});
+const SENSEI_CH=[{t:"How are you, Sensei?",go:"how"},{t:"Where should I go?",go:"where"},{t:"What is behind the castle gate?",go:"castle"},{t:"Goodbye.",go:"bye"}];
+const SENSEI_TREE={
+  start:()=>({say:[pick(["Ah. The student returns. Sit, if you like. Or stand. The pond does not mind.","Hm. You walk louder than the koi swim. Good afternoon.","Welcome back. The water was just telling me about you."])],choices:SENSEI_CH}),
+  how:()=>({say:[pick(["I have been "+((typeof senseiAct!=="undefined"&&senseiAct&&senseiAct.name)||"watching the leaves fall")+". It is going well. Thank you for asking.","Old. Wet. Content. In that order."])],choices:SENSEI_CH}),
+  where:{say:["East, past the tea house, a road climbs into the snow.","At the top is Yukimura. Good people, a hot spring, a fire that never goes out. Go and see what they need."],choices:[{t:"I'll go.",go:"bye"},{t:"Anything else?",go:"start"}]},
+  castle:{say:["A story. Not yet yours.","The gate opens when you have earned the right to be curious about it. That is not today."],choices:SENSEI_CH},
+  bye:{say:[()=>pick(["Go gently.","Mind the ice.","Come back with stories."])],choices:[{t:"Goodbye.",go:"end"}]},
+};
+function talkSensei(){ dlgStart(senseiWho(),SENSEI_TREE); }
+function talkNpc(n,o,tree){ try{ npcBow(n); }catch(e){} dlgStart(npcWho(n,o),tree); }
+const NPC_TREES={
+  okitsune:{start:{say:["Welcome. Tea warms the hands first, then the heart."],choices:[{t:"A cup of tea, please.",go:"tea"},{t:"What's new in the valley?",go:"news"},{t:"Goodbye.",go:"end"}]},
+    tea:{say:[()=>pick(["Here. Sencha from the hillside. Sip slowly, it is hot.","Hojicha, roasted this morning. It smells like a campfire that went to school."])],fx:()=>{ try{ chime(); }catch(e){} },choices:[{t:"Thank you.",go:"end"}]},
+    news:{say:["Travellers say the road east is open again. The snow people of Yukimura keep the best hot spring in the mountains."],choices:[{t:"I'll look for it.",go:"end"}]}},
+  tanuki:{start:{say:["Ramen! The broth has been going since dawn. Possibly since last week."],choices:[{t:"One bowl, please.",go:"bowl"},{t:"Heard any rumours?",go:"rumour"},{t:"Goodbye.",go:"end"}]},
+    bowl:{say:[()=>pick(["Shoyu, extra scallion. Do not tell Sensei I gave you two eggs.","Miso with butter and corn. The cook winks."])],fx:()=>{ try{ chime(); }catch(e){} },choices:[{t:"Delicious.",go:"end"}]},
+    rumour:{say:["They say penguins live up in the Snowy Pass. Penguins! On a mountain!","I say that is nonsense. I also say I would like to see one."],choices:[{t:"I'll keep an eye out.",go:"end"}]}},
+  kaeru:{start:{say:["Ribbit. Welcome to my farm. Mind the radishes, they are shy."],choices:[{t:"What are you growing?",go:"grow"},{t:"Do you have a dream?",go:"dream"},{t:"Goodbye.",go:"end"}]},
+    grow:{say:["Radishes, cabbages, and one very stubborn pumpkin. Rain does most of the work. I do the worrying."],choices:[{t:"Good luck with the pumpkin.",go:"end"}]},
+    dream:{say:["One day this field will be a golf course. Green as a lily pad, with a little flag on every hole.","It costs more coins than a frog can find, though. Maybe someone will help me, someday."],choices:[{t:"Maybe someday.",go:"end"}]}},
+  taro:{start:{say:["Don! ...The drum is resting today. So am I."],choices:[{t:"When do you play?",go:"when"},{t:"Goodbye.",go:"end"}]},
+    when:{say:["At festivals. When the whole village is listening, the drum is louder. I am not sure how. I do not ask."],choices:[{t:"I'll come to the next one.",go:"end"}]}},
+};
+
 /* ===================== DEV EDITOR (F2 or `) ===================== */
 // Click anything to select it. 1 move · 2 rotate · 3 scale · Ctrl+D duplicate · Delete remove · G snap to ground · Ctrl+Z undo.
 // Edits are saved on this computer and re-applied every time the game loads. "Export" copies them so they can be baked into the game.
-const DEV={on:false,sel:null,inst:null,proxy:new THREE.Object3D(),undo:[],ops:[],done:new Set(),pre:null};
+// edits Gabriel made in the dev editor, baked into the game
+const DEV_BAKED=[{"t":"set","k":"Mesh||0|-13.3,1.4,-10.9","m":[0.9991576447841328,0.04103657965066201,1.6651564941548665e-16,0,-0.041036579650662,0.9991576447841326,-4.28578316905183e-18,0,-1.6655125797206024e-16,-2.5510596930750227e-18,1.0000000000000002,0,-1.386870776152473,1.3448628424238567,1.7053061642287073,1]},{"t":"set","k":"Mesh||0|-13.3,1.4,-10.9","m":[0.9991576447841326,0.041036579650662,0,0,-0.041036579650662,0.9991576447841326,0,0,0,0,1,0,-0.25,1.3448628424238567,0,1]},{"t":"set","k":"Group||10|-14.0,0.1,-14.5","m":[1,0,0,0,0,1,0,0,0,0,1,0,-14,0.08526943558738952,-14.466433456770334,1]},{"t":"set","k":"Group||10|-14.0,0.1,-14.5","m":[1,0,0,0,0,1,0,0,0,0,1,0,-14,0.08526943558738952,-16,1]},{"t":"set","k":"Mesh||0|0.2,0.2,8.3","m":[0.4528099311881182,-0.05183128231513125,-0.5257987093269967,0,-0.006279044114934369,0.5322117636268539,-0.05787087561423503,0,0.47208524787507805,0.04924892103473274,0.40169793141127524,0,-0.08575072174725928,0.12925127779557635,8.342898779835899,1]},{"t":"set","k":"Mesh||0|0.2,0.2,8.3","m":[0.4528099311881182,-0.05183128231513125,-0.5257987093269967,0,-0.006279044114934369,0.5322117636268539,-0.05787087561423503,0,0.47208524787507805,0.04924892103473274,0.40169793141127524,0,-0.07657854839307032,0.12925127779556617,8.799676752317119,1]},{"t":"set","k":"Mesh||0|0.2,0.2,8.3","m":[0.4528099311881182,-0.05183128231513125,-0.5257987093269967,0,-0.006279044114934369,0.5322117636268539,-0.05787087561423503,0,0.47208524787507805,0.04924892103473274,0.40169793141127524,0,-0.07657854839307032,0.12925127779556617,8.799676752317119,1]},{"t":"del","k":"Mesh||0|0.2,0.2,8.3"},{"t":"set","k":"Group||10|-7.8,0.2,6.9","m":[0.16049929717475225,0.571643079389433,-0.08639540145503724,0,-0.5781349112503158,0.15869706307545695,-0.02398471523312021,0,-8.326672684688674e-18,0.08966287948415955,0.5932626467616253,0,-7.380805264255769,0.2544143682422384,6.5618526129229995,1]},{"t":"set","k":"Group||10|-7.8,0.2,6.9","m":[0.16049929717475225,0.571643079389433,-0.08639540145503724,0,-0.5781349112503158,0.15869706307545695,-0.02398471523312021,0,-8.326672684688674e-18,0.08966287948415955,0.5932626467616253,0,-7.380805264255769,-0.03774337860998345,6.5618526129229995,1]},{"t":"set","k":"Group||10|-7.8,0.2,6.9","m":[0.16049929717475225,0.571643079389433,-0.08639540145503724,0,-0.5781349112503158,0.15869706307545695,-0.02398471523312021,0,-8.326672684688674e-18,0.08966287948415955,0.5932626467616253,0,-8.65741346616436,-0.03774337860998345,6.5618526129229995,1]},{"t":"del","k":"Group||10|-7.8,0.2,6.9"},{"t":"del","k":"Mesh||0|-6.5,0.2,6.8"},{"t":"del","k":"Mesh||0|-10.7,0.2,2.7"},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,-13.43592073698491,0.3805234148970589,5.97193040417627,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,-13.992922560130397,-0.24482079951081026,6.6479170412197375,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,-13.992922560130397,-0.24482079951081026,6.6479170412197375,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,-9.215079565270972,0.8229373006248233,29.923082040191392,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,1.7071505792605208,0.7663602153740239,29.915214136858022,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.117866499799264,0.7663602153740239,29.915214136858022,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.335958505495002,0.5994801793467073,29.915214136858022,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.335958505495002,0.6222962262686622,12.82187143418966,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.335958505495002,0.6222962262686622,12.82187143418966,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.335958505495002,0.13519884112479574,17.38817928963841,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.141641465597905,0.17836923733399304,17.879471797863864,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.64838812460223,-0.10118302514236535,17.90066880830288,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.64838812460223,0.5620830505472987,17.90066880830288,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29408584883752353,0,-0.95577900872195,0,0,1,0,0,0.95577900872195,0,-0.29408584883752353,0,11.64838812460223,0.5452623181901997,17.90066880830288,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.2935787820088248,0.017262249004752726,-0.9557790087219503,0,0.058697992688147876,0.9982757863708717,-3.469446951953614e-17,0,0.9541310415286771,-0.05610230926544627,-0.2940858488375243,0,11.64838812460223,0.5443880712201328,17.90066880830288,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.29791224973039904,0.010816946277789426,-0.9545319717713997,0,0.06022441846676439,0.9981567990951855,-0.007484907507348475,0,0.9526916137349551,-0.059715978542404645,-0.29801458190130675,0,11.64838812460223,0.5443880712201328,17.90066880830288,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.12415098229339175,0.010787871634243712,0.9922046943152352,0,-0.05793992002757719,0.9981559342873257,-0.0181023897371,0,-0.9905702899152509,-0.05973569010733018,-0.12329699130399388,0,11.64838812460223,0.5443880712201328,17.90066880830288,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.12415098229339172,0.01078787163424371,0.9922046943152352,0,-0.05793992002757719,0.9981559342873257,-0.01810238973709999,0,-0.9905702899152509,-0.05973569010733017,-0.12329699130399385,0,10.747276781509212,0.4779153423594356,20.99731711722635,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.12415098229339172,0.01078787163424371,0.9922046943152352,0,-0.05793992002757719,0.9981559342873257,-0.01810238973709999,0,-0.9905702899152509,-0.05973569010733017,-0.12329699130399385,0,10.749805090914204,-0.2649524301505486,20.988261393184683,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.12415098229339172,0.01078787163424371,0.9922046943152352,0,-0.05793992002757719,0.9981559342873257,-0.01810238973709999,0,-0.9905702899152509,-0.05973569010733017,-0.12329699130399385,0,10.749805090914204,-0.12479027216502647,20.988261393184683,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.12415098229339172,0.01078787163424371,0.9922046943152352,0,-0.05793992002757719,0.9981559342873257,-0.01810238973709999,0,-0.9905702899152509,-0.05973569010733017,-0.12329699130399385,0,10.749805090914204,-0.12479027216502647,20.988261393184683,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.12415098229339172,0.01078787163424371,0.9922046943152352,0,-0.05793992002757719,0.9981559342873257,-0.01810238973709999,0,-0.9905702899152509,-0.05973569010733017,-0.12329699130399385,0,13.670786438775256,-0.12479027216502647,20.988261393184683,1]},{"t":"set","k":"Group||6|-13.0,0.0,5.5","m":[-0.12415098229339172,0.01078787163424371,0.9922046943152352,0,-0.05793992002757719,0.9981559342873257,-0.01810238973709999,0,-0.9905702899152509,-0.05973569010733017,-0.12329699130399385,0,13.670786438775256,-0.12479027216502647,21.89662875780415,1]},{"t":"del","k":"Mesh||0|10.7,0.2,-2.7"},{"t":"del","k":"Mesh||0|10.8,0.2,2.5"},{"t":"del","k":"Mesh||0|6.5,0.2,-6.8"},{"t":"undel","k":"Mesh||0|6.5,0.2,-6.8"},{"t":"set","k":"Mesh||0|6.5,0.2,-6.8","m":[0.6446813589560026,-0.08851916158882571,-0.2776954175397847,0,0.10140332933307813,0.5655304204176766,0.055141556257655044,0,0.22764868202367888,-0.09531179870450086,0.5588777214164102,0,6.511869404631673,0.1731568926031328,-6.7832432857425,1]},{"t":"set","k":"Mesh||0|6.5,0.2,-6.8","m":[0.6446813589560026,-0.08851916158882571,-0.2776954175397847,0,0.10140332933307813,0.5655304204176766,0.055141556257655044,0,0.22764868202367888,-0.09531179870450086,0.5588777214164103,0,5.25701030804337,0.1731568926031328,-6.7832432857425,1]},{"t":"set","k":"Mesh||0|-0.2,0.2,-8.3","m":[0.29132457306554144,-0.0006626463644857339,0.49893818954571595,0,0.03297222115881611,0.6263400778333403,-0.018420270224203075,0,-0.5990483492739116,0.04182389160860449,0.34983335151491707,0,6.483693806797344,-0.17982748830292142,-6.791879886839023,1]},{"t":"set","k":"Mesh||0|6.5,0.2,-6.8","m":[0.6446813589560026,-0.08851916158882571,-0.2776954175397847,0,0.10140332933307813,0.5655304204176766,0.055141556257655044,0,0.22764868202367888,-0.09531179870450086,0.5588777214164103,0,5.539782207477029,-0.43085196227706346,-6.78433003976808,1]},{"t":"set","k":"Mesh||0|-0.2,0.2,-8.3","m":[0.29132457306554144,-0.000662646364485736,0.49893818954571595,0,0.03297222115881611,0.6263400778333403,-0.018420270224203072,0,-0.5990483492739116,0.041823891608604495,0.34983335151491707,0,6.3774948083029255,-0.3903597152502633,-6.849387449796299,1]},{"t":"set","k":"Mesh||0|6.5,0.2,-6.8","m":[0.6446813589560026,-0.08851916158882571,-0.2776954175397847,0,0.10140332933307813,0.5655304204176766,0.055141556257655044,0,0.22764868202367888,-0.09531179870450086,0.5588777214164103,0,5.539782207477029,-0.43085196227706346,-6.78433003976808,1]},{"t":"dup","k":"dup:mwtg07joop4r","src":"Mesh||0|6.5,0.2,-6.8","m":[0.6446813589560026,-0.08851916158882571,-0.2776954175397847,0,0.10140332933307813,0.5655304204176766,0.055141556257655044,0,0.22764868202367888,-0.09531179870450086,0.5588777214164103,0,4.09429284995247,-0.43085196227706346,-7.185030073812546,1]},{"t":"set","k":"dup:mwtg07joop4r","m":[0.6446813589560026,-0.08851916158882571,-0.2776954175397847,0,0.10140332933307813,0.5655304204176766,0.055141556257655044,0,0.22764868202367888,-0.09531179870450086,0.5588777214164103,0,4.966885020459198,-0.423510973832442,-6.937936024544456,1]},{"t":"del","k":"Mesh||0|-6.8,0.2,-6.6"}];
+const DEV={on:false,sel:null,inst:null,proxy:new THREE.Object3D(),undo:[],ops:[],done:new Set(),bdone:new Set(),pre:null};
 try{ DEV.ops=JSON.parse(localStorage.getItem("sh_dev_ops")||"[]"); }catch(e){ DEV.ops=[]; }
 scene.add(DEV.proxy);
 const devTC=new TransformControls(camera,renderer.domElement); devTC.setSize(.9); devTC.enabled=false; devTC.visible=false; scene.add(devTC);
@@ -4162,16 +4289,23 @@ body.dev,body.dev *{cursor:auto!important}body.dev canvas{cursor:crosshair!impor
 <div class="h">WASD still walks. Drag the coloured arrows/rings to edit. Hold Shift while dragging to snap. Edits save automatically.</div>`;
 document.body.appendChild(devUI);
 function devSave(){ const when=Date.now(); try{ localStorage.setItem("sh_dev_ops",JSON.stringify(DEV.ops)); localStorage.setItem("sh_dev_when",String(when)); }catch(e){}
-  devCloudSet("saving…"); try{ if(typeof DB!=="undefined"&&DB) DB.doc("dev/edits").set({ops:DEV.ops,when}).then(()=>devCloudSet("saved to the cloud ✓")).catch(()=>devCloudSet("cloud offline: saved on this PC")); else devCloudSet("cloud offline: saved on this PC"); }catch(e){ devCloudSet("cloud offline: saved on this PC"); } }
+  devCloudSet("saving…"); let fileOk=false;
+  const fileSave=()=>{ try{ if(window.sensei&&window.sensei.invoke) return window.sensei.invoke("garden:devfile",{op:"set",data:{ops:DEV.ops,when}}).then(r=>{ fileOk=!!(r&&r.ok); return fileOk; }).catch(()=>false); }catch(e){} return Promise.resolve(false); };
+  fileSave().then(ok=>{ const where=ok?"saved to Documents\\Sensei Hakuun (OneDrive) ✓":"saved on this PC";
+    try{ if(typeof DB!=="undefined"&&DB) DB.doc("dev/edits").set({ops:DEV.ops,when}).then(()=>devCloudSet(where+" + cloud ✓")).catch(()=>devCloudSet(where)); else devCloudSet(where); }catch(e){ devCloudSet(where); } }); }
 function devCloudSet(t){ const el=document.getElementById("devCloud"); if(el) el.textContent=t; }
 // pull edits made on another computer (or before a reinstall) from the cloud
+(async()=>{ try{ if(!(window.sensei&&window.sensei.invoke)) return; const r=await window.sensei.invoke("garden:devfile",{op:"get"}); const localWhen=+(localStorage.getItem("sh_dev_when")||0);
+  if(r&&r.data&&Array.isArray(r.data.ops)&&(r.data.when||0)>localWhen){ DEV.ops=r.data.ops; DEV.done.clear(); try{ localStorage.setItem("sh_dev_ops",JSON.stringify(DEV.ops)); localStorage.setItem("sh_dev_when",String(r.data.when)); }catch(e){} devApplyAll(); }
+  if(r&&r.ok) devCloudSet("Documents\\Sensei Hakuun (OneDrive) ✓"); }catch(e){} })();
 let devCloudTries=0; const devCloudPoll=setInterval(async()=>{ if(++devCloudTries>40) return clearInterval(devCloudPoll); if(typeof DB==="undefined"||!DB) return; clearInterval(devCloudPoll);
   try{ const snap=await DB.doc("dev/edits").get(); const localWhen=+(localStorage.getItem("sh_dev_when")||0);
     if(snap&&snap.exists){ const d=snap.data(); if((d.when||0)>localWhen&&Array.isArray(d.ops)){ DEV.ops=d.ops; DEV.done.clear(); try{ localStorage.setItem("sh_dev_ops",JSON.stringify(DEV.ops)); localStorage.setItem("sh_dev_when",String(d.when)); }catch(e){} devApplyAll(); } devCloudSet("synced with the cloud ✓"); }
     else if(DEV.ops.length){ DB.doc("dev/edits").set({ops:DEV.ops,when:localWhen||Date.now()}).then(()=>devCloudSet("saved to the cloud ✓")).catch(()=>{}); } else devCloudSet("connected to the cloud ✓"); }catch(e){ devCloudSet("cloud offline: saved on this PC"); } },1500);
 function devVisible(o){ for(let p=o;p;p=p.parent){ if(!p.visible) return false; } return true; }
 function devSize(o){ devBox.setFromObject(o); return devBox.isEmpty()?0:devBox.getSize(devV).length(); }
-function devKey(o){ if(o.userData.devKey) return o.userData.devKey; o.updateWorldMatrix(true,false); const p=new THREE.Vector3().setFromMatrixPosition(o.matrixWorld); return o.userData.devKey=`${o.type}|${o.name||""}|${o.children.length}|${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`; }
+function devKeyOld(o){ o.updateWorldMatrix(true,false); const p=new THREE.Vector3().setFromMatrixPosition(o.matrixWorld); return `${o.type}|${o.name||""}|${o.children.length}|${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`; }
+function devKey(o){ if(o.userData.devKey) return o.userData.devKey; let k=devKeyOld(o); if(o.isInstancedMesh){ const g=o.geometry; k+=`|i${o.count}v${g.attributes.position?g.attributes.position.count:0}`; } return o.userData.devKey=k; }
 function devIndex(){ const m=new Map(); scene.traverse(o=>{ if(o===devTC||o===DEV.proxy) return; const k=devKey(o); if(!m.has(k)) m.set(k,o); }); return m; }
 function devRoot(o){ let r=o; while(r.parent&&r.parent!==scene){ const p=r.parent; if(p.children.length>40) break; const s=devSize(p); if(s>16) break; r=p; } return devSize(r)>70?null:r; }
 function devWorldRadius(o){ devBox.setFromObject(o); return Math.max(.5,Math.hypot(devBox.max.x-devBox.min.x,devBox.max.z-devBox.min.z)/2); }
@@ -4216,16 +4350,17 @@ function devUndo(){ const u=DEV.undo.pop(); if(!u) return;
   else if(u.t==="dup"){ u.obj.parent&&u.obj.parent.remove(u.obj); DEV.ops.push({t:"rm",k:u.k}); }
   devSave(); devSelect(null); }
 function devFind(idx,k){ const h=k.indexOf("#",k.lastIndexOf("|")); if(h>0&&!k.startsWith("dup:")){ const im=idx.get(k.slice(0,h)); return im&&im.isInstancedMesh?{inst:{im,id:+k.slice(h+1)}}:null; } const o=idx.get(k); return o?{obj:o}:null; }
-function devApplyAll(){ if(!DEV.ops.length) return; const idx=devIndex(); let pending=0;
-  DEV.ops.forEach((op,i)=>{ if(DEV.done.has(i)) return; let t;
-    if(op.t==="dup"){ const s=devFind(idx,op.src); if(!s){ pending++; return; } let c; if(s.inst){ const im=s.inst.im; c=new THREE.Mesh(im.geometry,im.material); c.castShadow=im.castShadow; c.receiveShadow=im.receiveShadow; im.parent.add(c); } else { c=s.obj.clone(true); s.obj.parent.add(c); c.traverse(o=>{ if(o!==c) delete o.userData.devKey; }); }
-      new THREE.Matrix4().fromArray(op.m).decompose(c.position,c.quaternion,c.scale); c.updateMatrixWorld(true); c.userData.devKey=op.k; idx.set(op.k,c); DEV.done.add(i); return; }
+function devApplyAll(){ if(!DEV.ops.length&&DEV.bdone.size>=DEV_BAKED.length) return; const idx=devIndex(); let pending=0;
+  const run=(list,done)=>list.forEach((op,i)=>{ if(done.has(i)) return; let t;
+    if(op.t==="dup"){ if(idx.has(op.k)){ done.add(i); return; } const s=devFind(idx,op.src); if(!s){ pending++; return; } let c; if(s.inst){ const im=s.inst.im; c=new THREE.Mesh(im.geometry,im.material); c.castShadow=im.castShadow; c.receiveShadow=im.receiveShadow; im.parent.add(c); } else { c=s.obj.clone(true); s.obj.parent.add(c); c.traverse(o=>{ if(o!==c) delete o.userData.devKey; }); }
+      new THREE.Matrix4().fromArray(op.m).decompose(c.position,c.quaternion,c.scale); c.updateMatrixWorld(true); c.userData.devKey=op.k; idx.set(op.k,c); done.add(i); return; }
     t=devFind(idx,op.k); if(!t){ pending++; return; }
     if(op.t==="set"){ const before=t.inst?null:t.obj.getWorldPosition(new THREE.Vector3()); devSetLocal(t,new THREE.Matrix4().fromArray(op.m)); if(before){ devColliders(before,t.obj.getWorldPosition(new THREE.Vector3()),devWorldRadius(t.obj),"move"); } }
     else if(op.t==="del"){ if(t.inst) devSetLocal(t,new THREE.Matrix4().makeScale(0,0,0)); else { const p=t.obj.getWorldPosition(new THREE.Vector3()); devColliders(p,p,devWorldRadius(t.obj),"del"); t.obj.visible=false; } }
     else if(op.t==="undel"){ if(!t.inst) t.obj.visible=true; }
     else if(op.t==="rm"){ if(t.obj&&t.obj.parent) t.obj.parent.remove(t.obj); }
-    DEV.done.add(i); });
+    done.add(i); });
+  run(DEV_BAKED,DEV.bdone); run(DEV.ops,DEV.done);
   return pending; }
 [1500,6000,15000,30000].forEach(ms=>setTimeout(()=>{ try{ devApplyAll(); }catch(e){ console.warn("[dev]",e); } },ms));
 function devToggle(on=!DEV.on){ DEV.on=on; devUI.style.display=on?"block":"none"; devTC.enabled=on; devTC.visible=on; document.body.classList.toggle("dev",on); if(on){ try{ document.exitPointerLock(); }catch(e){} } else { devSelect(null); controls.enabled=true; } }
@@ -4374,6 +4509,14 @@ $("#rJoin").addEventListener("click",async()=>{ const code=$("#rCode").value.rep
 document.querySelectorAll(".rb").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); b.classList.add("down"); setTimeout(()=>b.classList.remove("down"),130); cEmit({b:b.dataset.b}); }));
 $("#rForm").addEventListener("submit",e=>{ e.preventDefault(); const t=$("#rInp").value.trim(); if(!t) return; $("#rInp").value=""; cEmit({say:t}); $("#rInp").blur(); });
 
+// loading screen on launch: wait for the trees, rocks and fonts, and compile every shader once, so nothing pops in or stutters
+(function bootLoading(){ const el=$("#loadScr"); if(!el||remoteMode) return; $("#loadName").textContent=PAPER?"Paper Samurai":"Sensei Hakuun"; $("#loadTip").textContent="Preparing the world…"; el.classList.add("show","vis");
+  const bar=$("#loadBar"); bar.style.transition="width .3s"; let p=0; const t0=performance.now(); let compiled=false;
+  const tick=()=>{ const t=performance.now()-t0, ready=(typeof natReady!=="undefined"&&natReady)||t>20000;
+    p=Math.min(ready?100:90,p+(ready?6:Math.max(.15,(90-p)*.02))); bar.style.width=p+"%";
+    if(ready&&!compiled){ compiled=true; try{ renderer.compile(scene,camera); }catch(e){} }
+    if(ready&&p>=100&&t>900){ setTimeout(()=>{ el.classList.remove("vis"); setTimeout(()=>el.classList.remove("show"),600); },120); return; }
+    requestAnimationFrame(tick); }; requestAnimationFrame(tick); })();
 // run the starter-town clean-up after every part of the world has been built
 try{ starterCleanup(); }catch(e){ console.warn("[cut]",e); } [2500,9000,20000].forEach(ms=>setTimeout(()=>{ try{ cutWalk(scene); for(let i=circles.length-1;i>=0;i--){ const c=circles[i]; if(!c.sky&&inCut(c.x,c.z)) circles.splice(i,1); } }catch(e){} },ms));
 </script>

@@ -411,6 +411,10 @@ module.exports = function core(ctx) {
   // mouse capture for the garden's mouse-look, asked for from the main process so it counts as a user gesture
   ipcMain.on('garden:lock', (e, on) => { try { if (!garden || garden.isDestroyed()) return; if (on && !garden.isFocused()) garden.focus(); garden.webContents.executeJavaScript(on ? 'new Promise((ok,no)=>{ const c=document.getElementById("c"); const r=c.requestPointerLock(); if(r&&r.then) r.then(()=>ok("locked"),err=>no(String(err))); else ok("requested"); })' : 'document.exitPointerLock()', true).then(r => { if (on) log('pointer lock:', r); }).catch(err => log('pointer lock failed:', err && err.message)); } catch (err) { log('pointer lock error', err.message); } });
   ipcMain.on('garden:dbg', (e, m) => log('garden:', String(m).slice(0, 300)));
+  // dev-editor edits are also kept in Documents\Sensei Hakuun (OneDrive syncs it), so they survive reinstalls and other PCs
+  ipcMain.handle('garden:devfile', async (e, q) => { try { const dir = path.join(app.getPath('documents'), 'Sensei Hakuun'), f = path.join(dir, 'dev-edits.json');
+    if (q && q.op === 'set') { fs.mkdirSync(dir, { recursive: true }); fs.writeFileSync(f, JSON.stringify(q.data)); return { ok: true, path: f }; }
+    if (fs.existsSync(f)) return { ok: true, path: f, data: JSON.parse(fs.readFileSync(f, 'utf8')) }; return { ok: true, path: f, data: null }; } catch (err) { return { error: err.message }; } });
   // while the garden is open, both remotes are locked to the screen it is on
   function gameOpen() { return garden && !garden.isDestroyed() && garden.isVisible() && !garden.isMinimized(); }
   function gameRect() { if (gameOpen()) { if (garden.isFullScreen()) return screen.getDisplayMatching(garden.getBounds()).bounds; return garden.getContentBounds(); } return screen.getPrimaryDisplay().bounds; }
