@@ -1,7 +1,7 @@
 {
-  "version": 40,
+  "version": 41,
   "shellApi": 2,
-  "notes": "Paper Samurai (experimental): a Paper Mario style version of the game. Switch on the title screen with \"Try Paper Samurai (WIP)\". The 3D garden is unchanged.",
+  "notes": "Paper koi and paper villagers; forward roll; lantern black hole; babble voice; camera resets smoothly; tab out opens the menu; simpler menu; dev editor (F2).",
   "files": [
     "brain-client.js",
     "core.js",
@@ -30,7 +30,8 @@
     "vendor/addons/loaders/GLTFLoader.js",
     "vendor/addons/utils/BufferGeometryUtils.js",
     "assets/lowpoly.glb",
-    "visitor.js"
+    "visitor.js",
+    "vendor/addons/controls/TransformControls.js"
   ],
   "minShell": "0.2.0"
 }

@@ -236,6 +236,7 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
 <body>
 <canvas id="c"></canvas>
 <div class="grain"></div><div class="vignette"></div>
+<style>#miTalk,#miGames,#miScrolls,#miStyle,#miPair,#miRemote,#voiceBtn,#lifeBtn,#scrollBtn,#soundBtn{display:none!important}</style>
 <div class="hud">
   <div class="card" id="clock"><div class="t" id="clockT">--:--</div><div class="s" id="clockS"></div><div class="s" id="sStat" style="margin-top:4px;opacity:.95;color:#d9f2ff"></div></div>
   <div class="btns">
@@ -291,9 +292,10 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
 </div>
 <div class="panel" id="setPanel">
   <h2>Settings</h2>
-  <div class="pbtn" id="setVoice">Sensei's voice <b id="setVoiceV">—</b></div>
-  <div class="pbtn" id="setSpeak">Read replies aloud <b id="setSpeakV">On</b></div>
+  <div class="pbtn" id="setVoice" style="display:none">Sensei's voice <b id="setVoiceV">—</b></div>
+  <div class="pbtn" id="setSpeak">Sensei's voice <b id="setSpeakV">On</b></div>
   <div class="pbtn" id="setMusic">Music & ambience <b id="setMusicV">On</b></div>
+  <div class="pbtn" id="setStyle">Art style <b id="setStyleV">3D</b></div>
   <div class="pbtn" data-close="setPanel">Close</div>
 </div>
 <div class="panel tall" id="scrollPanel">
@@ -385,6 +387,7 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { TransformControls } from "three/addons/controls/TransformControls.js";
 
 /* ===================== Sensei's mind (used by the Windows app, opened as #brain) ===================== */
 if(location.hash==="#brain"){ await senseiBrainMode(); throw "sensei-brain-mode"; }
@@ -557,6 +560,133 @@ paperPass.enabled=PAPER; composer.addPass(paperPass); if(PAPER){ bloom.strength=
 const gm=new THREE.DataTexture(new Uint8Array([105,105,105,255,170,170,170,255,225,225,225,255,255,255,255,255]),4,1,THREE.RGBAFormat);
 gm.minFilter=gm.magFilter=THREE.NearestFilter; gm.needsUpdate=true;
 const MAT={}; const toon=(c,o={})=>{ const k=c+JSON.stringify(Object.keys(o)); if(!Object.keys(o).length && MAT[k]) return MAT[k]; const m=new THREE.MeshToonMaterial({color:c,gradientMap:gm,...o}); if(!Object.keys(o).length) MAT[k]=m; return m; };
+/* ===================== PAPER SAMURAI: paper-cutout drawing helpers ===================== */
+const PAPERX={ix:0,iz:1,mag:0,face:1,sx:1,back:false,ft:0,step:0};
+function paperInput(ix,iz,mag){ PAPERX.mag=mag; if(mag>.08){ if(Math.abs(ix)>.25) PAPERX.face=ix>0?1:-1; if(Math.abs(iz)>.3) PAPERX.back=iz<0; } }
+function paperCanvas(w,h,draw,border=10){
+  const a=document.createElement("canvas"); a.width=w; a.height=h; const g=a.getContext("2d"); draw(g,w,h);
+  const c=document.createElement("canvas"); c.width=w; c.height=h; const o=c.getContext("2d");
+  if(border>0){
+    for(let i=0;i<24;i++){ const t=i/24*Math.PI*2; o.drawImage(a,Math.cos(t)*border,Math.sin(t)*border+2); }
+    o.globalCompositeOperation="source-in"; o.fillStyle="#cfc7b8"; o.fillRect(0,0,w,h); o.globalCompositeOperation="source-over";
+    const b=document.createElement("canvas"); b.width=w; b.height=h; const bg=b.getContext("2d");
+    for(let i=0;i<24;i++){ const t=i/24*Math.PI*2; bg.drawImage(a,Math.cos(t)*border,Math.sin(t)*border); }
+    bg.globalCompositeOperation="source-in"; bg.fillStyle="#fffdf6"; bg.fillRect(0,0,w,h); o.drawImage(b,0,0);
+  }
+  o.drawImage(a,0,0);
+  o.globalCompositeOperation="source-atop"; for(let i=0;i<w*h/250;i++){ o.fillStyle=`rgba(${Math.random()<.5?255:120},${Math.random()<.5?250:110},230,${Math.random()*.06})`; o.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*3,1); }
+  o.globalCompositeOperation="source-over"; return c;
+}
+function paperCut(w,h,draw,border=10){ const t=new THREE.CanvasTexture(paperCanvas(w,h,draw,border)); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t; }
+const rr=(g,x,y,w,h,r)=>{ g.beginPath(); g.roundRect(x,y,w,h,r); };
+function drawSamurai(g,W,H,back,step){
+  const s=W/256; g.save(); g.scale(s,s); const X=128; const ink="#1d1a22"; const lo=step?10:0;
+  [[-1,lo],[1,-lo]].forEach(([d,o])=>{ g.fillStyle="#232a3d"; rr(g,X+d*26-14,250+o*.4,28,48-o*.6,12); g.fill(); g.fillStyle="#6b4a2c"; rr(g,X+d*26-17,290-o*.2,34,12,6); g.fill(); });
+  g.fillStyle="#2e3a5c"; g.beginPath(); g.moveTo(X-50,262); g.lineTo(X-36,178); g.lineTo(X+36,178); g.lineTo(X+50,262); g.quadraticCurveTo(X,270,X-50,262); g.fill();
+  g.strokeStyle="#22294a"; g.lineWidth=3; [-18,0,18].forEach(d=>{ g.beginPath(); g.moveTo(X+d*.8,184); g.lineTo(X+d*1.2,258); g.stroke(); });
+  g.fillStyle="#3c5a8c"; rr(g,X-44,138,88,58,22); g.fill(); rr(g,X-62,144,26,52,13); g.fill(); rr(g,X+36,144,26,52,13); g.fill();
+  g.fillStyle="#f3cfae"; g.beginPath(); g.arc(X-49,198,10,0,7); g.arc(X+49,198,10,0,7); g.fill();
+  if(!back){ g.fillStyle="#f4ecd8"; g.beginPath(); g.moveTo(X-18,140); g.lineTo(X,176); g.lineTo(X+18,140); g.closePath(); g.fill(); g.strokeStyle="#c8452f"; g.lineWidth=5; g.beginPath(); g.moveTo(X-16,140); g.lineTo(X,172); g.lineTo(X+16,140); g.stroke(); }
+  g.fillStyle="#c8452f"; rr(g,X-46,176,92,16,6); g.fill(); g.fillStyle="#e8c25a"; rr(g,X-6,177,12,14,3); g.fill();
+  g.save(); if(back){ g.translate(X,170); g.rotate(-.75); } else { g.translate(X+40,186); g.rotate(-.35); }
+  g.fillStyle="#2a2028"; rr(g,-70,-6,110,12,5); g.fill(); g.fillStyle="#e8c25a"; rr(g,38,-11,8,22,3); g.fill(); g.fillStyle="#6e2b2b"; rr(g,46,-5,40,10,4); g.fill(); g.restore();
+  g.fillStyle="#c8452f"; g.beginPath(); g.moveTo(X+18,132); g.quadraticCurveTo(X+58,126,X+70,step?150:142); g.lineTo(X+60,156); g.quadraticCurveTo(X+44,140,X+16,146); g.fill();
+  g.fillStyle=back?"#2a2026":"#f6d9bb"; g.beginPath(); g.ellipse(X,100,44,42,0,0,7); g.fill();
+  if(!back){ g.fillStyle="#2a2026"; g.beginPath(); g.ellipse(X,80,44,24,0,Math.PI,0); g.fill();
+    g.fillStyle=ink; [-1,1].forEach(d=>{ g.beginPath(); g.ellipse(X+d*16,104,6,9,0,0,7); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(X+d*16+2,100,2.4,0,7); g.fill(); g.fillStyle=ink; });
+    g.fillStyle="rgba(232,120,110,.45)"; g.beginPath(); g.ellipse(X-30,118,9,5,0,0,7); g.ellipse(X+30,118,9,5,0,0,7); g.fill();
+    g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); g.arc(X,118,6,.2,Math.PI-.2); g.stroke(); }
+  else { g.fillStyle="#1d161b"; g.beginPath(); g.arc(X,70,12,0,7); g.fill(); }
+  g.fillStyle="#c8452f"; rr(g,X-36,128,72,16,8); g.fill();
+  g.fillStyle="#d9b56b"; g.beginPath(); g.moveTo(X-96,72); g.quadraticCurveTo(X,6,X+96,72); g.quadraticCurveTo(X,58,X-96,72); g.fill();
+  g.strokeStyle="#b48a44"; g.lineWidth=3; for(let i=-3;i<=3;i++){ g.beginPath(); g.moveTo(X+i*8,26); g.lineTo(X+i*28,68); g.stroke(); }
+  g.fillStyle="#8a6232"; g.beginPath(); g.ellipse(X,64,96,7,0,0,7); g.fill(); g.restore();
+}
+function drawSensei(g,W,H){
+  const s=W/320; g.save(); g.scale(s,s);
+  g.fillStyle="rgba(170,225,255,.85)"; [[-1,0],[0,1],[1,.6]].forEach(([k,o])=>{ g.beginPath(); g.moveTo(96,120); g.quadraticCurveTo(50,100+k*30,8,96+k*44); g.quadraticCurveTo(46,118+k*12,96,132); g.fill(); });
+  g.fillStyle="#f2fbff"; g.beginPath(); g.ellipse(170,124,88,46,0,0,7); g.fill();
+  g.fillStyle="#ffcfc4"; g.beginPath(); g.ellipse(150,104,26,12,-.2,0,7); g.ellipse(196,140,20,9,.2,0,7); g.fill();
+  g.save(); g.beginPath(); g.ellipse(170,124,88,46,0,0,7); g.clip(); g.fillStyle="#7d9ad6"; [128,164].forEach(x=>{ g.beginPath(); g.moveTo(x-7,60); g.quadraticCurveTo(x+6,124,x-7,190); g.lineTo(x+7,190); g.quadraticCurveTo(x+20,124,x+7,60); g.fill(); }); g.restore();
+  g.fillStyle="rgba(190,232,255,.9)"; g.beginPath(); g.moveTo(170,166); g.quadraticCurveTo(150,198,130,192); g.quadraticCurveTo(150,178,160,164); g.fill();
+  g.fillStyle="#1d1a22"; g.beginPath(); g.ellipse(226,114,7,9,0,0,7); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(228,110,2.5,0,7); g.fill();
+  g.strokeStyle="#1d1a22"; g.lineWidth=3; g.beginPath(); g.arc(240,130,9,.3,Math.PI-.6); g.stroke();
+  g.fillStyle="rgba(232,120,110,.45)"; g.beginPath(); g.ellipse(214,134,9,5,0,0,7); g.fill();
+  g.strokeStyle="#9fbcd8"; g.lineWidth=3; g.beginPath(); g.moveTo(252,128); g.quadraticCurveTo(280,140,290,170); g.moveTo(250,124); g.quadraticCurveTo(284,118,300,132); g.stroke();
+  g.fillStyle="#d9b56b"; g.beginPath(); g.moveTo(140,86); g.quadraticCurveTo(200,18,262,80); g.quadraticCurveTo(200,70,140,86); g.fill();
+  g.strokeStyle="#b48a44"; g.lineWidth=3; for(let i=-3;i<=3;i++){ g.beginPath(); g.moveTo(201+i*5,40); g.lineTo(201+i*17,78); g.stroke(); }
+  g.fillStyle="#8a6232"; g.beginPath(); g.ellipse(201,80,62,5,-.1,0,7); g.fill(); g.restore();
+}
+function shade(c,k){ const x=new THREE.Color(c); return "#"+x.multiplyScalar(k).getHexString(); }
+// villagers and friends: chibi animal spirits in robes
+function drawAnimal(g,W,H,o){
+  const s=W/256; g.save(); g.scale(s,s); const X=128, ink="#1d1a22";
+  const kind=o.kind||(o.fox?"fox":/tanuki/i.test(o.name||"")?"tanuki":/kaeru/i.test(o.name||"")?"frog":"cat");
+  const fur=o.fur||"#e9d7b9", furD=shade(fur,.78), robe=o.robe||"#2f3d55", sash=o.sash||"#c23a2a";
+  if(o.tail||kind==="fox"){ g.fillStyle=fur; g.beginPath(); g.moveTo(X+30,250); g.quadraticCurveTo(X+120,240,X+104,150); g.quadraticCurveTo(X+84,200,X+28,226); g.fill(); g.fillStyle=o.tip||"#ffffff"; g.beginPath(); g.moveTo(X+104,150); g.quadraticCurveTo(X+116,186,X+98,198); g.quadraticCurveTo(X+92,176,X+104,150); g.fill(); }
+  if(kind==="tanuki"){ g.fillStyle=furD; rr(g,X+30,220,60,26,13); g.fill(); g.fillStyle="#3a2a1e"; rr(g,X+56,220,10,26,3); g.fill(); rr(g,X+74,220,10,26,3); g.fill(); }
+  g.fillStyle=furD; [[-1],[1]].forEach(([d])=>{ g.beginPath(); g.ellipse(X+d*24,292,20,12,0,0,7); g.fill(); });
+  g.fillStyle=robe; g.beginPath(); g.moveTo(X-58,290); g.lineTo(X-40,160); g.lineTo(X+40,160); g.lineTo(X+58,290); g.quadraticCurveTo(X,300,X-58,290); g.fill();
+  g.strokeStyle=shade(robe,.75); g.lineWidth=3; g.beginPath(); g.moveTo(X-14,166); g.lineTo(X+8,206); g.moveTo(X+14,166); g.lineTo(X-2,186); g.stroke();
+  if(o.apron){ g.fillStyle=o.apron; rr(g,X-34,206,68,78,10); g.fill(); }
+  g.fillStyle=sash; rr(g,X-46,196,92,18,6); g.fill();
+  g.fillStyle=robe; rr(g,X-66,168,26,58,13); g.fill(); rr(g,X+40,168,26,58,13); g.fill();
+  g.fillStyle=fur; g.beginPath(); g.arc(X-53,228,11,0,7); g.arc(X+53,228,11,0,7); g.fill();
+  // ears
+  g.fillStyle=fur;
+  if(kind==="rabbit"){ [-1,1].forEach(d=>{ g.beginPath(); g.ellipse(X+d*24,30,15,44,d*.15,0,7); g.fill(); }); g.fillStyle="#f2b5c4"; [-1,1].forEach(d=>{ g.beginPath(); g.ellipse(X+d*24,34,7,30,d*.15,0,7); g.fill(); }); }
+  else if(kind==="fox"||kind==="cat"){ [-1,1].forEach(d=>{ g.beginPath(); g.moveTo(X+d*18,58); g.lineTo(X+d*(kind==="fox"?50:46),kind==="fox"?6:22); g.lineTo(X+d*56,74); g.fill(); }); g.fillStyle=furD; [-1,1].forEach(d=>{ g.beginPath(); g.moveTo(X+d*28,60); g.lineTo(X+d*(kind==="fox"?48:44),kind==="fox"?20:32); g.lineTo(X+d*50,66); g.fill(); }); }
+  else if(kind==="bear"||kind==="tanuki"){ [-1,1].forEach(d=>{ g.beginPath(); g.arc(X+d*44,50,20,0,7); g.fill(); }); g.fillStyle=furD; [-1,1].forEach(d=>{ g.beginPath(); g.arc(X+d*44,50,10,0,7); g.fill(); }); }
+  else if(kind==="owl"){ [-1,1].forEach(d=>{ g.beginPath(); g.moveTo(X+d*30,52); g.lineTo(X+d*54,22); g.lineTo(X+d*58,62); g.fill(); }); }
+  else if(kind==="frog"){ [-1,1].forEach(d=>{ g.beginPath(); g.arc(X+d*30,50,22,0,7); g.fill(); }); }
+  // head
+  g.fillStyle=fur; g.beginPath(); g.ellipse(X,104,60,56,0,0,7); g.fill();
+  if(kind==="owl"){ g.fillStyle=shade(fur,1.25); [-1,1].forEach(d=>{ g.beginPath(); g.arc(X+d*24,100,22,0,7); g.fill(); }); }
+  if(o.muzzle||kind==="fox"||kind==="cat"||kind==="tanuki"||kind==="bear"){ g.fillStyle=o.muzzle||shade(fur,1.2); g.beginPath(); g.ellipse(X,128,30,22,0,0,7); g.fill(); }
+  if(o.patch||kind==="tanuki"){ g.fillStyle=o.patch||"#3a2a1e"; [-1,1].forEach(d=>{ g.beginPath(); g.ellipse(X+d*22,102,17,13,d*.4,0,7); g.fill(); }); }
+  if(o.mask){ g.strokeStyle=o.mask; g.lineWidth=5; [-1,1].forEach(d=>{ g.beginPath(); g.moveTo(X+d*12,82); g.lineTo(X+d*34,74); g.stroke(); }); }
+  // eyes
+  const ey=kind==="frog"?50:102, ex=kind==="frog"?30:22;
+  [-1,1].forEach(d=>{ g.fillStyle=kind==="frog"||kind==="owl"?"#fff8e0":"transparent"; if(kind==="frog"||kind==="owl"){ g.beginPath(); g.arc(X+d*ex,ey,kind==="owl"?14:13,0,7); g.fill(); }
+    g.fillStyle=ink; g.beginPath(); g.ellipse(X+d*ex,ey+1,7,9,0,0,7); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(X+d*ex+2,ey-3,2.6,0,7); g.fill(); });
+  if(kind==="owl"||kind==="crane"){ g.fillStyle="#e8a23a"; g.beginPath(); g.moveTo(X-8,118); g.lineTo(X+8,118); g.lineTo(X,134); g.fill(); }
+  else { g.fillStyle=ink; g.beginPath(); g.ellipse(X,120,6,4,0,0,7); g.fill(); g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); g.arc(X-6,126,6,.2,Math.PI-.4); g.arc(X+6,126,6,.4,Math.PI-.2); g.stroke(); }
+  if(kind==="crane"){ g.fillStyle="#d23a2a"; g.beginPath(); g.arc(X,58,12,0,7); g.fill(); }
+  g.fillStyle="rgba(232,120,110,.42)"; g.beginPath(); g.ellipse(X-38,124,9,5,0,0,7); g.ellipse(X+38,124,9,5,0,0,7); g.fill();
+  if(o.hat){ const fr=kind==="frog", hw=fr?14:36, hy=fr?50:40; g.fillStyle=o.hat; rr(g,X-hw,hy,hw*2,fr?18:24,8); g.fill(); g.fillStyle=shade(o.hat,.8); rr(g,X-hw-(fr?5:10),hy+(fr?14:18),hw*2+(fr?10:20),8,4); g.fill(); }
+  g.restore();
+}
+function drawKoi(g,W,H,base,spot,side){
+  const s=W/256; g.save(); g.scale(s,s); const cy=64;
+  g.fillStyle=base; g.beginPath(); g.moveTo(250,cy); g.bezierCurveTo(240,cy-(side?40:34),150,cy-(side?44:40),60,cy-(side?14:12)); g.quadraticCurveTo(14,cy,60,cy+(side?14:12)); g.bezierCurveTo(150,cy+(side?40:40),240,cy+(side?30:34),250,cy); g.fill();
+  if(side){ g.beginPath(); g.moveTo(170,cy-36); g.quadraticCurveTo(130,cy-62,92,cy-24); g.fill(); g.beginPath(); g.moveTo(190,cy+28); g.quadraticCurveTo(176,cy+50,160,cy+30); g.fill(); }
+  else { g.globalAlpha=.75; [-1,1].forEach(d=>{ g.beginPath(); g.moveTo(196,cy+d*30); g.quadraticCurveTo(182,cy+d*60,160,cy+d*52); g.quadraticCurveTo(174,cy+d*40,184,cy+d*28); g.fill(); }); g.globalAlpha=1; }
+  if(spot){ g.save(); g.beginPath(); g.moveTo(250,cy); g.bezierCurveTo(240,cy-40,150,cy-44,60,cy-14); g.quadraticCurveTo(14,cy,60,cy+14); g.bezierCurveTo(150,cy+40,240,cy+34,250,cy); g.clip(); g.fillStyle=spot;
+    [[170,cy-14,30,20],[118,cy+8,26,16],[206,cy+10,18,12]].forEach(([x,y,a,b])=>{ g.beginPath(); g.ellipse(x,y,a,b,.3,0,7); g.fill(); }); g.restore(); }
+  g.fillStyle="#1d1a22"; if(side){ g.beginPath(); g.arc(232,cy-6,5,0,7); g.fill(); } else { [-1,1].forEach(d=>{ g.beginPath(); g.arc(232,cy+d*14,4.5,0,7); g.fill(); }); }
+  g.strokeStyle=shade(base,.7); g.lineWidth=2.5; g.beginPath(); g.moveTo(250,cy+(side?6:0)); g.quadraticCurveTo(262,cy+18,256,cy+28); g.stroke();
+  g.restore();
+}
+function drawKoiTail(g,W,H,base){ const s=W/128; g.save(); g.scale(s,s); g.fillStyle=base; g.globalAlpha=.92; g.beginPath(); g.moveTo(124,64); g.quadraticCurveTo(70,40,10,8); g.quadraticCurveTo(40,52,30,64); g.quadraticCurveTo(40,76,10,120); g.quadraticCurveTo(70,88,124,64); g.fill(); g.globalAlpha=1; g.strokeStyle=shade(base,.8); g.lineWidth=2; for(let i=-2;i<=2;i++){ g.beginPath(); g.moveTo(120,64); g.lineTo(30,64+i*22); g.stroke(); } g.restore(); }
+function paperPlane(tex,w,h,o={}){ const geo=new THREE.PlaneGeometry(w,h); if(o.tx||o.ty) geo.translate(o.tx||0,o.ty||0,0);
+  const m=new THREE.MeshBasicMaterial({map:tex,transparent:!!o.ghost,opacity:o.ghost?.85:1,alphaTest:o.ghost?.2:.45,side:THREE.DoubleSide,depthWrite:!o.ghost});
+  const mesh=new THREE.Mesh(geo,m); mesh.userData.paper=true; if(o.shadow){ mesh.castShadow=true; mesh.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:tex,alphaTest:.45}); } return mesh; }
+function hideFromCamera(root){ root.traverse(o=>{ if(o.isMesh||o.isPoints||o.isLine||o.isSprite) o.layers.set(5); }); }
+const KOI_TEX=new Map();
+function paperKoi(g,tp2,base,spot,o){
+  hideFromCamera(g); const k=base+"|"+(spot||"")+"|"+(o.mat?1:0);
+  if(!KOI_TEX.has(k)) KOI_TEX.set(k,{top:paperCut(256,128,(c,w,h)=>drawKoi(c,w,h,base,spot,false),5),side:paperCut(256,128,(c,w,h)=>drawKoi(c,w,h,base,spot,true),5),tail:paperCut(128,128,(c,w,h)=>drawKoiTail(c,w,h,base),4)});
+  const T=KOI_TEX.get(k), ghost=!!o.mat;
+  const top=paperPlane(T.top,1.0,.5,{tx:-.03,ghost}); top.rotation.x=-Math.PI/2; top.position.y=.02; g.add(top);
+  const side=paperPlane(T.side,1.0,.5,{tx:-.03,ghost}); g.add(side);
+  const tt=paperPlane(T.tail,.5,.5,{tx:-.22,ghost}); tt.rotation.x=-Math.PI/2; tt.position.y=.02; tp2.add(tt);
+  const ts=paperPlane(T.tail,.5,.5,{tx:-.22,ghost}); tp2.add(ts);
+}
+function paperNpc(n,o){
+  hideFromCamera(n.rig);
+  const sp=paperPlane(paperCut(256,320,(c,w,h)=>drawAnimal(c,w,h,o),9),1.65,2.06,{ty:1.03,shadow:true}); n.g.add(sp); n.psp=sp;
+}
+
 function glowTex(inner="rgba(255,255,255,1)",mid="rgba(255,255,255,.35)"){ const cv=document.createElement("canvas"); cv.width=cv.height=128; const g=cv.getContext("2d"); const r=g.createRadialGradient(64,64,0,64,64,64); r.addColorStop(0,inner); r.addColorStop(.35,mid); r.addColorStop(1,"rgba(255,255,255,0)"); g.fillStyle=r; g.fillRect(0,0,128,128); const t=new THREE.CanvasTexture(cv); t.colorSpace=THREE.SRGBColorSpace; return t; }
 const GLOW=glowTex();
 const shadowy=(o,cast=true,recv=true)=>{ o.traverse(m=>{ if(m.isMesh){ m.castShadow=cast; m.receiveShadow=recv; } }); return o; };
@@ -733,7 +863,7 @@ function koiBuild(base,spot,o={}){ const g=new THREE.Group(); const bm=o.mat||to
   for(const s of [-1,1]){ const pf=new THREE.Mesh(pect,fm); pf.position.set(.22,-.06,s*.1); pf.rotation.set(s*-.9,s*.5,-.3); g.add(pf); pf.userData.pec=s; }
   const tp=new THREE.Group(); tp.position.x=-.33; g.add(tp); const root=new THREE.Mesh(FTAILROOT,bm); root.scale.set(.2,.07,.075); root.position.x=-.08; tp.add(root);
   const tp2=new THREE.Group(); tp2.position.x=-.22; tp.add(tp2); const tf=new THREE.Mesh(caudal,fm); tf.scale.setScalar(o.tail||1.05); tp2.add(tf);
-  g.userData.tp2=tp2; g.userData.pecs=g.children.filter(c=>c.userData.pec); return {g,tp,tp2,body}; }
+  g.userData.tp2=tp2; g.userData.pecs=g.children.filter(c=>c.userData.pec); if(PAPER) paperKoi(g,tp2,base,spot,o); return {g,tp,tp2,body}; }
 function swimAnim(k,sp=1){ const s=clamp(sp,0,2); const dd=Math.min(.1,clock-(k.lc??clock)); k.lc=clock; k.sph=(k.sph||0)+dd*(3.2+2.6*s); const ph=k.sph+(k.ph||0); const a=.1+.09*Math.min(1,s); k.tp.rotation.y=Math.sin(ph)*a; if(k.tp2) k.tp2.rotation.y=Math.sin(ph-1.1)*a*1.35; k.g.children[0].rotation.y=Math.sin(ph+1.4)*.025; }
 const tailShape=(()=>{ const s=new THREE.Shape(); s.moveTo(0,0); s.quadraticCurveTo(-.25,.22,-.42,.2); s.quadraticCurveTo(-.32,0,-.42,-.2); s.quadraticCurveTo(-.25,-.22,0,0); return s; })();
 KOI.forEach(p=>{ const {g,tp,tp2}=koiBuild(p[0],p[1]); g.scale.setScalar(rand(.95,1.25));
@@ -1405,6 +1535,7 @@ AREAS.push({id:"garden",k:"庭",n:"Sensei's Garden",test:(x,z)=>Math.hypot(x,z)<
 // ---------- fast travel: stone lanterns you light ----------
 const TRAVEL=[{id:"gate",n:"Spirit Gate",x:4.8,z:41},{id:"castle",n:"Castle Gate",x:CGATE.x-3,z:CGATE.z+3.5},{id:"village",n:"Night Market",x:SQ.x+4.5,z:SQ.z+3.5},{id:"shrine",n:"Kumo Shrine",x:SHR.x+3.6,z:SHR.z+12},{id:"lake",n:"Mirror Lake pier",x:PIER.x0-2,z:PIER.z+3.5},{id:"onsen",n:"Yuki Onsen",x:ONS.x-7,z:ONS.z+6},{id:"maze",n:"Bamboo Maze",x:MZ.x+MZH+4,z:MZ.z+9},{id:"orchard",n:"Sakura Orchard",x:-27,z:47.5},{id:"golf",n:"Mini Golf",x:GOLF.x-GOLF.w/2-2.5,z:GOLF.z-5},{id:"peak",n:"Kumo Peak",x:PEAK.x+PEAK.r0+4,z:PEAK.z+5}];
 const isLit=id=>(store.lit||["gate"]).includes(id);
+const unlocked=k=>!!(store.unlocks&&store.unlocks[k]);   // story unlocks taught by Sensei (glide, ...)
 TRAVEL.forEach(t=>{ let best=null,bd=1e9; for(const r of ROADS) for(let i=0;i<r.length-1;i++){ const [ax,az]=r[i],[bx,bz]=r[i+1]; const dx=bx-ax,dz=bz-az; const u=clamp(((t.x-ax)*dx+(t.z-az)*dz)/(dx*dx+dz*dz),0,1); const d=Math.hypot(t.x-ax-dx*u,t.z-az-dz*u); if(d<bd){ bd=d; const l=Math.hypot(dx,dz); best=[-dz/l,dx/l]; } }
   let [px,pz]=best||[1,0]; { let bs=-1e9; for(let k=0;k<16;k++){ const a=k/16*Math.PI; const ux=Math.cos(a), uz=Math.sin(a); const sc=Math.min(pathClear(t.x+ux*2.4,t.z+uz*2.4),pathClear(t.x-ux*2.4,t.z-uz*2.4))-(insideCollider(t.x+ux*2.4,t.z+uz*2.4,.5)||insideCollider(t.x-ux*2.4,t.z-uz*2.4,.5)?3:0); if(sc>bs+.05){ bs=sc; px=ux; pz=uz; } } } t.pair=[];
   [1,-1].forEach(sg=>{ const [lx,lz]=grassSpot(t.x+px*sg*2.4,t.z+pz*sg*2.4,px*sg,pz*sg,.8); const L=lantern(lx,lz,false,1.05,true); const pl=new THREE.PointLight(0xffb45a,0,14,2); pl.position.y=2.05; L.add(pl); L.userData.light=pl; t.pair.push(L); });
@@ -1433,14 +1564,15 @@ const VORTEX_MAT=new THREE.ShaderMaterial({transparent:true,depthWrite:false,sid
   fragmentShader:"varying vec2 vUv; uniform float time,open; void main(){ vec2 p=vUv*2.-1.; float r=length(p); float a=atan(p.y,p.x); float sw=sin(a*5.+r*14.-time*9.)*.5+.5; float core=smoothstep(.34*open,.30*open,r); float disk=smoothstep(1.,.35,r)*smoothstep(.2*open,.4*open,r); vec3 hot=mix(vec3(1.,.55,.18),vec3(.55,.75,1.),sw); vec3 col=hot*disk*(.5+sw*.9); float al=max(core,disk*(.35+sw*.5))*open; gl_FragColor=vec4(mix(col,vec3(0.),core),al); }"});
 const VORTEX=new THREE.Mesh(new THREE.PlaneGeometry(4,4),VORTEX_MAT); VORTEX.visible=false; VORTEX.renderOrder=5; scene.add(VORTEX);
 let TRAVELING=false;
+function lanternMouth(t){ const L=t.pair&&t.pair[0]; if(!L) return new THREE.Vector3(t.mid.x,H(t.mid.x,t.mid.z)+1.7,t.mid.z); const b=new THREE.Box3(); L.traverse(o=>{ if(o.isMesh&&o.geometry){ o.updateWorldMatrix(true,false); if(!o.geometry.boundingBox) o.geometry.computeBoundingBox(); b.union(o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld)); } }); if(b.isEmpty()) return new THREE.Vector3(t.mid.x,H(t.mid.x,t.mid.z)+1.7,t.mid.z); const c=b.getCenter(new THREE.Vector3()); c.y=b.min.y+(b.max.y-b.min.y)*.66; return c; }
 function travelTo(t){ const from=TRAVEL.find(s=>isLit(s.id)&&Math.hypot(player.position.x-s.x,player.position.z-s.z)<5); if(!from||zone!=="world"||pmode!=="walk"){ travelToPlain(t); return; }
-  TRAVELING=true; const c=new THREE.Vector3(from.mid.x,H(from.mid.x,from.mid.z)+1.7,from.mid.z); const p0=player.position.clone(), s0=player.scale.clone(); VORTEX.position.copy(c); VORTEX.visible=true; whoosh();
-  CPFX.push({t:0,dur:2.0,tick(u,dt){ VORTEX_MAT.uniforms.time.value+=dt; VORTEX_MAT.uniforms.open.value=Math.min(1,u*2.2); VORTEX.lookAt(camera.position); VORTEX.scale.setScalar(.4+Math.min(1,u*1.8)*.8);
+  TRAVELING=true; const c=lanternMouth(from); const p0=player.position.clone(), s0=player.scale.clone(); VORTEX.position.copy(c); VORTEX.visible=true; whoosh();
+  CPFX.push({t:0,dur:2.0,tick(u,dt){ VORTEX_MAT.uniforms.time.value+=dt; VORTEX_MAT.uniforms.open.value=Math.min(1,u*2.2); VORTEX.position.copy(c).add(new THREE.Vector3().subVectors(camera.position,c).setY(0).normalize().multiplyScalar(.42)); VORTEX.lookAt(camera.position); VORTEX.scale.setScalar(.1+Math.min(1,u*1.8)*.26);
       const w=clamp((u-.25)/.75,0,1), e=w*w*w; const a=e*14; const r=(1-e)*Math.hypot(p0.x-c.x,p0.z-c.z);
       player.position.set(c.x+Math.cos(a+Math.atan2(p0.z-c.z,p0.x-c.x))*r,lerp(p0.y,c.y-.4,e),c.z+Math.sin(a+Math.atan2(p0.z-c.z,p0.x-c.x))*r); player.rotation.y+=dt*(4+e*30); player.scale.set(s0.x*(1-e*.95),s0.y*(1+e*.8)*(1-e*.95),s0.z*(1-e*.95));
       controls.target.lerp(c,Math.min(1,dt*3)); camera.position.lerp(new THREE.Vector3(c.x+(camera.position.x-c.x)*.985,camera.position.y,c.z+(camera.position.z-c.z)*.985),1); },
-    done(){ player.scale.copy(s0); showLoading(t,()=>{ travelToPlain(t); setTimeout(()=>{ const d=t; const c2=new THREE.Vector3(d.mid.x,H(d.mid.x,d.mid.z)+1.7,d.mid.z); VORTEX.position.copy(c2); const pe=player.position.clone();
-        CPFX.push({t:0,dur:1.1,tick(u,dt){ VORTEX_MAT.uniforms.time.value+=dt; VORTEX_MAT.uniforms.open.value=1-u; VORTEX.lookAt(camera.position); const e=1-(1-u)**3; player.position.lerpVectors(c2,pe,e); player.scale.setScalar(s0.x*Math.max(.05,e)); },
+    done(){ player.scale.copy(s0); showLoading(t,()=>{ travelToPlain(t); setTimeout(()=>{ const d=t; const c2=lanternMouth(d); VORTEX.scale.setScalar(.36); VORTEX.position.copy(c2); const pe=player.position.clone();
+        CPFX.push({t:0,dur:1.1,tick(u,dt){ VORTEX_MAT.uniforms.time.value+=dt; VORTEX_MAT.uniforms.open.value=1-u; VORTEX.position.copy(c2).add(new THREE.Vector3().subVectors(camera.position,c2).setY(0).normalize().multiplyScalar(.42)); VORTEX.lookAt(camera.position); const e=1-(1-u)**3; player.position.lerpVectors(c2,pe,e); player.scale.setScalar(s0.x*Math.max(.05,e)); },
           done(){ VORTEX.visible=false; player.scale.copy(s0); TRAVELING=false; } }); },520); }); } }); }
 function whoosh(){ if(!actx||!soundOn) return; const t=actx.currentTime, n=actx.createBufferSource(), b=actx.createBuffer(1,actx.sampleRate*2,actx.sampleRate), d=b.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*.5; n.buffer=b; const f=actx.createBiquadFilter(); f.type="bandpass"; f.Q.value=3; f.frequency.setValueAtTime(200,t); f.frequency.exponentialRampToValueAtTime(2400,t+1.8); const g=actx.createGain(); g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.25,t+1.2); g.gain.linearRampToValueAtTime(0,t+2); n.connect(f); f.connect(g); g.connect(actx.destination); n.start(t); n.stop(t+2.1); }
 const LOAD_TIPS=["The koi remember who feeds them. They do not remember who doesn't.","Lit lanterns stay lit. Sensei checks on them at night anyway.","Something under the castle hums when the maples turn.","Hold Shift to run. Sensei would not.","Each lantern you light is one more way home.","Press M anywhere to see which lanterns you've lit."];
@@ -1495,7 +1627,7 @@ function makeSpirit(o){ const g=new THREE.Group(); const rig=new THREE.Group(); 
   const arms=[-1,1].map(s=>{ const a=new THREE.Group(); a.position.set(s*.34,1.22,0); const m=new THREE.Mesh(new THREE.CylinderGeometry(.08,.11,.6,6),F(o.robe)); m.position.y=-.28; a.add(m); const hd=new THREE.Mesh(new THREE.SphereGeometry(.08,6,4),F(o.fur)); hd.position.y=-.6; a.add(hd); a.rotation.z=s*.2; rig.add(a); return a; });
   if(o.tail){ const t=new THREE.Mesh(new THREE.ConeGeometry(.2,.8,6),F(o.fur)); t.rotation.x=-1.9; t.position.set(0,.5,-.5); rig.add(t); const tip=new THREE.Mesh(new THREE.ConeGeometry(.12,.25,6),F(o.tip||"#ffffff")); tip.rotation.x=-1.9; tip.position.set(0,.36,-.86); rig.add(tip); }
   shadowy(g); scene.add(g);
-  const npc={g,rig,head,arms,face:o.face||0,bow:0,ph:rand(0,TAU),name:o.name,lines:o.lines||[]}; NPCS.push(npc); return npc; }
+  const npc={g,rig,head,arms,face:o.face||0,bow:0,ph:rand(0,TAU),name:o.name,lines:o.lines||[]}; NPCS.push(npc); if(PAPER) paperNpc(npc,o); return npc; }
 function placeSpirit(n,x,z,face){ n.g.position.set(x,H(x,z),z); n.face=face; n.g.rotation.y=face; addCircle(x,z,.45); }
 function npcBow(n){ n.bow=1.6; }
 function npcFrame(dt){ for(const n of NPCS){ const dx=player.position.x-n.g.position.x, dz=player.position.z-n.g.position.z, d=Math.hypot(dx,dz);
@@ -1506,9 +1638,9 @@ function npcFrame(dt){ for(const n of NPCS){ const dx=player.position.x-n.g.posi
   n.head.rotation.z=Math.sin(clock*.9+n.ph)*.08; n.arms[0].rotation.x=n.bow>0?-.6:Math.sin(clock*1.2+n.ph)*.08; n.arms[1].rotation.x=n.arms[0].rotation.x; } }
 const teaKeeper=makeSpirit({name:"Okitsune",fox:true,fur:"#f4efe6",muzzle:"#ffffff",robe:"#b23a2c",sash:"#f2d27a",mask:"#d23a2a",tail:true,tip:"#d23a2a"});
 placeSpirit(teaKeeper,SQ.x-5.9,SQ.z-5.2,Math.PI*.75);
-const ramenCook=makeSpirit({name:"Tanuki-san",fur:"#7a5a3e",muzzle:"#d8c3a2",patch:"#3a2a1e",robe:"#2f3d55",sash:"#f4ead2",apron:"#f4ead2",hat:"#f4ead2"});
+const ramenCook=makeSpirit({name:"Tanuki-san",kind:"tanuki",fur:"#7a5a3e",muzzle:"#d8c3a2",patch:"#3a2a1e",robe:"#2f3d55",sash:"#f4ead2",apron:"#f4ead2",hat:"#f4ead2"});
 placeSpirit(ramenCook,SQ.x+6.4,SQ.z-4.6,-Math.PI*.75);
-const golfFrog=makeSpirit({name:"Kaeru",fur:"#6fa04a",muzzle:"#cfe39a",robe:"#3a6a3a",sash:"#e9c46a",hat:"#e9c46a"});
+const golfFrog=makeSpirit({name:"Kaeru",kind:"frog",fur:"#6fa04a",muzzle:"#cfe39a",robe:"#3a6a3a",sash:"#e9c46a",hat:"#e9c46a"});
 placeSpirit(golfFrog,GOLF.x-GOLF.w/2-1.2,GOLF.z-1.2,Math.PI/2);
 const drummer=makeSpirit({name:"Taro",fur:"#e9d7b9",muzzle:"#f6ead2",robe:"#1f3d63",sash:"#c23a2a",mask:"#1f1d22",hat:"#c23a2a"});
 placeSpirit(drummer,SQ.x-2.6,SQ.z+2.6,Math.PI*.75);
@@ -1834,124 +1966,46 @@ const legs=[-1,1].map(s=>{ const g=new THREE.Group(); g.position.set(s*.15,.5,0)
 const pUpper=new THREE.Group(); pUpper.position.y=.95; pRig.add(pUpper); [torso,hood,hoodTip,face,scarf,scarfTail,...pRig.children.filter(o=>o.isMesh&&o.geometry.type==="SphereGeometry"&&o!==hood)].forEach(o=>{ pRig.remove(o); o.position.y-=.95; pUpper.add(o); });
 shadowy(player,true,false);
 const START=new THREE.Vector3(0,0,46); player.position.set(START.x,H(START.x,START.z),START.z); player.rotation.y=Math.PI;
-/* ===================== PAPER SAMURAI (experimental art style) ===================== */
-// Flat paper-cutout characters with a white paper border that flip like Paper Mario, plus an ink + paper-grain look.
-const PAPERX={ix:0,iz:1,mag:0,face:1,sx:1,back:false,ft:0,step:0};
-function paperInput(ix,iz,mag){ PAPERX.mag=mag; if(mag>.08){ if(Math.abs(ix)>.25) PAPERX.face=ix>0?1:-1; if(Math.abs(iz)>.3) PAPERX.back=iz<0; } }
-function paperCut(w,h,draw,border=10){
-  const a=document.createElement("canvas"); a.width=w; a.height=h; const g=a.getContext("2d"); draw(g,w,h);
-  const c=document.createElement("canvas"); c.width=w; c.height=h; const o=c.getContext("2d");
-  // paper border: the silhouette dilated, filled white, with a soft grey shadow edge
-  for(let i=0;i<24;i++){ const t=i/24*Math.PI*2; o.drawImage(a,Math.cos(t)*border,Math.sin(t)*border+2); }
-  o.globalCompositeOperation="source-in"; o.fillStyle="#cfc7b8"; o.fillRect(0,0,w,h); o.globalCompositeOperation="source-over";
-  const b=document.createElement("canvas"); b.width=w; b.height=h; const bg=b.getContext("2d");
-  for(let i=0;i<24;i++){ const t=i/24*Math.PI*2; bg.drawImage(a,Math.cos(t)*border,Math.sin(t)*border); }
-  bg.globalCompositeOperation="source-in"; bg.fillStyle="#fffdf6"; bg.fillRect(0,0,w,h);
-  o.drawImage(b,0,0); o.drawImage(a,0,0);
-  // faint paper fibres over the whole cutout
-  o.globalCompositeOperation="source-atop"; for(let i=0;i<260;i++){ o.fillStyle=`rgba(${Math.random()<.5?255:120},${Math.random()<.5?250:110},230,${Math.random()*.06})`; o.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*3,1); }
-  o.globalCompositeOperation="source-over";
-  const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; return t;
-}
-const rr=(g,x,y,w,h,r)=>{ g.beginPath(); g.roundRect(x,y,w,h,r); };
-function drawSamurai(g,W,H,back,step){
-  const cx=W/2, s=W/256; g.save(); g.scale(s,s); const X=128;
-  const ink="#1d1a22";
-  // legs + sandals
-  const lo=step?10:0;
-  [[-1,lo],[1,-lo]].forEach(([d,o])=>{ g.fillStyle="#232a3d"; rr(g,X+d*26-14,250+o*.4,28,48-o*.6,12); g.fill(); g.fillStyle="#6b4a2c"; rr(g,X+d*26-17,290-o*.2,34,12,6); g.fill(); });
-  // hakama (wide trousers)
-  g.fillStyle="#2e3a5c"; g.beginPath(); g.moveTo(X-50,262); g.lineTo(X-36,178); g.lineTo(X+36,178); g.lineTo(X+50,262); g.quadraticCurveTo(X,270,X-50,262); g.fill();
-  g.strokeStyle="#22294a"; g.lineWidth=3; [-18,0,18].forEach(d=>{ g.beginPath(); g.moveTo(X+d*.8,184); g.lineTo(X+d*1.2,258); g.stroke(); });
-  // kimono top
-  g.fillStyle="#3c5a8c"; rr(g,X-44,138,88,58,22); g.fill();
-  // arms
-  g.fillStyle="#3c5a8c"; rr(g,X-62,144,26,52,13); g.fill(); rr(g,X+36,144,26,52,13); g.fill();
-  g.fillStyle="#f3cfae"; g.beginPath(); g.arc(X-49,198,10,0,7); g.arc(X+49,198,10,0,7); g.fill();
-  if(!back){ g.fillStyle="#f4ecd8"; g.beginPath(); g.moveTo(X-18,140); g.lineTo(X,176); g.lineTo(X+18,140); g.closePath(); g.fill(); g.strokeStyle="#c8452f"; g.lineWidth=5; g.beginPath(); g.moveTo(X-16,140); g.lineTo(X,172); g.lineTo(X+16,140); g.stroke(); }
-  // obi sash
-  g.fillStyle="#c8452f"; rr(g,X-46,176,92,16,6); g.fill(); g.fillStyle="#e8c25a"; rr(g,X-6,177,12,14,3); g.fill();
-  // katana: on the hip from the front, across the back from behind
-  g.save(); if(back){ g.translate(X,170); g.rotate(-.75); } else { g.translate(X+40,186); g.rotate(-.35); }
-  g.fillStyle="#2a2028"; rr(g,-70,-6,110,12,5); g.fill(); g.fillStyle="#e8c25a"; rr(g,38,-11,8,22,3); g.fill(); g.fillStyle="#6e2b2b"; rr(g,46,-5,40,10,4); g.fill(); g.restore();
-  // scarf tail
-  g.fillStyle="#c8452f"; g.beginPath(); g.moveTo(X+18,132); g.quadraticCurveTo(X+58,126,X+70,step?150:142); g.lineTo(X+60,156); g.quadraticCurveTo(X+44,140,X+16,146); g.fill();
-  // head
-  g.fillStyle=back?"#2a2026":"#f6d9bb"; g.beginPath(); g.ellipse(X,100,44,42,0,0,7); g.fill();
-  if(!back){ g.fillStyle="#2a2026"; g.beginPath(); g.ellipse(X,80,44,24,0,Math.PI,0); g.fill(); // fringe
-    g.fillStyle=ink; [-1,1].forEach(d=>{ g.beginPath(); g.ellipse(X+d*16,104,6,9,0,0,7); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(X+d*16+2,100,2.4,0,7); g.fill(); g.fillStyle=ink; });
-    g.fillStyle="rgba(232,120,110,.45)"; g.beginPath(); g.ellipse(X-30,118,9,5,0,0,7); g.ellipse(X+30,118,9,5,0,0,7); g.fill();
-    g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); g.arc(X,118,6,.2,Math.PI-.2); g.stroke(); }
-  else { g.fillStyle="#1d161b"; g.beginPath(); g.arc(X,70,12,0,7); g.fill(); }
-  // red scarf around the neck
-  g.fillStyle="#c8452f"; rr(g,X-36,128,72,16,8); g.fill();
-  // kasa (straw hat)
-  g.fillStyle="#d9b56b"; g.beginPath(); g.moveTo(X-96,72); g.quadraticCurveTo(X,6,X+96,72); g.quadraticCurveTo(X,58,X-96,72); g.fill();
-  g.strokeStyle="#b48a44"; g.lineWidth=3; for(let i=-3;i<=3;i++){ g.beginPath(); g.moveTo(X+i*8,26); g.lineTo(X+i*28,68); g.stroke(); }
-  g.fillStyle="#8a6232"; g.beginPath(); g.ellipse(X,64,96,7,0,0,7); g.fill();
-  g.restore();
-}
-function drawSensei(g,W,H){
-  const s=W/320; g.save(); g.scale(s,s);
-  // wispy tail
-  g.fillStyle="rgba(170,225,255,.85)"; [[-1,0],[0,1],[1,.6]].forEach(([k,o])=>{ g.beginPath(); g.moveTo(96,120); g.quadraticCurveTo(50,100+k*30,8,96+k*44); g.quadraticCurveTo(46,118+k*12,96,132); g.fill(); });
-  // body
-  g.fillStyle="#f2fbff"; g.beginPath(); g.ellipse(170,124,88,46,0,0,7); g.fill();
-  g.fillStyle="#ffcfc4"; g.beginPath(); g.ellipse(150,104,26,12,-.2,0,7); g.ellipse(196,140,20,9,.2,0,7); g.fill();
-  g.save(); g.beginPath(); g.ellipse(170,124,88,46,0,0,7); g.clip(); g.fillStyle="#7d9ad6"; [128,164].forEach(x=>{ g.beginPath(); g.moveTo(x-7,60); g.quadraticCurveTo(x+6,124,x-7,190); g.lineTo(x+7,190); g.quadraticCurveTo(x+20,124,x+7,60); g.fill(); }); g.restore();
-  // fins
-  g.fillStyle="rgba(190,232,255,.9)"; g.beginPath(); g.moveTo(170,166); g.quadraticCurveTo(150,198,130,192); g.quadraticCurveTo(150,178,160,164); g.fill();
-  // eye + smile
-  g.fillStyle="#1d1a22"; g.beginPath(); g.ellipse(226,114,7,9,0,0,7); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(228,110,2.5,0,7); g.fill();
-  g.strokeStyle="#1d1a22"; g.lineWidth=3; g.beginPath(); g.arc(240,130,9,.3,Math.PI-.6); g.stroke();
-  g.fillStyle="rgba(232,120,110,.45)"; g.beginPath(); g.ellipse(214,134,9,5,0,0,7); g.fill();
-  // whiskers
-  g.strokeStyle="#9fbcd8"; g.lineWidth=3; g.beginPath(); g.moveTo(252,128); g.quadraticCurveTo(280,140,290,170); g.moveTo(250,124); g.quadraticCurveTo(284,118,300,132); g.stroke();
-  // straw hat
-  g.fillStyle="#d9b56b"; g.beginPath(); g.moveTo(140,86); g.quadraticCurveTo(200,18,262,80); g.quadraticCurveTo(200,70,140,86); g.fill();
-  g.strokeStyle="#b48a44"; g.lineWidth=3; for(let i=-3;i<=3;i++){ g.beginPath(); g.moveTo(201+i*5,40); g.lineTo(201+i*17,78); g.stroke(); }
-  g.fillStyle="#8a6232"; g.beginPath(); g.ellipse(201,80,62,5,-.1,0,7); g.fill();
-  g.restore();
-}
+/* ===================== PAPER SAMURAI: player + Sensei sprites ===================== */
 const PAPERSP={};
-function paperSprite(texs,w,h,yOff=0){
-  const geo=new THREE.PlaneGeometry(w,h); geo.translate(0,h/2+yOff,0);
-  const m=new THREE.MeshBasicMaterial({map:texs[0],transparent:true,alphaTest:.45,side:THREE.DoubleSide});
-  const mesh=new THREE.Mesh(geo,m); mesh.castShadow=true;
-  mesh.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:texs[0],alphaTest:.45});
-  mesh.userData.texs=texs; scene.add(mesh); return mesh;
-}
-function paperSetTex(m,t){ if(m.material.map!==t){ m.material.map=t; m.customDepthMaterial.map=t; m.material.needsUpdate=true; m.customDepthMaterial.needsUpdate=true; } }
-function hideFromCamera(root){ root.traverse(o=>{ if(o.isMesh||o.isPoints||o.isLine||o.isSprite) o.layers.set(5); }); }
 if(PAPER){
   const S_=(b,st)=>paperCut(256,320,(g,w,h)=>drawSamurai(g,w,h,b,st),9);
-  PAPERSP.p=paperSprite([S_(false,0),S_(false,1),S_(true,0),S_(true,1)],1.8,2.25,-.03);
-  PAPERSP.s=paperSprite([paperCut(320,220,drawSensei,8)],3.6,2.48,-1.25); PAPERSP.s.castShadow=false;
+  const texs=[S_(false,0),S_(false,1),S_(true,0),S_(true,1)];
+  PAPERSP.p=paperPlane(texs[0],1.8,2.25,{ty:1.095,shadow:true}); PAPERSP.p.userData.texs=texs; scene.add(PAPERSP.p);
+  PAPERSP.s=paperPlane(paperCut(320,220,drawSensei,8),3.6,2.48,{ty:-.01}); scene.add(PAPERSP.s);
   hideFromCamera(pRig); hideFromCamera(sRig);
   document.title="Paper Samurai (WIP)";
 }
-const _pv=new THREE.Vector3(), _pv2=new THREE.Vector3(); let _sPrev=null, _sFace=1, _sSx=1;
+function paperSetTex(m,t){ if(m.material.map!==t){ m.material.map=t; m.material.needsUpdate=true; if(m.customDepthMaterial){ m.customDepthMaterial.map=t; m.customDepthMaterial.needsUpdate=true; } } }
+const _pv=new THREE.Vector3(), _pax=new THREE.Vector3(), _pq=new THREE.Quaternion(), _pqy=new THREE.Quaternion(), _pup=new THREE.Vector3(0,1,0), _poff=new THREE.Vector3();
+let _sPrev=null, _sFace=1, _sSx=1;
 function paperTick(dt){
   if(!PAPER) return;
   const yaw=Math.atan2(camera.position.x-controls.target.x, camera.position.z-controls.target.z);
-  // player
-  const p=PAPERSP.p; const P=PAPERX; const moving=P.mag>.08||ROLL.t>=0;
-  p.visible=pmode!=="koi"||true; p.position.copy(player.position); p.rotation.set(0,yaw,0);
+  const p=PAPERSP.p, P=PAPERX, rolling=ROLL.t>=0, moving=P.mag>.08||rolling;
   P.ft+=dt; if(moving&&P.ft>.14){ P.ft=0; P.step^=1; } if(!moving) P.step=0;
   paperSetTex(p,p.userData.texs[(P.back?2:0)+P.step]);
-  P.sx+=Math.sign(P.face-P.sx)*Math.min(Math.abs(P.face-P.sx),dt*11);   // the paper flip
-  const bob=moving?Math.abs(Math.sin(clock*13))*.07:0, breathe=moving?1:1+Math.sin(clock*2.2)*.012;
-  p.scale.set(P.sx||.001, breathe, 1); p.position.y+=bob;
-  p.rotation.z=ROLL.t>=0?-P.face*(ROLL.t/ROLL_T)*Math.PI*2:0;
-  if(ROLL.t>=0) p.position.y+=.35;
+  P.sx+=Math.sign(P.face-P.sx)*Math.min(Math.abs(P.face-P.sx),dt*11);           // the paper flip
+  const bob=moving&&!rolling?Math.abs(Math.sin(clock*13))*.07:0, breathe=moving?1:1+Math.sin(clock*2.2)*.012;
+  p.scale.set(Math.abs(P.sx)<.02?.02*Math.sign(P.sx||1):P.sx, breathe, 1);
+  _pqy.setFromAxisAngle(_pup,yaw);
+  if(rolling){ // forward somersault in the roll direction, pivoting around the middle of the cutout
+    const u=Math.min(1,ROLL.t/ROLL_T), e=u<.12?0:Math.min(1,(u-.12)/.72), th=(e*e*(3-2*e))*Math.PI*2, c=1.0;
+    _pax.set(ROLL.dir.z,0,-ROLL.dir.x).normalize(); _pq.setFromAxisAngle(_pax,th);
+    p.quaternion.copy(_pq).multiply(_pqy); _poff.set(0,c,0).applyQuaternion(_pq);
+    p.position.set(player.position.x-_poff.x, player.position.y+c-_poff.y+.12*Math.sin(Math.PI*u), player.position.z-_poff.z);
+  } else { p.quaternion.copy(_pqy); p.position.copy(player.position); p.position.y+=bob; }
+  const psc=player.scale.y; if(Math.abs(psc-1)>.001){ p.scale.multiplyScalar(psc); p.rotation.z+=0; }
   p.visible=!(typeof POSE!=="undefined"&&POSE.kind==="soak");
-  // sensei: face the way he drifts, relative to the camera
-  const s=PAPERSP.s; sensei.getWorldPosition(_pv); s.position.copy(_pv); s.rotation.set(0,yaw,0);
+  if((PAPERX.hide=(PAPERX.hide||0)+dt)>1.5){ PAPERX.hide=0; hideFromCamera(sRig); hideFromCamera(pRig); }
+  // sensei faces the way he drifts, relative to the camera
+  const s=PAPERSP.s; sensei.getWorldPosition(_pv); s.position.copy(_pv); s.quaternion.copy(_pqy);
   if(_sPrev){ const dx=_pv.x-_sPrev.x, dz=_pv.z-_sPrev.z; const right=Math.cos(yaw)*dx - Math.sin(yaw)*dz; if(Math.abs(right)>.004) _sFace=right>0?1:-1; } _sPrev=(_sPrev||new THREE.Vector3()).copy(_pv);
   _sSx+=Math.sign(_sFace-_sSx)*Math.min(Math.abs(_sFace-_sSx),dt*6);
-  s.scale.set(_sSx||.001,1+Math.sin(clock*1.7)*.02,1); s.visible=sensei.visible;
+  s.scale.set(Math.abs(_sSx)<.02?.02:_sSx,1+Math.sin(clock*1.7)*.02,1); s.visible=sensei.visible;
+  // villagers and friends: stand up straight facing the camera, little bow squash
+  for(const n of NPCS){ if(!n.psp) continue; n.psp.rotation.y=yaw-n.g.rotation.y; const b=Math.max(0,n.bow||0); n.psp.scale.y=1-.14*Math.min(1,b)+Math.sin(clock*2+(n.ph||0))*.01; }
 }
-
 
 /* ===================== Sensei's own life ===================== */
 const GATE={x:CASTLE.x-7.5,z:CASTLE.z+7};
@@ -2064,14 +2118,14 @@ addEventListener("keydown",e=>{ if(/^(Key[WASD]|Arrow|Space|Shift)/.test(e.code)
 addEventListener("mousedown",()=>tryLock());
 function edgeTurn(){ const now=performance.now(), dt=Math.min(.05,(now-(PL.et||now))/1000); PL.et=now; if(PL.locked||isTouch||PL.mx===undefined||!(wantLock()||pmode==="koi")) return; const W=innerWidth, Hh=innerHeight, m=Math.min(80,W*.06); let ex=0, ey=0; if(PL.mx<m) ex=-(1-PL.mx/m); else if(PL.mx>W-m) ex=(PL.mx-(W-m))/m; if(PL.my<m) ey=-(1-PL.my/m); else if(PL.my>Hh-m) ey=(PL.my-(Hh-m))/m; if(!ex&&!ey) return;
   if(pmode==="koi"&&RCK.on){ RCK.yaw-=ex*dt*2.2; return; } PL.ax=(PL.ax||0)+ex*dt*920; PL.ay=(PL.ay||0)+ey*dt*640; }
-function wantLock(){ return entered&&!isTouch&&!menuOpen&&!chatOpen&&!uiBlock()&&!MG&&pmode!=="golf"; }
+function wantLock(){ return !(typeof DEV!=="undefined"&&DEV.on)&&entered&&!isTouch&&!menuOpen&&!chatOpen&&!uiBlock()&&!MG&&pmode!=="golf"; }
 canvas.addEventListener("click",()=>{ if(wantLock()&&!PL.locked&&!PL.failed){ try{ const r=canvas.requestPointerLock({unadjustedMovement:true}); if(r&&r.catch) r.catch(()=>{ try{ canvas.requestPointerLock(); }catch(e){ PL.failed=true; controls.enableRotate=true; } }); }catch(e){ PL.failed=true; controls.enableRotate=true; } } });
 document.addEventListener("pointerlockchange",()=>{ PL.locked=document.pointerLockElement===canvas; controls.enableRotate=!PL.locked; document.body.classList.toggle("locked",PL.locked); });
 document.addEventListener("pointerlockerror",()=>{ PL.fails=(PL.fails||0)+1; if(PL.fails>4) PL.failed=true; controls.enableRotate=true; try{ window.sensei&&window.sensei.send("garden:dbg","pointerlockerror"); }catch(e){} });
 addEventListener("mousemove",e=>{ PL.mx=e.clientX; PL.my=e.clientY; if(!PL.locked&&!(wantLock()||pmode==="koi")) return; if(!PL.locked&&isTouch) return; const mx=e.movementX||0, my=e.movementY||0; if(Math.abs(mx)>300||Math.abs(my)>300) return;
   if(pmode==="koi"&&RCK.on&&!RCK.intro){ RCK.yaw-=mx*.0028; return; }
   PL.ax=(PL.ax||0)+mx; PL.ay=(PL.ay||0)+my; });
-function applyMouseLook(){ const mx=PL.ax||0, my=PL.ay||0; PL.ax=PL.ay=0; if(!mx&&!my) return; const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=mx*.0026; sph.phi=clamp(sph.phi-my*.0022,controls.minPolarAngle+.02,controls.maxPolarAngle-.02); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); }
+function applyMouseLook(){ const mx=PL.ax||0, my=PL.ay||0; PL.ax=PL.ay=0; if(!mx&&!my) return; if(typeof DEV!=="undefined"&&DEV.on) return; const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=mx*.0026; sph.phi=clamp(sph.phi-my*.0022,controls.minPolarAngle+.02,controls.maxPolarAngle-.02); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); }
 
 { const tap=(id,fn)=>{ const el=$("#"+id); el.addEventListener("touchstart",e=>{ e.preventDefault(); e.stopPropagation(); el.classList.add("dn"); fn(); },{passive:false}); el.addEventListener("touchend",()=>el.classList.remove("dn")); el.addEventListener("click",e=>{ e.stopPropagation(); fn(); }); };
   tap("tRoll",()=>startRoll()); tap("tRun",()=>{ TOUCHRUN=!TOUCHRUN; $("#tRun").classList.toggle("on",TOUCHRUN); }); tap("tMap",()=>openTravel()); tap("tTalk",()=>openChat()); }
@@ -2228,7 +2282,7 @@ let modeIdx=0, modeChosen=false;
 const modeOK=m=>m.type==="web"?(webOK&&webVoices.length>0):!!tts;
 const ttsReady=(async()=>{ try{ if(window.claude&&claude.use){ tts=await claude.use("tts"); if(tts) tts.onState(({state})=>{ const was=speaking; speaking=state!=="idle"; if(speaking&&!was) ghostStart(MODES[modeIdx].layer); if(!speaking&&was) ghostStop(); }); } }catch(e){ tts=null; } })();
 const cleanForSpeech=t=>t.replace(/[぀-ヿ㐀-鿿＀-￯]+/g,"").replace(/\(\s*[,.]?\s*\)/g,"").replace(/\s+/g," ").trim();
-async function speak(text){ if(!voiceOn||voiceDenied) return; const t=cleanForSpeech(text).slice(0,2000); if(!t) return;
+async function speak(text){ if(!voiceOn||voiceDenied) return; const t=cleanForSpeech(text).slice(0,2000); if(!t) return; babble(t); return;
   if(window.senseiVoice&&window.sensei){ senseiVoice.speak(t,{onstart:()=>{ speaking=true; },onend:()=>{ speaking=false; }}); return; }
   await ttsReady;
   if(!modeChosen&&tts) modeIdx=1; if(!modeOK(MODES[modeIdx])){ const i=MODES.findIndex(modeOK); if(i<0) return; modeIdx=i; }
@@ -2480,7 +2534,7 @@ const NPC_FALLBACK={okitsune:["The tea is hot, the gossip hotter. Sensei sneezed
   tanuki:["Three hundred years of broth! Each year the noodles get a little more confident.","You look hungry. You always look hungry. That is a compliment, here.","Kaeru says golf is serious. I say lunch is serious."],
   kaeru:["Three holes. The third one has a spinning gate. I built it to humble a crane.","Par is a suggestion. Like most rules in this valley.","Pull back, then let go. Gently. Gentler than that."],
   taro:["Don! Don! Ka-don! Feel that? That is the valley's heartbeat.","Festivals are just reasons to hit things joyfully.","When the drum is loud, worries get quiet. Try it."]};
-function npcSay(n,key){ npcBow(n); const l=freshPick(lineBank()?.npc?.[key])||freshPick(NPC_FALLBACK[key]); toast(`${n.name}: ${l}`); }
+function npcSay(n,key){ npcBow(n); const l=freshPick(lineBank()?.npc?.[key])||freshPick(NPC_FALLBACK[key]); toast(`${n.name}: ${l}`); babble(l,1.45); }
 const MYST=["Hmm…","Hmmm…","Hmm… the pond remembers what the river forgets.","Hmm. Interesting. Very interesting.","Hmmm… I have seen this before. In another century.","Hmm… do you hear that? …No? Good.","Hmm… the wind is early today.","Hmm… patience, little one. Patience.","Hmmm… a cloud just told me something. I will not repeat it.","Hm… the koi are whispering about you again.","Hmmm… three hundred years, and the moon still surprises me.","Hm. The stone does not hurry. Neither shall I.","Hmmm… something stirs beneath the water.","Hm… you smell of adventure. And a little of ramen."];
 const hum=()=>Math.random()<.18?pick(["Hmm… ","Hmmm… ","Hm… "]):"";
 let idleChatT=rand(120,200);
@@ -2625,6 +2679,7 @@ function frame(now){
   cloak.scale.x=cloak.scale.z=1+(moving?Math.sin(walkPh*2)*.03:0); scarfTail.rotation.x=.3+(moving?.5+Math.sin(walkPh*2)*.15:Math.sin(clock*1.5)*.05);
   // ---- camera follow ----
   if(CAMFIX.free&&entered&&pmode!=="golf"&&!advMode) camera.position.copy(CAMFIX.free);
+  try{ camSettle(dt,advMode); }catch(e){}
   if(entered&&pmode!=="golf"&&!advMode) applyMouseLook(); else { PL.ax=PL.ay=0; }
   if(entered&&pmode!=="golf"){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); if(P2.on&&pmode==="walk"){ tgt.add(P2.g.position).multiplyScalar(.5); tgt.y+=.85; const sep=P2.g.position.distanceTo(player.position); const want=clamp(9+sep*.9,9,26); const off=camera.position.clone().sub(controls.target); const L=off.length(); if(L<want-.3) camera.position.copy(controls.target).addScaledVector(off.normalize(),lerp(L,want,.05)); } const delta=tgt.clone().sub(controls.target); controls.target.add(delta); camera.position.add(delta); }
   if(pmode!=="golf"&&pmode!=="koi"&&pmode!=="climb"&&pmode!=="fall") controls.update();
@@ -2845,7 +2900,7 @@ function buildHome(c,i){ if(LIFE.homes[c.id]) return; LIFE.taken=LIFE.taken||[];
   const cvs=document.createElement("canvas"); cvs.width=128; cvs.height=128; const gg=cvs.getContext("2d"); gg.fillStyle="#efe3c8"; gg.fillRect(0,0,128,128); gg.fillStyle="#2b2420"; gg.font='700 92px "Shippori Mincho",serif'; gg.textAlign="center"; gg.textBaseline="middle"; gg.fillText(c.k,64,70);
   const st=new THREE.CanvasTexture(cvs); st.colorSpace=THREE.SRGBColorSpace; const sign=new THREE.Mesh(new THREE.PlaneGeometry(.5,.5),new THREE.MeshToonMaterial({map:st,gradientMap:gm})); sign.position.set(-.9,1.6,1.22); g.add(sign);
   shadowy(g); groundIt(g,3.2,2.8,{lift:false}); addBox(x,z,1.6*1.9,1.4*1.9,face); LIFE.homes[c.id]=g; for(let k=0;k<4;k++) pathStone(x+Math.sin(face)*(3.2+k*1.15),z+Math.cos(face)*(3.2+k*1.15),1.05); stonePathToRoad(x+Math.sin(face)*7.8,z+Math.cos(face)*7.8);
-  const n=makeSpirit({name:c.name,fur:c.fur,robe:c.robe,sash:c.sash,fox:!!c.fox,tail:!!c.tail,tip:"#ffffff",lines:[]}); const fx=x+Math.sin(face)*4.4+Math.cos(face)*2.2, fz=z+Math.cos(face)*4.4-Math.sin(face)*2.2;
+  const n=makeSpirit({name:c.name,kind:c.kind,fur:c.fur,robe:c.robe,sash:c.sash,fox:!!c.fox,tail:!!c.tail,tip:"#ffffff",lines:[]}); const fx=x+Math.sin(face)*4.4+Math.cos(face)*2.2, fz=z+Math.cos(face)*4.4-Math.sin(face)*2.2;
   placeSpirit(n,fx,fz,face); n.comp=c; LIFE.compNpcs[c.id]=n; ghostify(n,c); n.home={x:fx,z:fz,f:face};
   addInteract({x:fx,z:fz,r:2.6,k:c.k,label:`Talk to ${c.name}`,fn:()=>{ npcBow(n); compPlay(c); toast(`${c.name}: ${pick(COMP_LINES[c.id])}`); }});
   discoveries.push({id:"home-"+c.id,x,z,r:6,k:c.k,n:`${c.name}'s House`,line:`${c.name} moved in. ${c.brings[0].toUpperCase()+c.brings.slice(1)}.`}); }
@@ -3089,7 +3144,7 @@ function advFrame(dt){
   if(!entered) return; const [ix,iz]=advInput(); const leap=!!(keys.Space||(navigator.getGamepads&&[...navigator.getGamepads()].some(g=>g&&g.buttons[0]&&g.buttons[0].pressed))); const leapEdge=leap&&!advLeapPrev; advLeapPrev=leap;
   // walk: auto-climb when pushing into the rock; jump off the summit to glide
   if(pmode==="walk"&&zone==="world"){ const dx=player.position.x-PEAK.x, dz=player.position.z-PEAK.z, d=Math.hypot(dx,dz);
-    if(ADV.onTop){ if(player.position.y<PEAK_BASE+PEAK.h-3) ADV.onTop=false; else if(d>3.25) startGlide(); }
+    if(ADV.onTop){ if(player.position.y<PEAK_BASE+PEAK.h-3) ADV.onTop=false; else if(d>3.25){ if(unlocked("glide")) startGlide(); else { ADV.onTop=false; pmode="fall"; ADV.vy=0; if(!ADV.glideHint){ ADV.glideHint=1; whisper("You do not know how to glide yet. Sensei will teach you, when you are ready.",5000); } } } }
     else if(d<PEAK.r0+1.2&&(Math.abs(ix)+Math.abs(iz))>.3){ const f=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const mx=-f.z*ix-f.x*iz, mz=f.x*ix-f.z*iz; const ml=Math.hypot(mx,mz)||1; if((mx*-dx+mz*-dz)/(ml*d)>.6){ ADV.push=(ADV.push||0)+dt; if(ADV.push>.25){ ADV.push=0; startClimb(); } } else ADV.push=0; } }
   if(pmode==="climb"){ const r=peakR(ADV.y)+.55; const up=-iz, ar=ix, mag=Math.min(1,Math.hypot(up,ar)); let rest=PEAK_LEDGES.some(l=>Math.abs(ADV.y-l)<.5);
     if(mag>.15){ ADV.y+=up*2.1*dt; ADV.theta+=ar*1.7*dt/r; ADV.stamina-=(rest?0:7.5)*mag*dt; walkPh+=dt*6; } else if(!rest) ADV.stamina-=1.1*dt;
@@ -3882,6 +3937,8 @@ document.querySelectorAll("[data-game]").forEach(b=>b.addEventListener("click",(
 
 /* ===================== main menu ===================== */
 let menuOpen=true, lastReply="", firstEnter=true;
+function pauseToMenu(){ try{ if(entered&&!menuOpen&&!(typeof DEV!=="undefined"&&DEV.on)&&!TRAVELING) showMenu(); }catch(e){} }
+addEventListener("blur",pauseToMenu); document.addEventListener("visibilitychange",()=>{ if(document.hidden) pauseToMenu(); });
 function showMenu(){ menuOpen=true; document.body.classList.add("inmenu"); $("#hint").style.opacity=0; $("#title").classList.remove("gone"); $("#miEnterT").textContent=entered?"Return to the Garden":"Enter the Garden"; closeChat(); hostPush(); }
 function hideMenu(){ menuOpen=false; document.body.classList.remove("inmenu"); $("#hint").style.opacity=chatOpen?0:1; $("#title").classList.add("gone"); ["pairPanel","setPanel"].forEach(id=>$("#"+id).classList.remove("show")); hostPush(); }
 async function enterGame(){
@@ -3899,6 +3956,128 @@ $("#miEnter").addEventListener("click",()=>enterGame());
 $("#miScrolls").addEventListener("click",()=>openScrolls());
 $("#miTalk").addEventListener("click",async()=>{ await enterGame(); setTimeout(()=>{ openChat(); toast("Sensei drifts over to you."); },400); });
 $("#miSettings").addEventListener("click",()=>{ refreshSettings(); $("#setPanel").classList.add("show"); });
+
+/* ===================== DEV EDITOR (F2 or `) ===================== */
+// Click anything to select it. 1 move · 2 rotate · 3 scale · Ctrl+D duplicate · Delete remove · G snap to ground · Ctrl+Z undo.
+// Edits are saved on this computer and re-applied every time the game loads. "Export" copies them so they can be baked into the game.
+const DEV={on:false,sel:null,inst:null,proxy:new THREE.Object3D(),undo:[],ops:[],done:new Set(),pre:null};
+try{ DEV.ops=JSON.parse(localStorage.getItem("sh_dev_ops")||"[]"); }catch(e){ DEV.ops=[]; }
+scene.add(DEV.proxy);
+const devTC=new TransformControls(camera,renderer.domElement); devTC.setSize(.9); devTC.enabled=false; devTC.visible=false; scene.add(devTC);
+const devRay=new THREE.Raycaster(), devBox=new THREE.Box3(), devV=new THREE.Vector3(), devM=new THREE.Matrix4();
+const devUI=document.createElement("div"); devUI.id="devUI";
+devUI.innerHTML=`<style>#devUI{position:fixed;left:12px;top:12px;z-index:80;background:rgba(14,16,30,.9);color:#f4ecd8;font:13px/1.45 system-ui,sans-serif;padding:10px 12px;border-radius:10px;display:none;width:300px;box-shadow:0 6px 24px rgba(0,0,0,.4)}
+#devUI b{color:#e8c25a}#devUI .r{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}#devUI button{background:#2a3264;color:#f4ecd8;border:0;border-radius:6px;padding:5px 8px;font:12px system-ui;cursor:pointer}#devUI button:hover{background:#c8452f}#devUI button.on{background:#e8c25a;color:#14182e}#devUI .h{opacity:.65;font-size:11.5px;margin-top:8px}
+body.dev,body.dev *{cursor:auto!important}body.dev canvas{cursor:crosshair!important}</style>
+<div><b>DEV MODE</b> · <span id="devSel">click an object</span></div>
+<div class="r"><button data-m="translate" class="on">1 Move</button><button data-m="rotate">2 Rotate</button><button data-m="scale">3 Scale</button><button id="devDup">Duplicate</button><button id="devDel">Delete</button><button id="devSnap">Snap to ground</button><button id="devUndo">Undo</button></div>
+<div class="r"><button id="devExport">Export edits</button><button id="devReset">Reset all edits</button><button id="devClose">Close (F2)</button></div>
+<div class="h">WASD still walks. Drag the coloured arrows/rings to edit. Hold Shift while dragging to snap. Edits save automatically.</div>`;
+document.body.appendChild(devUI);
+function devSave(){ try{ localStorage.setItem("sh_dev_ops",JSON.stringify(DEV.ops)); }catch(e){} }
+function devVisible(o){ for(let p=o;p;p=p.parent){ if(!p.visible) return false; } return true; }
+function devSize(o){ devBox.setFromObject(o); return devBox.isEmpty()?0:devBox.getSize(devV).length(); }
+function devKey(o){ if(o.userData.devKey) return o.userData.devKey; o.updateWorldMatrix(true,false); const p=new THREE.Vector3().setFromMatrixPosition(o.matrixWorld); return o.userData.devKey=`${o.type}|${o.name||""}|${o.children.length}|${p.x.toFixed(1)},${p.y.toFixed(1)},${p.z.toFixed(1)}`; }
+function devIndex(){ const m=new Map(); scene.traverse(o=>{ if(o===devTC||o===DEV.proxy) return; const k=devKey(o); if(!m.has(k)) m.set(k,o); }); return m; }
+function devRoot(o){ let r=o; while(r.parent&&r.parent!==scene){ const p=r.parent; if(p.children.length>40) break; const s=devSize(p); if(s>16) break; r=p; } return devSize(r)>70?null:r; }
+function devWorldRadius(o){ devBox.setFromObject(o); return Math.max(.5,Math.hypot(devBox.max.x-devBox.min.x,devBox.max.z-devBox.min.z)/2); }
+function devColliders(oldP,newP,r,mode){ const out={c:[],b:[]}; const near=(x,z)=>Math.hypot(x-oldP.x,z-oldP.z)<Math.max(.6,r*.8);
+  for(let i=circles.length-1;i>=0;i--){ const c=circles[i]; if(c.sky||!near(c.x,c.z)) continue; if(mode==="del"){ out.c.push(circles.splice(i,1)[0]); } else if(mode==="dup"){ circles.push({...c,x:c.x+newP.x-oldP.x,z:c.z+newP.z-oldP.z}); } else { c.x+=newP.x-oldP.x; c.z+=newP.z-oldP.z; } }
+  for(let i=boxes.length-1;i>=0;i--){ const b=boxes[i]; if(!near(b.x,b.z)) continue; if(mode==="del"){ out.b.push(boxes.splice(i,1)[0]); } else if(mode==="dup"){ boxes.push({...b,x:b.x+newP.x-oldP.x,z:b.z+newP.z-oldP.z}); } else { b.x+=newP.x-oldP.x; b.z+=newP.z-oldP.z; } } return out; }
+function devTargetWorld(){ if(DEV.inst){ const {im,id}=DEV.inst; im.getMatrixAt(id,devM); return devM.clone().premultiply(im.matrixWorld); } DEV.sel.updateWorldMatrix(true,false); return DEV.sel.matrixWorld.clone(); }
+function devLocalMatrix(){ if(DEV.inst){ const {im,id}=DEV.inst; im.getMatrixAt(id,devM); return devM.clone(); } DEV.sel.updateMatrix(); return DEV.sel.matrix.clone(); }
+function devSetLocal(target,m){ if(target.inst){ const {im,id}=target.inst; im.setMatrixAt(id,m); im.instanceMatrix.needsUpdate=true; im.boundingSphere=null; im.boundingBox=null; } else { m.decompose(target.obj.position,target.obj.quaternion,target.obj.scale); target.obj.updateMatrixWorld(true); } }
+function devCurKey(){ return DEV.inst?devKey(DEV.inst.im)+"#"+DEV.inst.id:devKey(DEV.sel); }
+function devSelect(obj,inst){ DEV.sel=obj; DEV.inst=inst||null; if(!obj){ devTC.detach(); $("#devSel").textContent="click an object"; return; }
+  DEV.proxy.matrix.copy(devTargetWorld()); DEV.proxy.matrix.decompose(DEV.proxy.position,DEV.proxy.quaternion,DEV.proxy.scale); DEV.proxy.updateMatrixWorld(true); devTC.attach(DEV.proxy);
+  const nm=inst?`${inst.im.name||"tree/plant"} #${inst.id}`:(obj.name||obj.type); $("#devSel").textContent=nm.slice(0,40); }
+function devApplyProxy(){ const w=DEV.proxy.matrixWorld.clone(); if(DEV.inst){ const {im,id}=DEV.inst; const l=w.premultiply(im.matrixWorld.clone().invert()); im.setMatrixAt(id,l); im.instanceMatrix.needsUpdate=true; im.boundingSphere=null; im.boundingBox=null; }
+  else { const par=DEV.sel.parent; par.updateWorldMatrix(true,false); const l=w.premultiply(par.matrixWorld.clone().invert()); l.decompose(DEV.sel.position,DEV.sel.quaternion,DEV.sel.scale); DEV.sel.updateMatrixWorld(true); } }
+devTC.addEventListener("dragging-changed",e=>{ controls.enabled=!e.value; if(!DEV.sel) return;
+  if(e.value){ DEV.pre={m:devLocalMatrix(),p:new THREE.Vector3().setFromMatrixPosition(devTargetWorld())}; }
+  else if(DEV.pre){ const np=new THREE.Vector3().setFromMatrixPosition(devTargetWorld()); const r=DEV.inst?1.2:devWorldRadius(DEV.sel); devColliders(DEV.pre.p,np,r,"move");
+    const k=devCurKey(); DEV.undo.push({t:"set",k,tgt:{obj:DEV.sel,inst:DEV.inst},m:DEV.pre.m,p:np,op:DEV.pre.p,r}); DEV.ops.push({t:"set",k,m:devLocalMatrix().toArray()}); devSave(); DEV.pre=null; } });
+devTC.addEventListener("objectChange",()=>{ if(DEV.sel) devApplyProxy(); });
+function devMode(m){ devTC.setMode(m); devUI.querySelectorAll("[data-m]").forEach(b=>b.classList.toggle("on",b.dataset.m===m)); }
+devUI.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>devMode(b.dataset.m));
+function devDelete(){ if(!DEV.sel) return; const k=devCurKey(), p=new THREE.Vector3().setFromMatrixPosition(devTargetWorld()); const r=DEV.inst?1.2:devWorldRadius(DEV.sel);
+  const cols=devColliders(p,p,r,"del"); const tgt={obj:DEV.sel,inst:DEV.inst}, prev=devLocalMatrix();
+  if(DEV.inst){ devSetLocal(tgt,new THREE.Matrix4().makeScale(0,0,0)); } else { DEV.sel.visible=false; }
+  DEV.undo.push({t:"del",k,tgt,m:prev,cols}); DEV.ops.push({t:"del",k}); devSave(); devSelect(null); }
+function devDuplicate(){ if(!DEV.sel) return; const srcK=devCurKey(); let c;
+  if(DEV.inst){ const {im}=DEV.inst; c=new THREE.Mesh(im.geometry,im.material); c.castShadow=im.castShadow; c.receiveShadow=im.receiveShadow; c.name=(im.name||"plant")+" copy"; im.parent.add(c); devM.copy(devLocalMatrix()); devM.premultiply(im.matrix); c.matrix.copy(devM); c.matrix.decompose(c.position,c.quaternion,c.scale); }
+  else { c=DEV.sel.clone(true); DEV.sel.parent.add(c); }
+  // offset 1.5m to the camera's right
+  const right=new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld,0).setY(0).normalize().multiplyScalar(1.5); const par=c.parent; par.updateWorldMatrix(true,false);
+  const wp=c.getWorldPosition(new THREE.Vector3()), op=wp.clone(); wp.add(right); c.position.copy(par.worldToLocal(wp)); c.updateMatrixWorld(true);
+  const k="dup:"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); c.userData.devKey=k; c.traverse(o=>{ if(o!==c) delete o.userData.devKey; });
+  devColliders(op,wp,DEV.inst?1.2:devWorldRadius(c),"dup");
+  c.updateMatrix(); DEV.ops.push({t:"dup",k,src:srcK,m:c.matrix.toArray()}); DEV.undo.push({t:"dup",k,obj:c}); devSave(); devSelect(c); }
+function devSnap(){ if(!DEV.sel) return; const w=devTargetWorld(); let bb; if(DEV.inst){ const g=DEV.inst.im.geometry; if(!g.boundingBox) g.computeBoundingBox(); bb=g.boundingBox.clone().applyMatrix4(w); } else { bb=new THREE.Box3().setFromObject(DEV.sel); }
+  const p=new THREE.Vector3().setFromMatrixPosition(w); const dy=H(p.x,p.z)-bb.min.y; DEV.pre={m:devLocalMatrix(),p};
+  DEV.proxy.position.y+=dy; DEV.proxy.updateMatrixWorld(true); devApplyProxy(); devTC.dispatchEvent({type:"dragging-changed",value:false}); controls.enabled=true; }
+function devUndo(){ const u=DEV.undo.pop(); if(!u) return;
+  if(u.t==="set"){ devSetLocal(u.tgt,u.m); devColliders(u.p,u.op,u.r,"move"); DEV.ops.push({t:"set",k:u.k,m:u.m.toArray()}); }
+  else if(u.t==="del"){ if(u.tgt.inst) devSetLocal(u.tgt,u.m); else u.tgt.obj.visible=true; circles.push(...u.cols.c); boxes.push(...u.cols.b); DEV.ops.push({t:"undel",k:u.k}); }
+  else if(u.t==="dup"){ u.obj.parent&&u.obj.parent.remove(u.obj); DEV.ops.push({t:"rm",k:u.k}); }
+  devSave(); devSelect(null); }
+function devFind(idx,k){ const h=k.indexOf("#",k.lastIndexOf("|")); if(h>0&&!k.startsWith("dup:")){ const im=idx.get(k.slice(0,h)); return im&&im.isInstancedMesh?{inst:{im,id:+k.slice(h+1)}}:null; } const o=idx.get(k); return o?{obj:o}:null; }
+function devApplyAll(){ if(!DEV.ops.length) return; const idx=devIndex(); let pending=0;
+  DEV.ops.forEach((op,i)=>{ if(DEV.done.has(i)) return; let t;
+    if(op.t==="dup"){ const s=devFind(idx,op.src); if(!s){ pending++; return; } let c; if(s.inst){ const im=s.inst.im; c=new THREE.Mesh(im.geometry,im.material); c.castShadow=im.castShadow; c.receiveShadow=im.receiveShadow; im.parent.add(c); } else { c=s.obj.clone(true); s.obj.parent.add(c); c.traverse(o=>{ if(o!==c) delete o.userData.devKey; }); }
+      new THREE.Matrix4().fromArray(op.m).decompose(c.position,c.quaternion,c.scale); c.updateMatrixWorld(true); c.userData.devKey=op.k; idx.set(op.k,c); DEV.done.add(i); return; }
+    t=devFind(idx,op.k); if(!t){ pending++; return; }
+    if(op.t==="set"){ const before=t.inst?null:t.obj.getWorldPosition(new THREE.Vector3()); devSetLocal(t,new THREE.Matrix4().fromArray(op.m)); if(before){ devColliders(before,t.obj.getWorldPosition(new THREE.Vector3()),devWorldRadius(t.obj),"move"); } }
+    else if(op.t==="del"){ if(t.inst) devSetLocal(t,new THREE.Matrix4().makeScale(0,0,0)); else { const p=t.obj.getWorldPosition(new THREE.Vector3()); devColliders(p,p,devWorldRadius(t.obj),"del"); t.obj.visible=false; } }
+    else if(op.t==="undel"){ if(!t.inst) t.obj.visible=true; }
+    else if(op.t==="rm"){ if(t.obj&&t.obj.parent) t.obj.parent.remove(t.obj); }
+    DEV.done.add(i); });
+  return pending; }
+[1500,6000,15000,30000].forEach(ms=>setTimeout(()=>{ try{ devApplyAll(); }catch(e){ console.warn("[dev]",e); } },ms));
+function devToggle(on=!DEV.on){ DEV.on=on; devUI.style.display=on?"block":"none"; devTC.enabled=on; devTC.visible=on; document.body.classList.toggle("dev",on); if(on){ try{ document.exitPointerLock(); }catch(e){} } else { devSelect(null); controls.enabled=true; } }
+renderer.domElement.addEventListener("pointerdown",e=>{ if(!DEV.on||e.button!==0||devTC.dragging||devTC.axis) return; const r=renderer.domElement.getBoundingClientRect();
+  devRay.setFromCamera({x:(e.clientX-r.left)/r.width*2-1,y:-(e.clientY-r.top)/r.height*2+1},camera);
+  const hits=devRay.intersectObjects(scene.children,true);
+  for(const h of hits){ const o=h.object; if(!o.isMesh||o.userData.paper||!devVisible(o)) continue; let isTC=false; for(let p=o;p;p=p.parent) if(p===devTC){ isTC=true; break; } if(isTC) continue;
+    if(o.isInstancedMesh&&h.instanceId!=null){ devSelect(o,{im:o,id:h.instanceId}); return; }
+    const root=devRoot(o); if(!root) continue; devSelect(root); return; }
+  devSelect(null); },true);
+addEventListener("keydown",e=>{ if(e.code==="F2"||e.code==="Backquote"){ e.preventDefault(); e.stopImmediatePropagation(); devToggle(); return; }
+  if(!DEV.on) return; const k=e.code; let hit=true;
+  if(k==="Digit1") devMode("translate"); else if(k==="Digit2") devMode("rotate"); else if(k==="Digit3") devMode("scale");
+  else if(k==="Delete"||k==="Backspace") devDelete(); else if(k==="KeyD"&&(e.ctrlKey||e.metaKey)) devDuplicate(); else if(k==="KeyZ"&&(e.ctrlKey||e.metaKey)) devUndo();
+  else if(k==="KeyG") devSnap(); else if(k==="Escape") devToggle(false); else if(k==="ShiftLeft"||k==="ShiftRight"){ devTC.setTranslationSnap(.5); devTC.setRotationSnap(Math.PI/12); devTC.setScaleSnap(.1); hit=false; } else hit=false;
+  if(hit){ e.preventDefault(); e.stopImmediatePropagation(); } },true);
+addEventListener("keyup",e=>{ if(e.code==="ShiftLeft"||e.code==="ShiftRight"){ devTC.setTranslationSnap(null); devTC.setRotationSnap(null); devTC.setScaleSnap(null); } });
+$("#devDup").onclick=devDuplicate; $("#devDel").onclick=devDelete; $("#devSnap").onclick=devSnap; $("#devUndo").onclick=devUndo; $("#devClose").onclick=()=>devToggle(false);
+$("#devExport").onclick=()=>{ const j=JSON.stringify({game:"sensei-hakuun",when:new Date().toISOString(),ops:DEV.ops}); try{ navigator.clipboard.writeText(j); }catch(e){} const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([j],{type:"application/json"})); a.download="sensei-dev-edits.json"; a.click(); toast("Edits copied and saved as sensei-dev-edits.json. Send that file to Claude to bake them into the game."); };
+$("#devReset").onclick=function(){ if(this.dataset.arm){ DEV.ops=[]; devSave(); location.reload(); } else { this.dataset.arm=1; this.textContent="Click again to reset"; setTimeout(()=>{ delete this.dataset.arm; this.textContent="Reset all edits"; },3000); } };
+
+/* ===================== Sensei babble (no words, just a voice) ===================== */
+function babble(text,pitch=1){ if(!voiceOn||!text) return; try{ initAudio(); }catch(e){} if(!actx) return; if(actx.state==="suspended") actx.resume();
+  const words=String(text).replace(/\*[^*]*\*/g,"").split(/\s+/).filter(Boolean).slice(0,46); let t=actx.currentTime+.03, h=7;
+  for(const w of words){ const n=Math.max(1,Math.min(4,Math.round(w.replace(/[^a-z]/gi,"").length/3)));
+    for(let i=0;i<n;i++){ h=(h*31+w.charCodeAt(i%w.length))%997; const f=(170+(h%9)*14)*pitch; const o=actx.createOscillator(), g=actx.createGain(), lp=actx.createBiquadFilter(); lp.type="lowpass"; lp.frequency.value=1400*pitch;
+      o.type="triangle"; o.frequency.setValueAtTime(f,t); o.frequency.linearRampToValueAtTime(f*(h%2?1.12:.9),t+.06);
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(.16,t+.012); g.gain.exponentialRampToValueAtTime(.001,t+.075);
+      o.connect(lp); lp.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+.09); t+=.088; }
+    t+=/[.!?…]$/.test(w)?.22:/[,;:]$/.test(w)?.12:.03; if(t-actx.currentTime>4.5) break; }
+  speaking=true; clearTimeout(babble.tm); babble.tm=setTimeout(()=>{ speaking=false; },(t-actx.currentTime)*1000); }
+
+/* ===================== camera settles back to normal after any special camera ===================== */
+const CAMSET={last:9,t:0,was:false};
+function baseFov(){ const w=innerWidth,h=innerHeight; return w/h<.8?62:w/h<1.2?55:50; }
+function camSettle(dt,adv){ const special=!entered||TRAVELING||adv||pmode==="golf"||!!MG||(typeof RCK!=="undefined"&&RCK.on);
+  const dist=camera.position.distanceTo(controls.target);
+  if(special){ CAMSET.was=true; CAMSET.t=0; return; }
+  if(CAMSET.was){ CAMSET.was=false; CAMSET.t=1.3; CAMSET.from=dist; }
+  if(CAMSET.t>0){ CAMSET.t=Math.max(0,CAMSET.t-dt); const u=1-CAMSET.t/1.3, e=u*u*(3-2*u); const to=clamp(CAMSET.last,4,16);
+    const d=lerp(CAMSET.from,to,e); camera.position.sub(controls.target).setLength(d).add(controls.target);
+    const f=baseFov(); if(Math.abs(camera.fov-f)>.01||camera.near!==.1){ camera.fov=lerp(camera.fov,f,Math.min(1,dt*6)); if(CAMSET.t===0) camera.fov=f; camera.near=.1; camera.updateProjectionMatrix(); } }
+  else CAMSET.last=dist; }
+
+$("#setStyleV").textContent=PAPER?"Paper Samurai (WIP)":"3D garden";
+$("#setStyle").addEventListener("click",()=>{ try{ localStorage.setItem("sh_style",PAPER?"3d":"paper"); }catch(e){} const u=new URL(location.href); u.searchParams.delete("paper"); location.replace(u.toString()); });
 $("#miStyle").addEventListener("click",()=>{ try{ localStorage.setItem("sh_style",PAPER?"3d":"paper"); }catch(e){} const u=new URL(location.href); u.searchParams.delete("paper"); location.replace(u.toString()); });
 if(PAPER){ $("#miStyleT").textContent="Back to the 3D garden"; const h=$("#title h1"); if(h) h.textContent="Paper Samurai"; const sb=$("#title .sub"); if(sb) sb.textContent="紙の侍 · EXPERIMENTAL · WORK IN PROGRESS"; const k=$("#title .kanji"); if(k) k.textContent="紙"; }
 $("#miPair").addEventListener("click",()=>{ if(window.sensei){ window.sensei.send("open","pair"); return; } initAudio(); $("#pairPanel").classList.add("show"); hostInit(); });
