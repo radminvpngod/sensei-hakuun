@@ -68,3 +68,7 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 - **Sensei is already dead (a ghost).** His story plays at the start of the game: the "loss you arrive too late for".
 - **The vessel:** beautiful. Every sealed spirit cracks your physical seal, and you gradually turn into a vibrant spirit made of many colours (one colour per sealed spirit).
 - **Paper identity:** bosses tear through paper; memories unroll as ink-wash scrolls; spirits get painted into the vessel; fire burns paper.
+- **Death:** brutal. You burn to a crisp (paper catches, curls and blackens to ash), with an iconic death screen like RDR or GTA's "WASTED".
+- **Endings:** the transformation leads to different endings. You become a god who controls the planet, or there's a twist where you become, or always were, the villain who caused the trauma.
+- Cracks glow through and turn you into a spirit made of many colours that is always changing. Flashy combat. Opening, look/power and theme approved.
+- Music: TBD (options: commissioned composer, licensed indie tracks, AI-assisted drafts plus a human pass).
