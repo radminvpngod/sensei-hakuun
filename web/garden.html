@@ -1622,16 +1622,13 @@ function drawMap(cv,big=false){ const g=cv.getContext("2d"), W=cv.width, R=W/2, 
   g.fillStyle="rgba(120,140,90,.25)"; g.beginPath(); g.arc(...P(0,0),WALK_R*sc,0,TAU); g.fill();
   g.strokeStyle="#a98e66"; g.lineWidth=big?2:2.5; g.lineCap="round"; for(const r of ROADS){ g.beginPath(); r.forEach(([x,z],i)=>{ const [a,b]=P(x,z); i?g.lineTo(a,b):g.moveTo(a,b); }); g.stroke(); }
   g.beginPath(); { const [a,b]=P(0,44); g.moveTo(a,b); const [c,d]=P(0,10); g.lineTo(c,d); } g.stroke();
-  g.fillStyle="#7fb0b8"; g.beginPath(); g.ellipse(...P(0,0),PRX*sc,PRZ*sc,0,0,TAU); g.fill(); g.beginPath(); g.ellipse(...P(LAKE.x,LAKE.z),LAKE.a*sc,LAKE.b*sc,0,0,TAU); g.fill();
-  g.fillStyle="#8a9a6a"; g.beginPath(); g.arc(...P(ISL.x,ISL.z),ISL.r*sc,0,TAU); g.fill();
-  g.fillStyle="rgba(80,110,60,.5)"; { const [a,b]=P(MZ.x-MZH,MZ.z-MZH); g.fillRect(a,b,MZH*2*sc,MZH*2*sc); }
-  g.fillStyle="rgba(240,170,190,.6)"; g.beginPath(); g.arc(...P(ORC.x,ORC.z),ORC.r*sc,0,TAU); g.fill();
-  g.fillStyle="rgba(255,255,255,.75)"; g.beginPath(); g.arc(...P(ONS.x,ONS.z),14*sc,0,TAU); g.fill();
+  g.fillStyle="#7fb0b8"; g.beginPath(); g.ellipse(...P(0,0),PRX*sc,PRZ*sc,0,0,TAU); g.fill();
+  g.fillStyle="rgba(120,90,60,.55)"; { const [a,b]=P(GOLF.x-5.5,GOLF.z-6.4); g.fillRect(a,b,11*sc,10.4*sc); }
   g.fillStyle="#6a5a44"; { const [a,b]=P(VIL.x0+4,VIL.z0); g.fillRect(a,b,(VIL.x1-VIL.x0-8)*sc,(SQ.z-VIL.z0)*sc); } g.beginPath(); g.arc(...P(SQ.x,SQ.z),SQ.r*sc,0,TAU); g.fill();
   const lab=(x,z,t,k)=>{ const [a,b]=P(x,z); g.fillStyle="#3a2c1e"; g.font=(big?"600 13px":"600 11px")+" Shippori Mincho, serif"; g.textAlign="center"; g.fillText(big?t:k,a,b+4); };
   g.fillStyle="#c23a2a"; for(const t of TRAVEL){ if(!isLit(t.id)) continue; const [a,b]=P(t.x,t.z); g.beginPath(); g.arc(a,b,big?3.5:2.5,0,TAU); g.fill(); }
-  if(big){ [["Sensei's Garden",0,-2,"庭"],["Kumo Shrine",SHR.x,SHR.z,"社"],["Night Market",SQ.x,SQ.z,"市"],["Mini Golf",GOLF.x,GOLF.z,"球"],["Mirror Lake",LAKE.x,LAKE.z-6,"湖"],["Yuki Onsen",ONS.x,ONS.z,"湯"],["Bamboo Maze",MZ.x,MZ.z,"竹"],["Sakura Orchard",ORC.x,ORC.z,"桜"],["Castle",CASTLE.x,CASTLE.z,"城"]].forEach(([t,x,z,k])=>lab(x,z,t,k)); }
-  else [["社",SHR.x,SHR.z],["市",SQ.x,SQ.z],["球",GOLF.x,GOLF.z],["湖",LAKE.x,LAKE.z],["湯",ONS.x,ONS.z],["竹",MZ.x,MZ.z],["桜",ORC.x,ORC.z],["城",CASTLE.x,CASTLE.z],["庭",0,0]].forEach(([k,x,z])=>lab(x,z,"",k));
+  if(big){ [["Sensei's Garden",0,-2,""],["Kumo Shrine",SHR.x,SHR.z,""],["Night Market",SQ.x,SQ.z,""],["Kaeru's Farm",GOLF.x+2,GOLF.z,""],["Castle",CASTLE.x,CASTLE.z,""],["Snowy Pass →",70,-4,""]].forEach(([t,x,z,k])=>lab(x,z,t,k)); }
+
   // Sensei + you
   { const [a,b]=P(sensei.position.x,sensei.position.z); g.fillStyle="#ffffff"; g.strokeStyle="#5a7aa0"; g.lineWidth=2; g.beginPath(); g.arc(a,b,big?5:4,0,TAU); g.fill(); g.stroke(); }
   if(zone==="world"){ const [a,b]=P(player.position.x,player.position.z); g.save(); g.translate(a,b); g.rotate(-player.rotation.y+Math.PI); g.fillStyle="#c8452f"; g.beginPath(); g.moveTo(0,-7); g.lineTo(5,6); g.lineTo(0,3); g.lineTo(-5,6); g.closePath(); g.fill(); g.restore(); }
@@ -2688,6 +2685,7 @@ function frame(now){
   const dt=Math.min(.05,(now-last)/1000); last=now; clock+=dt; tUni.value=clock;
   // ---- player movement ----
   hostFrame();
+  if((PL.locked||document.pointerLockElement)&&!wantLock()&&pmode!=="koi"){ try{ document.exitPointerLock(); }catch(e){} PL.locked=false; }
   if(PAPER) paperTick(dt);
   try{ passFrame(dt); }catch(e){}
   { const A=frame.ad||(frame.ad={t:0,n:0,s:0,pr:PR}); A.t+=dt; A.n++; A.s+=dt; if(A.t>2){ const avg=A.s/A.n; let pr=A.pr; if(avg>.021&&pr>1) pr=Math.max(1,pr-.25); else if(avg<.013&&pr<PR) pr=Math.min(PR,pr+.25); if(pr!==A.pr){ A.pr=pr; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); } A.t=0; A.n=0; A.s=0; } }
@@ -3054,6 +3052,7 @@ function starterCleanup(){
     "Talk to Kaeru":()=>talkNpc(golfFrog,{name:"Kaeru",kind:"frog",fur:"#6fa04a",muzzle:"#cfe39a",robe:"#3a6a3a",sash:"#e9c46a",hat:"#e9c46a"},NPC_TREES.kaeru),
     "Talk to Taro":()=>talkNpc(drummer,{name:"Taro",fur:"#e9d7b9",muzzle:"#f6ead2",robe:"#1f3d63",sash:"#c23a2a",mask:"#1f1d22",hat:"#c23a2a"},NPC_TREES.taro)};
   for(const it of interacts){ let lab=""; try{ lab=it.label; }catch(e){} if(TALKS[lab]){ it.fn=TALKS[lab]; if(lab.startsWith("Order")) Object.defineProperty(it,"label",{value:"Talk to "+(lab==="Order tea"?"Okitsune":"Tanuki-san"),writable:true}); } }
+  try{ for(let i=discoveries.length-1;i>=0;i--){ const d=discoveries[i]; if(/^(lake|orchard|maze|golf|onsen|peak|sky)/.test(d.id)||inCut(d.x,d.z)) discoveries.splice(i,1); } }catch(e){}
   // the castle is sealed until the story opens it
   for(const it of interacts){ let lab=""; try{ lab=it.label; }catch(e){} if(lab==="Enter the castle"){ Object.defineProperty(it,"label",{value:"The castle gate is sealed",writable:true}); it.k="封"; it.fn=()=>toast("The great gate is sealed. Sensei says it will open when the story calls for it."); } }
 }

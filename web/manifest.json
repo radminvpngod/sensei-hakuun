@@ -1,7 +1,7 @@
 {
-  "version": 45,
+  "version": 46,
   "shellApi": 2,
-  "notes": "Snowy Pass climbs to Yukidake summit; travel lanterns in the pass; frozen falls, camp fire and bridge fixed; giant backdrop mountains out of the pass; trees/rocks solid; grass back where places were removed; castle gates solid; sword worn on the back; correct title on launch; smoother frame rate.",
+  "notes": "Close buttons work again (the mouse is released whenever a panel or menu is open); the map shows the current world.",
   "files": [
     "brain-client.js",
     "core.js",
