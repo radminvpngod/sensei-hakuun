@@ -54,3 +54,11 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 - **Later eras (story):** after the ancient-era questline, move into steampunk. You build planes (the map must be big enough for flying to be fun), fly to the Air Towns, and build steamboats.
 - The game's own physics for breakables (later).
 - Player light: drop the paper outline and triple glow, use a hand lantern with a small radius.
+
+## First boss: the Red Panda (Nov 23)
+- Not a kitsune. A red panda that turns into a massive demon.
+- **Setup:** a sketchy red, flaming stranger who looks evil sends you on a mysterious quest. He is secretly the panda's evil spirit, luring you there.
+- **Arena:** the fight rewrites the environment into the panda's own dome (like Violet's ult in Deadlock), with things attacking from every direction.
+- **After:** you kill it and seal it in your vessel. Talking to Sensei triggers a BotW-style Memory flashback that reveals the stranger was the panda's spirit. It should make you rethink what you missed in the moment.
+- Reward: fire, which melts the Snow Temple.
+- Goal: an art piece, not a money grab. Style, beauty, a massive map.
