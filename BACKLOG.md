@@ -41,3 +41,16 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 ## Home & shops
 - The music speaker is a shop item you buy for your home village.
 - Animal Crossing-style decorations to customise your home village (later).
+
+## Big picture (Nov 23)
+- World ~10x bigger, one open mainland (not islands), with BotW-style chunk streaming. Where the home valley sits will be decided once the map is laid out.
+- Cut Shiohama/Atlantis/cave town/bamboo road (v47). A beach comes much later, Tsushima-quality.
+- The lighthouse becomes a Japanese watchtower on a hill.
+- Biome path: forest → dying forest (bare trees, less colour) → ruined towns and castles → far off, a semi-realistic desert (later).
+- **Snow is the focus now:** expand the snow hills much further. Snow Temple frozen in ice, melted with fire (fire sword?). A massive Gate in the snow that needs a key you have to find.
+- **First boss: Fire Spirit**, a Kitsune or Red Panda in a fabled area. It appears only at a certain time of day, with a big entrance animation, and gives the fire power.
+- **Boss fights:** spirits morph into massive, scary (still paper) forms full of malice. The ancient era ends by fighting all the spirits and sealing them into your vessel's spirit storage.
+- **Next biome after snow:** Shadow Biome, all black, gothic castles.
+- **Later eras (story):** after the ancient-era questline, move into steampunk. You build planes (the map must be big enough for flying to be fun), fly to the Air Towns, and build steamboats.
+- The game's own physics for breakables (later).
+- Player light: drop the paper outline and triple glow, use a hand lantern with a small radius.
