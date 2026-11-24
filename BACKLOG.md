@@ -62,3 +62,9 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 - **After:** you kill it and seal it in your vessel. Talking to Sensei triggers a BotW-style Memory flashback that reveals the stranger was the panda's spirit. It should make you rethink what you missed in the moment.
 - Reward: fire, which melts the Snow Temple.
 - Goal: an art piece, not a money grab. Style, beauty, a massive map.
+
+## Story and identity (Nov 23)
+- **Emotional pillars:** BotW and Wukong. Memories are viewable (a BotW-style memory album). The game needs its own artistic icons (like the Master Sword and Wukong's monkey). Steeze like Kingdom Hearts.
+- **Sensei is already dead (a ghost).** His story plays at the start of the game: the "loss you arrive too late for".
+- **The vessel:** beautiful. Every sealed spirit cracks your physical seal, and you gradually turn into a vibrant spirit made of many colours (one colour per sealed spirit).
+- **Paper identity:** bosses tear through paper; memories unroll as ink-wash scrolls; spirits get painted into the vessel; fire burns paper.
