@@ -79,3 +79,9 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 - Gabriel's idea: 2D→3D. Explored and coloured regions pop up as 3D paper dioramas on the scroll (pop-up book). Could also decide the art style: the world starts flat ink and becomes 3D and coloured as you progress.
 - Markers to add: Sensei's margin notes, live panda sightings at sunset, weather drawn as ink swirls, today's footstep trail.
 - Next: a UI pass on everything (HUD, menus, dialogue, prompts) in the same ink/paper style.
+
+## Nov 25 (evening)
+- Priority order (Gabriel): map → UI → HUD → character → animations → combat → accessories → everything walkable (house and building interiors).
+- Transport for the base game: horses, maybe. Ideas: a folded paper horse you summon, sleds in the snow, later boats and planes (steampunk era).
+- First weapon idea: something with paint or ink, "inking" enemies (a calligraphy brush blade, sealing by drawing a glyph). No combat yet.
+- Finder (v52): a retro popup compass with a fighter-jet-style screen showing a live diorama of the target.

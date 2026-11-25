@@ -2496,7 +2496,7 @@ addInteract({sensei:true,k:"話",label:"Talk",r:7,fn:()=>talkSensei()});
 addInteract({pond:true,k:"餌",label:"Feed koi",r:1,fn:()=>tossFood(.55)});
 function updateNearest(){ nearest=null; let bd=1e9;
   for(const it of interacts){ if((it.zone||"world")!==zone||(it.when&&!it.when())) continue; if(zone==="world"&&pmode!=="walk"&&!it.when&&!it.sensei) continue; const x=it.sensei?sensei.position.x:it.x, z=it.sensei?sensei.position.z:it.z; let d=Math.hypot(player.position.x-x,player.position.z-z); if(it.pond){ d=((player.position.x/(PRX+3.2))**2+(player.position.z/(PRZ+3.2))**2<1)?.9:99; } if(d<it.r && d<bd+(it.sensei?3:0)){ bd=d; nearest=it; } }
-  const a=$("#act"); if(nearest&&entered&&!chatOpen){ $("#actK").textContent=nearest.k; $("#actT").textContent=nearest.label+(isTouch?"":" · E"); a.classList.add("show"); } else a.classList.remove("show"); document.body.classList.toggle("playing",wantLock()||pmode==="koi"); edgeTurn(); if(PL.locked&&!wantLock()&&!["koi","climb","glide","fall"].includes(pmode)) document.exitPointerLock(); if(isTouch) $("#tpad").classList.toggle("on",entered&&!menuOpen&&!chatOpen&&pmode==="walk"&&!MG&&zone!=="sky"); }
+  const a=$("#act"); if(nearest&&entered&&!chatOpen){ $("#actK").textContent=nearest.k; $("#actT").textContent=nearest.label; a.classList.add("show"); } else a.classList.remove("show"); document.body.classList.toggle("playing",wantLock()||pmode==="koi"); edgeTurn(); if(PL.locked&&!wantLock()&&!["koi","climb","glide","fall"].includes(pmode)) document.exitPointerLock(); if(isTouch) $("#tpad").classList.toggle("on",entered&&!menuOpen&&!chatOpen&&pmode==="walk"&&!MG&&zone!=="sky"); }
 
 // ---- prologue: the story opening scroll ----
 const PROLOGUE=[
@@ -2738,7 +2738,7 @@ function frame(now){
   if(PAPER) paperTick(dt);
   try{ passFrame(dt); }catch(e){}
   try{ worldFrame(dt); }catch(e){ if(!window._wfe){ window._wfe=1; console.warn("[world]",e); } }
-  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
+  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); inkbarFrame(); finderFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
   { const A=frame.ad||(frame.ad={t:0,n:0,s:0,pr:PR}); A.t+=dt; A.n++; A.s+=dt; if(A.t>2){ const avg=A.s/A.n; let pr=A.pr; if(avg>.021&&pr>1) pr=Math.max(1,pr-.25); else if(avg<.013&&pr<PR) pr=Math.min(PR,pr+.25); if(pr!==A.pr){ A.pr=pr; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); } A.t=0; A.n=0; A.s=0; } }
   padPoll(dt); golfFrame(dt); skyFxFrame(dt); lifeFrame(dt); advFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   const advMode=pmode==="climb"||pmode==="fall"||pmode==="glide"||pmode==="koi";
@@ -2864,7 +2864,7 @@ function frame(now){
   if(snow) snow.visible=zone!=="hall";
   // ---- interactions & discoveries ----
   if(entered){ updateNearest(); if(zone==="world"&&clock-lastDiscCheck>.5){ lastDiscCheck=clock; for(const d of discoveries){ if(store.found.includes(d.id)) continue; if(Math.hypot(player.position.x-d.x,player.position.z-d.z)<d.r){ store.found.push(d.id); save(); discover(d); break; } } } }
-  if(!MG){ renderer.shadowMap.autoUpdate=camera.position.y<14||(renderer.info.render.frame%3===0); composer.render(); }
+  if(!MG){ renderer.shadowMap.autoUpdate=camera.position.y<14||(renderer.info.render.frame%3===0); composer.render(); try{ finderRender(); }catch(e){} }
   requestAnimationFrame(frame);
 }
 
@@ -3534,6 +3534,102 @@ let _memT=0; function memoryFrame(dt){ if((_memT+=dt)<.5) return; _memT=0; const
 // crane points: high places in each region
 MAP_REG.forEach(r=>{ if(!r.crane) return; const c=r.crane;
   addInteract({keep:true,x:c.x,z:c.z,r:3.2,k:"",get label(){ return mapStore().rev[r.id]?"Look out over the land":"Release a paper crane"; },fn:()=>{ if(mapStore().rev[r.id]) openScroll({x:r.cx,z:r.cz,zoom:.6}); else releaseCrane(r); }}); });
+
+
+/* ===================== UI PASS (v52): ink bar + compass, the Finder, brush prompts, calligraphy banners ===================== */
+(function(){ const st=document.createElement("style"); st.textContent=`
+#inkbar{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 10px);transform:translateX(-50%);width:min(620px,86vw);height:62px;z-index:7;pointer-events:none}
+#inkbar canvas{position:absolute;inset:0;width:100%;height:100%}
+#inkbar .find{position:absolute;right:-46px;top:6px;width:36px;height:36px;border-radius:4px;display:grid;place-items:center;background:rgba(239,230,208,.92);border:2px solid #2a2420;color:#2a2420;font:700 17px "Shippori Mincho",serif;pointer-events:auto;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+#inkbar .find.on{background:#b8302a;color:#f6eedd;border-color:#7a1a14}
+#mini{display:none!important}
+#act{right:auto!important;left:50%!important;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 120px)!important;flex-direction:row!important;gap:0!important}
+#act .b{display:none!important}
+#act .t{font:700 15px "Shippori Mincho",serif!important;letter-spacing:.06em!important;color:#2a2420;background:linear-gradient(90deg,rgba(239,230,208,0),rgba(239,230,208,.95) 14%,rgba(239,230,208,.95) 86%,rgba(239,230,208,0))!important;padding:7px 30px 7px 46px!important;border-radius:0!important;position:relative}
+#act .t:before{content:"E";position:absolute;left:14px;top:50%;transform:translateY(-50%) rotate(-4deg);width:22px;height:22px;display:grid;place-items:center;background:#b8302a;color:#f6eedd;font:700 13px system-ui;border-radius:3px;box-shadow:0 0 0 2px rgba(122,26,20,.4)}
+body.touch #act .t:before{content:"話"}
+#disc{top:26%!important;text-shadow:none!important}
+#disc .n{font-family:"Shippori Mincho",serif!important;font-weight:800;font-size:min(9vw,46px)!important;letter-spacing:.08em!important;color:#f6eedd;padding:10px 46px;position:relative;filter:drop-shadow(0 3px 10px rgba(0,0,0,.45))}
+#disc .n:before{content:"";position:absolute;left:0;right:0;top:12%;bottom:8%;z-index:-1;background:radial-gradient(ellipse at 50% 55%,rgba(18,16,22,.82),rgba(18,16,22,.6) 55%,rgba(18,16,22,0) 72%);transform:scaleX(0);transform-origin:left;transition:transform .7s cubic-bezier(.3,.1,.2,1)}
+#disc.show .n:before{transform:scaleX(1)}
+#disc .k{color:#f6eedd;opacity:.9}
+#disc .l{width:0!important;height:3px!important;background:#b8302a!important;transition:width .9s .3s;border-radius:2px}
+#disc.show .l{width:120px!important}
+#toast{font-family:"Shippori Mincho",serif!important;font-weight:600;border-left:4px solid #b8302a}
+#finder{position:fixed;left:calc(env(safe-area-inset-left) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);width:300px;height:206px;z-index:8;pointer-events:none;opacity:0;transform:translateY(16px) scale(.96);transition:opacity .25s,transform .25s}
+#finder.show{opacity:1;transform:none}
+#finder .frame{position:absolute;inset:0;border:3px solid #2a2420;border-radius:6px;background:linear-gradient(#efe6d0,#efe6d0) top/100% 27px no-repeat,linear-gradient(#e8dcc0,#e8dcc0) bottom/100% 27px no-repeat,linear-gradient(#ebe0c6,#ebe0c6) left/7px 100% no-repeat,linear-gradient(#ebe0c6,#ebe0c6) right/7px 100% no-repeat;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+#finder .scr{position:absolute;left:10px;top:30px;right:10px;bottom:30px;border-radius:3px;overflow:hidden;box-shadow:inset 0 0 0 2px #1a1a14}
+#finder .scr:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.22) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+#finder .scr:after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(120,255,170,0) 55%,rgba(10,30,18,.55));}
+#finder .br{position:absolute;width:26px;height:26px;border:2px solid #9effb8;opacity:.9}
+#finder .br.a{left:40%;top:30%;border-right:0;border-bottom:0}#finder .br.b{right:40%;top:30%;border-left:0;border-bottom:0}#finder .br.c{left:40%;bottom:24%;border-right:0;border-top:0}#finder .br.d{right:40%;bottom:24%;border-left:0;border-top:0}
+#finder .hd{position:absolute;left:12px;right:12px;top:6px;display:flex;justify-content:space-between;font:700 12px "Shippori Mincho",serif;color:#2a2420;letter-spacing:.06em}
+#finder .hd b{color:#b8302a}
+#finder .ro{position:absolute;left:16px;right:16px;bottom:36px;display:flex;justify-content:space-between;font:600 11px ui-monospace,Menlo,monospace;color:#9effb8;text-shadow:0 0 6px rgba(120,255,170,.7)}
+#finder .nm{position:absolute;left:12px;right:12px;bottom:7px;font:700 13px "Shippori Mincho",serif;color:#2a2420;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#finder .blink{animation:fblink 1s steps(2) infinite}@keyframes fblink{50%{opacity:0}}
+body.photo #inkbar,body.photo #finder{visibility:hidden}
+#hint{font-family:"Shippori Mincho",serif!important;font-weight:600;color:#2a2420!important;background:linear-gradient(90deg,rgba(239,230,208,0),rgba(239,230,208,.92) 10%,rgba(239,230,208,.92) 90%,rgba(239,230,208,0))!important;border-radius:0!important;backdrop-filter:none!important;padding:7px 40px!important}`; document.head.appendChild(st);
+  const ib=document.createElement("div"); ib.id="inkbar"; ib.innerHTML=`<canvas></canvas><div class="find" title="Finder (F)">探</div>`; document.body.appendChild(ib);
+  const fd=document.createElement("div"); fd.id="finder"; fd.innerHTML=`<div class="frame"></div><div class="hd"><span>探 FINDER</span><b class="blink">● LIVE</b></div><div class="scr"><div class="br a"></div><div class="br b"></div><div class="br c"></div><div class="br d"></div></div><div class="ro"><span class="rng">RNG ---</span><span class="brg">BRG ---</span><span class="idx">1/1</span></div><div class="nm"></div>`; document.body.appendChild(fd);
+  ib.querySelector(".find").addEventListener("click",()=>finderNext());
+  addEventListener("keydown",e=>{ if(e.code!=="KeyF"||!entered||chatOpen||uiBlock()||(document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName))) return; if(e.repeat) return; finderNext(); });
+})();
+const INK={cv:null,g:null,w:0,h:0};
+const _bearing=(dx,dz)=>((Math.atan2(dx,-dz)*180/Math.PI)+360)%360;
+function hudTargets(){ const m=mapStore(), out=[], px=player.position.x, pz=player.position.z;
+  if(m.quest) out.push({x:m.quest.x,z:m.quest.z,k:"quest",n:m.quest.label||"Quest"});
+  for(const id in m.rumors){ const q=MAP_RUMOR[id]; if(!q) continue; if(MAP_MEM.find(v=>v.id===id)&&m.seen[id]) continue; out.push({x:q.x,z:q.z,k:"rumor",n:"Rumour: "+q.t}); }
+  for(const mm of MAP_MEM){ const rg=regionAt(mm.x,mm.z); if(!rg||!m.rev[rg.id]||m.seen[mm.id]) continue; out.push({x:mm.x,z:mm.z,k:"place",n:(mm.then||mm.now).n+" (unvisited)"}); }
+  for(const t of TRAVEL){ if(!isLit(t.id)) continue; out.push({x:t.x,z:t.z,k:"lantern",n:"Lantern: "+t.n}); }
+  for(const s of m.stamps) out.push({x:s.x,z:s.z,k:"stamp",n:"Your seal "+(STAMPK[s.k]||"印"),s:s.k});
+  return out.map(t=>({...t,d:Math.hypot(t.x-px,t.z-pz)})); }
+function inkbarFrame(){ const host=document.getElementById("inkbar"); if(!host) return; const show=entered&&!document.body.classList.contains("inmenu")&&!SCROLL.open; host.style.display=show?"":"none"; if(!show) return;
+  if(!INK.cv){ INK.cv=host.querySelector("canvas"); INK.g=INK.cv.getContext("2d"); }
+  const r=host.getBoundingClientRect(), dpr=Math.min(2,devicePixelRatio||1); if(INK.w!==r.width||INK.h!==r.height){ INK.w=r.width; INK.h=r.height; INK.cv.width=r.width*dpr; INK.cv.height=r.height*dpr; }
+  const g=INK.g, W=INK.w, Hh=INK.h; g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,Hh);
+  // the paper strip, torn at the ends
+  const top=4, bh=30; g.fillStyle="rgba(239,230,208,.93)"; g.beginPath(); g.moveTo(14,top); for(let x=14;x<=W-14;x+=W/24) g.lineTo(x,top+Math.sin(x*.7)*.8); g.lineTo(W-14,top); g.lineTo(W-4,top+bh/2); g.lineTo(W-14,top+bh); for(let x=W-14;x>=14;x-=W/24) g.lineTo(x,top+bh+Math.sin(x*.5)*.8); g.lineTo(4,top+bh/2); g.closePath(); g.fill();
+  g.strokeStyle="rgba(42,36,32,.55)"; g.lineWidth=1; g.stroke();
+  const fx=controls.target.x-camera.position.x, fz=controls.target.z-camera.position.z, head=_bearing(fx,fz), cx=W/2, span=95;
+  const toX=b=>{ let d=((b-head+540)%360)-180; return Math.abs(d)>span?null:cx+d/span*(W/2-26); };
+  g.save(); g.beginPath(); g.rect(18,top,W-36,bh); g.clip();
+  for(let b=0;b<360;b+=15){ const x=toX(b); if(x===null) continue; const major=b%90===0, mid=b%45===0; g.strokeStyle="#2a2420"; g.globalAlpha=major?.9:.45; g.lineWidth=major?2:1; g.beginPath(); g.moveTo(x,top+bh-3); g.lineTo(x,top+bh-(major?11:mid?8:5)); g.stroke();
+    if(major||mid){ g.globalAlpha=major?1:.6; g.fillStyle=b===0?"#b8302a":"#2a2420"; g.font=(major?'800 15px':'600 11px')+' "Shippori Mincho",serif'; g.textAlign="center"; g.fillText(major?["北","東","南","西"][b/90]:["NE","SE","SW","NW"][(b-45)/90],x,top+(major?16:14)); } }
+  g.globalAlpha=1;
+  const T=hudTargets();
+  for(const t of T){ if(t.d>900&&t.k!=="quest") continue; const x=toX(_bearing(t.x-player.position.x,t.z-player.position.z)); if(x===null) continue; const y=top+bh-14;
+    if(t.k==="lantern"){ g.fillStyle="#d8642a"; g.beginPath(); g.ellipse(x,y,3,4,0,0,TAU); g.fill(); }
+    else if(t.k==="rumor"||t.k==="place"){ g.strokeStyle="#3a3036"; g.lineWidth=1.3; g.setLineDash([2,2]); g.beginPath(); g.arc(x,y,5.5,0,TAU); g.stroke(); g.setLineDash([]); g.fillStyle="#3a3036"; g.font='700 9px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText(t.k==="rumor"?"?":"・",x,y+3); }
+    else if(t.k==="stamp"){ g.fillStyle="#b8302a"; g.fillRect(x-5,y-5,10,10); }
+    else if(t.k==="quest"){ g.strokeStyle="#b8302a"; g.lineWidth=2; g.beginPath(); g.arc(x,y,6,0,TAU); g.stroke(); g.fillStyle="#b8302a"; g.beginPath(); g.arc(x,y,2,0,TAU); g.fill(); } }
+  g.restore();
+  g.fillStyle="#b8302a"; g.beginPath(); g.moveTo(cx-5,top+bh+1); g.lineTo(cx+5,top+bh+1); g.lineTo(cx,top+bh-5); g.closePath(); g.fill();
+  // under the strip: region (left) and time (right), small brush text
+  const reg=regionAt(player.position.x,player.position.z), area=AREAS.find(A=>A.test(player.position.x,player.position.z));
+  const hr=nowHour(), hh=Math.floor(hr), mm=Math.floor((hr-hh)*60), part=hr<5?"Night":hr<8?"Dawn":hr<12?"Morning":hr<17?"Afternoon":hr<20?"Dusk":"Night";
+  g.font='700 12px "Shippori Mincho",serif'; g.lineWidth=3; g.strokeStyle="rgba(239,230,208,.85)"; g.fillStyle="#2a2420";
+  const L=(area?area.n:(reg?reg.n:"")), R=`${part} · ${String(hh).padStart(2,"0")}:${String(mm).padStart(2,"0")}`;
+  g.textAlign="left"; g.strokeText(L,22,top+bh+17); g.fillText(L,22,top+bh+17); g.textAlign="right"; g.strokeText(R,W-22,top+bh+17); g.fillText(R,W-22,top+bh+17);
+  if(FINDER.on&&FINDER.t){ const t=FINDER.t; g.textAlign="center"; g.fillStyle="#b8302a"; g.font='700 11px "Shippori Mincho",serif'; const s=`探 ${t.n.length>34?t.n.slice(0,33)+"…":t.n} · ${Math.round(t.d)}m`; g.strokeText(s,cx,top+bh+17); g.fillText(s,cx,top+bh+17); } }
+// --- the Finder: a little targeting screen that shows a live diorama of what you are looking for ---
+const FINDER={on:false,i:-1,t:null,cam:new THREE.PerspectiveCamera(42,300/146,.5,900),ang:0};
+function finderNext(){ const T=hudTargets().sort((a,b)=>a.d-b.d); if(!T.length){ toast("Nothing to find yet. Release a crane, hear a rumour, or press a seal on your scroll."); return; }
+  if(!FINDER.on){ FINDER.on=true; FINDER.i=0; } else { FINDER.i++; if(FINDER.i>=T.length){ FINDER.on=false; FINDER.t=null; } }
+  FINDER.t=FINDER.on?T[FINDER.i]:null; FINDER.ang=0; document.getElementById("finder").classList.toggle("show",FINDER.on); document.querySelector("#inkbar .find").classList.toggle("on",FINDER.on); try{ chime(); }catch(e){} }
+function finderFrame(dt){ if(!FINDER.on||!FINDER.t) return; const t=FINDER.t; t.d=Math.hypot(t.x-player.position.x,t.z-player.position.z);
+  const el=document.getElementById("finder"); el.querySelector(".rng").textContent="RNG "+String(Math.round(t.d)).padStart(4,"0");
+  el.querySelector(".brg").textContent="BRG "+String(Math.round(_bearing(t.x-player.position.x,t.z-player.position.z))).padStart(3,"0")+"°";
+  el.querySelector(".idx").textContent=(FINDER.i+1)+"/"+hudTargets().length; el.querySelector(".nm").textContent=t.n;
+  FINDER.ang+=dt*.35; const gy=H(t.x,t.z), R=t.k==="lantern"||t.k==="stamp"?26:58; { const base=Math.atan2(player.position.z-t.z,player.position.x-t.x)+Math.sin(FINDER.ang)*.6; const cx=t.x+Math.cos(base)*R, cz=t.z+Math.sin(base)*R; let ch=gy+R*.55; for(let u=.25;u<=1;u+=.25) ch=Math.max(ch,H(t.x+(cx-t.x)*u,t.z+(cz-t.z)*u)+6); FINDER.cam.position.set(cx,ch,cz); } FINDER.cam.lookAt(t.x,gy+R*.18,t.z); }
+function finderRender(){ if(!FINDER.on||!FINDER.t||SCROLL.open) return; const sc=document.querySelector("#finder .scr"); if(!sc||!document.getElementById("finder").classList.contains("show")) return; const r0=sc.getBoundingClientRect(), cr=renderer.domElement.getBoundingClientRect(), sz=renderer.getSize(_fsz), k=sz.x/cr.width, ky=sz.y/cr.height; const r={left:(r0.left-cr.left)*k,bottom:(r0.bottom-cr.top)*ky,width:r0.width*k,height:r0.height*ky}, Hc=sz.y;
+  if(r.width<10) return; FINDER.cam.aspect=r.width/r.height; FINDER.cam.updateProjectionMatrix();
+  const fog=scene.fog, bg=scene.background; scene.fog=null;
+  renderer.setScissorTest(true); renderer.setViewport(r.left,Hc-r.bottom,r.width,r.height); renderer.setScissor(r.left,Hc-r.bottom,r.width,r.height);
+  const ae=renderer.autoClear; renderer.autoClear=true; renderer.render(scene,FINDER.cam); renderer.autoClear=ae;
+  renderer.setScissorTest(false); renderer.setViewport(0,0,sz.x,sz.y); scene.fog=fog; }
+const _fsz=new THREE.Vector2();
 
 /* ===================== boot ===================== */
 

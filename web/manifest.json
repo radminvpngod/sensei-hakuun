@@ -1,7 +1,7 @@
 {
- "version": 51,
+ "version": 52,
  "shellApi": 2,
- "notes": "Paper Samurai (2D paper style) is now the default look. 3D is still in Settings.",
+ "notes": "UI pass 1: an ink bar compass at the top with markers (lanterns, rumours, your seals, quest, unvisited places), the Finder (F or the \u63a2 button), a retro targeting screen with a live view of what you're looking for, brush-style prompts, calligraphy area banners and paper toasts. The minimap is gone; the compass and the scroll replace it.",
  "files": [
   "brain-client.js",
   "core.js",
