@@ -1,7 +1,7 @@
 {
- "version": 52,
+ "version": 53,
  "shellApi": 2,
- "notes": "UI pass 1: an ink bar compass at the top with markers (lanterns, rumours, your seals, quest, unvisited places), the Finder (F or the \u63a2 button), a retro targeting screen with a live view of what you're looking for, brush-style prompts, calligraphy area banners and paper toasts. The minimap is gone; the compass and the scroll replace it.",
+ "notes": "UI pass 2: the Journal (J or \u5e33) with Scroll, Memories, Spirits (your vessel), Items and Settings tabs; Tsushima-style speech bubbles over whoever is talking, with replies at the bottom; the paper horse (H); a sled (T, pick it up at K\u014dri Lake); the ink brush (Q, splashes ink). Faster: far-away objects are hidden and only nearby trees cast shadows.",
  "files": [
   "brain-client.js",
   "core.js",

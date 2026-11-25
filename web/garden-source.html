@@ -2738,7 +2738,7 @@ function frame(now){
   if(PAPER) paperTick(dt);
   try{ passFrame(dt); }catch(e){}
   try{ worldFrame(dt); }catch(e){ if(!window._wfe){ window._wfe=1; console.warn("[world]",e); } }
-  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); inkbarFrame(); finderFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
+  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); inkbarFrame(); finderFrame(dt); rideFrame(dt); inkFrame(dt); dlgBubbleFrame(); cullFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
   { const A=frame.ad||(frame.ad={t:0,n:0,s:0,pr:PR}); A.t+=dt; A.n++; A.s+=dt; if(A.t>2){ const avg=A.s/A.n; let pr=A.pr; if(avg>.021&&pr>1) pr=Math.max(1,pr-.25); else if(avg<.013&&pr<PR) pr=Math.min(PR,pr+.25); if(pr!==A.pr){ A.pr=pr; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); } A.t=0; A.n=0; A.s=0; } }
   padPoll(dt); golfFrame(dt); skyFxFrame(dt); lifeFrame(dt); advFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   const advMode=pmode==="climb"||pmode==="fall"||pmode==="glide"||pmode==="koi";
@@ -2747,17 +2747,17 @@ function frame(now){
     let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y+P1J.y+PAD1.y;
     const mag=Math.min(1,Math.hypot(ix,iz));
     if(PAPER) paperInput(ix,iz,mag);
-    if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
+    if(RIDE.mode==="sled"&&ROLL.t<0){ sledMove(dt,ix,iz); } else if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
       if(POSE.kind) poseEnd();
       const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
       let mx=(rx*ix - fwd.x*iz), mz=(rz*ix - fwd.z*iz); const ml=Math.hypot(mx,mz); mx/=ml; mz/=ml;
-      const run=TOUCHRUN||keys.ShiftLeft||keys.ShiftRight||Math.hypot(joy.x,joy.y)>.92||Math.hypot(rjoy.x,rjoy.y)>.92||Math.hypot(P1J.x,P1J.y)>.92||PAD1.run; const sp=(pmode==="boat"?4.4:run?9:5)*mag; speedNow=lerp(speedNow,sp,dt*8);
+      const run=TOUCHRUN||keys.ShiftLeft||keys.ShiftRight||Math.hypot(joy.x,joy.y)>.92||Math.hypot(rjoy.x,rjoy.y)>.92||Math.hypot(P1J.x,P1J.y)>.92||PAD1.run; const sp=(pmode==="boat"?4.4:RIDE.mode==="horse"?(run?21:13):run?9:5)*mag; speedNow=lerp(speedNow,sp,dt*8);
       const old=player.position.clone(); const np={x:old.x+mx*speedNow*dt, z:old.z+mz*speedNow*dt}; collide(np);
       player.position.x=np.x; player.position.z=np.z; player.rotation.y=angLerp(player.rotation.y,Math.atan2(mx,mz),Math.min(1,dt*12));
       walkPh+=dt*speedNow*2.2;
     } else { speedNow=lerp(speedNow,0,dt*10); }
   }
-  const gy=groundY(player.position.x,player.position.z); const py0=player.position.y; if(!advMode){ player.position.y=lerp(player.position.y,gy,Math.min(1,dt*18)); if(player.position.y<gy-.05) player.position.y=gy-.05; }
+  const gy=groundY(player.position.x,player.position.z); const py0=player.position.y; if(!advMode){ const gy2=gy+RIDE.lift; player.position.y=lerp(player.position.y,gy2,Math.min(1,dt*18)); if(player.position.y<gy2-.05) player.position.y=gy2-.05; }
   const inBoat=pmode==="boat"; legs.forEach(l=>l.visible=!inBoat);
   if(inBoat){ boat.position.set(player.position.x,-.2+Math.sin(clock*1.4)*.04,player.position.z); boat.rotation.y=player.rotation.y; boat.rotation.z=Math.sin(clock*1.1)*.03; boat.userData.oars.rotation.x=speedNow>.3?Math.sin(clock*4)*.5:0; if(speedNow>.5&&srand()<dt*3) addRipple({x:player.position.x-Math.sin(player.rotation.y)*1.8,z:player.position.z-Math.cos(player.rotation.y)*1.8},-.24); }
   const moving=speedNow>.3&&!inBoat; legs[0].rotation.x=moving?Math.sin(walkPh)*.7:0; legs[1].rotation.x=moving?-Math.sin(walkPh)*.7:0;
@@ -3630,6 +3630,144 @@ function finderRender(){ if(!FINDER.on||!FINDER.t||SCROLL.open) return; const sc
   const ae=renderer.autoClear; renderer.autoClear=true; renderer.render(scene,FINDER.cam); renderer.autoClear=ae;
   renderer.setScissorTest(false); renderer.setViewport(0,0,sz.x,sz.y); scene.fog=fog; }
 const _fsz=new THREE.Vector2();
+
+
+/* ===================== UI PASS 2 (v53): the journal, speech bubbles, the paper horse, the sled, the ink brush, distance culling ===================== */
+// ---------- the journal (J, or the 帳 button) ----------
+(function(){ const st=document.createElement("style"); st.textContent=`
+#journal,#journal.panel{position:fixed;inset:0;left:0;top:0;width:auto;height:auto;transform:none;padding:0;border-radius:0;box-shadow:none;opacity:1;pointer-events:auto;max-height:none;overflow:visible;z-index:61;display:none;background:rgba(14,12,16,.5);backdrop-filter:blur(3px)}
+#journal.show{display:block}
+#journal .book{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(860px,94vw);height:min(560px,86vh);display:flex;background:#efe6d0;border:3px solid #2a2420;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.55),inset 0 0 50px rgba(120,90,50,.25);font-family:"Shippori Mincho",serif;color:#2a2420}
+#journal .tabs{width:150px;flex:none;border-right:2px solid rgba(42,36,32,.35);padding:18px 0;display:flex;flex-direction:column;gap:4px;background:linear-gradient(90deg,rgba(120,90,50,.08),transparent)}
+#journal .tab{padding:10px 18px;font-weight:700;font-size:16px;cursor:pointer;border-left:4px solid transparent}
+#journal .tab b{display:inline-block;width:26px;color:#b8302a}
+#journal .tab.on{background:rgba(42,36,32,.08);border-left-color:#b8302a}
+#journal .pg{flex:1;padding:22px 26px;overflow-y:auto}
+#journal h2{margin:0 0 4px;font-size:28px}#journal .sub{opacity:.7;font-size:14px;margin-bottom:16px}
+#journal .x{position:absolute;right:10px;top:8px;font:700 22px system-ui;cursor:pointer;padding:4px 10px}
+#journal .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+#journal .slot{border:2px solid rgba(42,36,32,.6);border-radius:3px;padding:12px;min-height:96px;background:rgba(255,250,236,.5)}
+#journal .slot.lock{border-style:dashed;opacity:.65}
+#journal .slot .t{font-weight:800;font-size:15px}#journal .slot .d{font-size:13px;opacity:.8;margin-top:4px;line-height:1.4}
+#journal .row{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid rgba(42,36,32,.18)}
+#journal .key{min-width:30px;height:30px;display:grid;place-items:center;background:#b8302a;color:#f6eedd;font:700 14px system-ui;border-radius:3px}
+#journal .key.off{background:#8a8078}
+#journal .btn{display:inline-block;margin-top:14px;padding:9px 16px;border:2px solid #2a2420;border-radius:3px;font-weight:700;cursor:pointer;background:rgba(255,250,236,.7)}
+#journal canvas{display:block;margin:6px auto 10px}
+#inkbar .jrn{position:absolute;left:-46px;top:6px;width:36px;height:36px;border-radius:4px;display:grid;place-items:center;background:rgba(239,230,208,.92);border:2px solid #2a2420;color:#2a2420;font:700 17px "Shippori Mincho",serif;pointer-events:auto;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3)}
+@media(max-width:600px){#journal .tabs{width:96px}#journal .tab{padding:10px 10px;font-size:14px}}`; document.head.appendChild(st);
+  const j=document.createElement("div"); j.id="journal"; j.className="panel"; j.innerHTML=`<div class="book"><div class="tabs">${[["地","Scroll","map"],["憶","Memories","mem"],["魂","Spirits","spirit"],["具","Items","items"],["設","Settings","set"]].map(([k,n,id])=>`<div class="tab" data-t="${id}"><b>${k}</b>${n}</div>`).join("")}</div><div class="pg"></div><div class="x">×</div></div>`;
+  document.body.appendChild(j);
+  j.addEventListener("click",e=>{ const t=e.target.closest(".tab"); if(t) journalTab(t.dataset.t); if(e.target.classList.contains("x")||e.target===j) closeJournal(); const a=e.target.dataset.a;
+    if(a==="scroll"){ closeJournal(); openScroll(); } else if(a==="settings"){ closeJournal(); showMenu(); setTimeout(()=>{ try{ $("#miSettings").click(); }catch(e){} },60); } else if(a==="horse"){ closeJournal(); toggleHorse(); } else if(a==="sled"){ closeJournal(); toggleSled(); } });
+  const ib=document.getElementById("inkbar"); if(ib){ const b=document.createElement("div"); b.className="jrn"; b.title="Journal (J)"; b.textContent="帳"; ib.appendChild(b); b.addEventListener("click",()=>openJournal()); }
+  addEventListener("keydown",e=>{ if(document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
+    const jo=document.getElementById("journal").classList.contains("show");
+    if(jo&&(e.code==="Escape"||e.code==="KeyJ")){ e.preventDefault(); e.stopImmediatePropagation(); closeJournal(); return; }
+    if(!entered||chatOpen||e.repeat) return; if(uiBlock()) return;
+    if(e.code==="KeyJ"){ e.preventDefault(); openJournal(); } else if(e.code==="KeyH"){ toggleHorse(); } else if(e.code==="KeyT"){ toggleSled(); } else if(e.code==="KeyQ"){ inkSwing(); } },true);
+})();
+let JTAB="map";
+function openJournal(t){ const j=document.getElementById("journal"); j.classList.add("show"); try{ document.exitPointerLock(); }catch(e){} journalTab(t||JTAB); }
+function closeJournal(){ document.getElementById("journal").classList.remove("show"); }
+function journalTab(t){ JTAB=t; const j=document.getElementById("journal"); j.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x.dataset.t===t)); const pg=j.querySelector(".pg"), m=mapStore(), it=store.items||{};
+  const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  if(t==="map"){ const n=MAP_REG.filter(r=>m.rev[r.id]).length; pg.innerHTML=`<h2>The Scroll</h2><div class="sub">${n} of ${MAP_REG.length} regions drawn · ${Object.keys(m.rumors).length} rumours · ${m.stamps.length} seals pressed</div>
+    <div class="grid">${MAP_REG.map(r=>`<div class="slot ${m.rev[r.id]?"":"lock"}"><div class="t">${m.rev[r.id]?esc(r.n):"Uncharted"}</div><div class="d">${m.rev[r.id]?(m.colored[r.id]?"In colour":"Drawn in ink"):"Find a high place here and release a paper crane."}</div></div>`).join("")}</div><div class="btn" data-a="scroll">Open the scroll (M)</div>`; }
+  else if(t==="mem"){ const found=(store.found||[]).map(id=>discoveries.find(d=>d.id===id)).filter(Boolean);
+    pg.innerHTML=`<h2>Memories</h2><div class="sub">Sensei's memories come back as ink scrolls when a spirit is sealed.</div><div class="grid">${Array.from({length:6},(_,i)=>`<div class="slot lock"><div class="t">— sealed —</div><div class="d">${i===0?"Something warm sleeps in the snow. Its memory is waiting.":"A memory you have not found."}</div></div>`).join("")}</div>
+    <h2 style="font-size:20px;margin-top:22px">Places you have found</h2><div class="sub">${found.length} found</div>${found.map(d=>`<div class="row"><div class="key off">${esc(d.k||"・")}</div><div><b>${esc(d.n)}</b><div style="font-size:13px;opacity:.8">${esc(d.line||"")}</div></div></div>`).join("")||"<div class='sub'>Nothing yet. Walk, and look closely.</div>"}`; }
+  else if(t==="spirit"){ pg.innerHTML=`<h2>Your Vessel</h2><div class="sub">Every spirit you seal cracks the seal on you, and colour gets in.</div><canvas id="vesselCv" width="200" height="220"></canvas>
+    <div class="grid">${[["The Fire Spirit","A small red shape at sunset. The snow will not settle where it sleeps.",1],["???","",0],["???","",0],["???","",0],["???","",0],["???","",0]].map(([n,d,hint])=>`<div class="slot lock"><div class="t">${n}</div><div class="d">${hint?d:"Not yet."}</div></div>`).join("")}</div>`;
+    const g=document.getElementById("vesselCv").getContext("2d"); g.strokeStyle="#2a2420"; g.lineWidth=3; g.lineCap="round"; g.beginPath(); g.moveTo(70,20); g.lineTo(130,20); g.moveTo(80,20); g.bezierCurveTo(80,50,30,70,30,130); g.bezierCurveTo(30,190,70,205,100,205); g.bezierCurveTo(130,205,170,190,170,130); g.bezierCurveTo(170,70,120,50,120,20); g.stroke();
+    g.globalAlpha=.25; g.fillStyle="#2a2420"; g.font='700 40px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("封",100,140); }
+  else if(t==="items"){ const row=(k,on,n,d,a)=>`<div class="row"><div class="key ${on?"":"off"}">${k}</div><div style="flex:1"><b>${n}</b><div style="font-size:13px;opacity:.8">${d}</div></div>${on&&a?`<div class="btn" style="margin:0" data-a="${a}">Use</div>`:""}</div>`;
+    pg.innerHTML=`<h2>Items</h2><div class="sub">What you carry.</div>${row("H",true,"Paper horse","Fold it and it gallops. Press H to summon or dismiss it.","horse")}${row("T",!!it.sled,"Sled",it.sled?"For the snow. Press T on a snowy slope, and lean with A and D.":"There is one by the fishing hut at Kōri Lake.","sled")}${row("Q",true,"Ink brush","Press Q to swing. It splashes ink. (Its real use comes later.)")}${row("—",true,"Paper lantern","It lights itself when it gets dark.")}${row("F",true,"Finder","Locks onto rumours, seals and places you have not been.")}`; }
+  else if(t==="set"){ pg.innerHTML=`<h2>Settings</h2><div class="sub">Art style, sound, graphics.</div><div class="btn" data-a="settings">Open game settings</div><h2 style="font-size:20px;margin-top:24px">Keys</h2>${[["WASD","Walk"],["Shift","Run"],["Space","Roll"],["E","Interact"],["M","Scroll (map)"],["J","Journal"],["F","Finder"],["H","Paper horse"],["T","Sled"],["Q","Ink brush"]].map(([k,n])=>`<div class="row"><div class="key" style="min-width:56px">${k}</div><div>${n}</div></div>`).join("")}`; } }
+
+// ---------- speech bubbles, Tsushima style: the line floats over whoever is talking, replies sit at the bottom ----------
+let _bubInit=false; function bubInit(){ if(_bubInit) return; _bubInit=true; const st=document.createElement("style"); st.textContent=`
+#dlg.bub{left:0!important;top:0!important;right:0!important;bottom:0!important;width:auto!important;transform:none!important;pointer-events:none!important}
+#dlg.bub .card{position:absolute;left:0;top:0;width:min(440px,82vw);transform:translate(-50%,-100%);background:#f4ecd8;border:3px solid #2a2420;border-radius:4px;padding:12px 16px 14px;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:auto}
+#dlg.bub .card:after{content:"";position:absolute;left:50%;bottom:-14px;margin-left:-10px;border:10px solid transparent;border-top-color:#2a2420;border-bottom:0}
+#dlg.bub .card:before{content:"";position:absolute;left:50%;bottom:-9px;margin-left:-7px;border:7px solid transparent;border-top-color:#f4ecd8;border-bottom:0;z-index:1}
+#dlg.bub .pt{width:48px;height:48px;border-radius:50%;border:2px solid #2a2420}
+#dlg.bub .nm{background:#b8302a;font:700 13px "Shippori Mincho",serif;border-radius:2px;padding:4px 9px}
+#dlg.bub .tx{font-size:17px;min-height:0}
+#dlg.bub .ch{position:fixed;left:50%;bottom:7vh;transform:translateX(-50%);width:min(420px,88vw);gap:8px;pointer-events:auto;margin:0}
+#dlg.bub .ch button{border-radius:2px;background:linear-gradient(90deg,rgba(244,236,216,.96),rgba(244,236,216,.9));font:700 15px "Shippori Mincho",serif;padding:9px 16px 9px 14px;border:2px solid #2a2420;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+#dlg.bub .ch button.on,#dlg.bub .ch button:hover{background:#2a2420;color:#f4ecd8}
+#dlg.bub .ch button b{color:#b8302a;opacity:1}`; document.head.appendChild(st);
+  dlgEl.classList.add("bub"); const ch=dlgEl.querySelector(".ch"); dlgEl.appendChild(ch); }
+const _dv=new THREE.Vector3();
+function dlgBubbleFrame(){ if(!_bubInit){ try{ bubInit(); }catch(e){} } if(!DLG.open) return; const card=dlgEl.querySelector(".card"), who=DLG.who||{}; let sx=innerWidth/2, sy=innerHeight*.62;
+  const o=who.obj; if(o){ o.getWorldPosition(_dv); _dv.y+=(who.h||2.4); _dv.project(camera); if(_dv.z<1&&Math.abs(_dv.x)<1.2&&Math.abs(_dv.y)<1.2){ sx=(_dv.x*.5+.5)*innerWidth; sy=(-_dv.y*.5+.5)*innerHeight; } }
+  sx=clamp(sx,230,innerWidth-230); sy=clamp(sy,card.offsetHeight+70,innerHeight*.66); card.style.left=sx+"px"; card.style.top=sy+"px"; }
+
+// ---------- the paper horse ----------
+function drawHorse(g,W,H,step){ g.save(); g.translate(W/2,H/2); const s=W/260; g.scale(s,s); g.lineJoin="round"; g.lineWidth=5; g.strokeStyle="#2a2420";
+  const leg=(x,a)=>{ g.save(); g.translate(x,10); g.rotate(a); g.fillStyle="#efe6d0"; g.beginPath(); g.rect(-7,0,14,62); g.fill(); g.stroke(); g.fillStyle="#2a2420"; g.fillRect(-8,54,16,10); g.restore(); };
+  const sw=step?.35:-.35; leg(-62,sw); leg(-40,-sw); leg(46,-sw); leg(66,sw);
+  g.fillStyle="#f6f0e2"; g.beginPath(); g.moveTo(-84,-6); g.lineTo(70,-14); g.lineTo(84,22); g.lineTo(-76,28); g.closePath(); g.fill(); g.stroke();
+  g.strokeStyle="rgba(42,36,32,.35)"; g.lineWidth=2; g.beginPath(); g.moveTo(-80,10); g.lineTo(78,4); g.moveTo(-10,-10); g.lineTo(-4,26); g.stroke(); g.strokeStyle="#2a2420"; g.lineWidth=5;
+  g.fillStyle="#f6f0e2"; g.beginPath(); g.moveTo(58,-12); g.lineTo(92,-74); g.lineTo(128,-58); g.lineTo(118,-44); g.lineTo(96,-46); g.lineTo(84,4); g.closePath(); g.fill(); g.stroke();
+  g.fillStyle="#b8302a"; g.beginPath(); g.moveTo(60,-14); g.lineTo(88,-70); g.lineTo(80,-74); g.lineTo(50,-14); g.closePath(); g.fill();
+  g.fillStyle="#2a2420"; g.beginPath(); g.arc(106,-60,4,0,TAU); g.fill(); g.beginPath(); g.moveTo(94,-74); g.lineTo(98,-90); g.lineTo(104,-72); g.fill();
+  g.fillStyle="#b8302a"; g.beginPath(); g.moveTo(-84,-4); g.quadraticCurveTo(-118,-20,-112,30); g.quadraticCurveTo(-100,6,-82,10); g.fill();
+  g.fillStyle="#3a4a7a"; g.fillRect(-26,-22,46,18); g.strokeRect(-26,-22,46,18); g.restore(); }
+const RIDE={mode:null,horse:null,sled:null,lift:0,v:new THREE.Vector2(),fold:0,frames:null,ft:0,step:0};
+function toggleHorse(){ if(RIDE.mode==="horse"){ rideEnd(); return; } if(zone!=="world"||pmode!=="walk"){ toast("No room for a horse here."); return; } if(RIDE.mode) rideEnd();
+  if(!RIDE.frames){ RIDE.frames=[0,1].map(st=>paperCut(320,240,(g,w,h)=>drawHorse(g,w,h,st),0)); RIDE.horse=paperPlane(RIDE.frames[0],3.4,2.55,{ty:1.0,shadow:true}); RIDE.horse.userData.keep=true; scene.add(RIDE.horse); }
+  RIDE.mode="horse"; RIDE.fold=0; RIDE.horse.visible=true; try{ chime(); }catch(e){} toast("You unfold the paper horse. (H to fold it away)"); }
+function toggleSled(){ if(RIDE.mode==="sled"){ rideEnd(); return; } const it=store.items||{}; if(!it.sled){ toast("You don't have a sled. There's one by the fishing hut at Kōri Lake."); return; }
+  if(player.position.x<90){ toast("A sled needs snow."); return; } if(zone!=="world"||pmode!=="walk") return; if(RIDE.mode) rideEnd();
+  if(!RIDE.sled){ const s=new THREE.Group(); const d=new THREE.Mesh(new THREE.BoxGeometry(.9,.1,2),toon("#8a6242")); d.position.y=.3; s.add(d); [-.38,.38].forEach(x=>{ const r=new THREE.Mesh(new THREE.BoxGeometry(.07,.22,2.2),toon("#8a2a20")); r.position.set(x,.12,0); s.add(r); const c=new THREE.Mesh(new THREE.TorusGeometry(.18,.035,5,10,Math.PI/2),toon("#8a2a20")); c.rotation.y=Math.PI/2; c.position.set(x,.3,1.1); s.add(c); }); s.userData.keep=true; scene.add(s); RIDE.sled=s; }
+  RIDE.mode="sled"; RIDE.v.set(0,0); RIDE.sled.visible=true; toast("Sled out. A and D lean, W pushes, T gets off."); }
+function rideEnd(){ if(RIDE.horse) RIDE.horse.visible=false; if(RIDE.sled) RIDE.sled.visible=false; RIDE.mode=null; RIDE.lift=0; }
+function sledMove(dt,ix,iz){ const p=player.position, e=1.2; const gx=(H(p.x+e,p.z)-H(p.x-e,p.z))/(2*e), gz=(H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e);
+  const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
+  RIDE.v.x+=(-gx*16+(rx*ix-fwd.x*iz)*3.2)*dt; RIDE.v.y+=(-gz*16+(rz*ix-fwd.z*iz)*3.2)*dt; RIDE.v.multiplyScalar(Math.pow(.62,dt)); const sp=RIDE.v.length(); if(sp>24) RIDE.v.multiplyScalar(24/sp);
+  const np={x:p.x+RIDE.v.x*dt,z:p.z+RIDE.v.y*dt}; collide(np); if(Math.abs(np.x-(p.x+RIDE.v.x*dt))>.01||Math.abs(np.z-(p.z+RIDE.v.y*dt))>.01) RIDE.v.multiplyScalar(.3);
+  p.x=np.x; p.z=np.z; speedNow=Math.min(9,RIDE.v.length()); if(RIDE.v.length()>.4) player.rotation.y=angLerp(player.rotation.y,Math.atan2(RIDE.v.x,RIDE.v.y),Math.min(1,dt*6)); if(p.x<90) rideEnd(); }
+function rideFrame(dt){ const p=player.position;
+  if(RIDE.mode==="horse"&&RIDE.horse){ RIDE.fold=Math.min(1,RIDE.fold+dt*3); RIDE.lift=lerp(RIDE.lift,1.05,Math.min(1,dt*8)); const h=RIDE.horse;
+    h.position.set(p.x,p.y-RIDE.lift+Math.abs(Math.sin(clock*(speedNow>6?14:8)))*(speedNow>.5?.12:0),p.z);
+    const yaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z); h.rotation.set(0,yaw,0);
+    const face=(typeof PAPERX!=="undefined"?PAPERX.face:1)<0?-1:1; h.scale.set(face*RIDE.fold,RIDE.fold,1);
+    RIDE.ft+=dt*(speedNow>.5?speedNow*.6:0); if(RIDE.ft>1){ RIDE.ft=0; RIDE.step^=1; paperSetTex(h,RIDE.frames[RIDE.step]); }
+    if(zone!=="world"||pmode!=="walk") rideEnd(); }
+  else if(RIDE.mode==="sled"&&RIDE.sled){ RIDE.lift=lerp(RIDE.lift,.32,Math.min(1,dt*8)); RIDE.sled.position.set(p.x,p.y-RIDE.lift,p.z); RIDE.sled.rotation.y=player.rotation.y;
+    if(RIDE.v.length()>3&&srand()<dt*20) addInkPuff(p.x,p.y-RIDE.lift+.1,p.z,"#ffffff"); }
+  else RIDE.lift=lerp(RIDE.lift,0,Math.min(1,dt*8)); }
+// the sled lives at Kōri Lake
+addInteract({keep:true,x:SF_LAKE.x+17,z:SF_LAKE.z-7,r:2.6,k:"",get label(){ return (store.items||{}).sled?"The sled's spot":"Take the sled"; },fn:()=>{ store.items=store.items||{}; if(!store.items.sled){ store.items.sled=1; save(); try{ chime(); }catch(e){} toast("You got the sled. Press T on any snowy slope."); } else toast("You already have the sled. Press T on snow."); }});
+
+// ---------- the ink brush ----------
+const INKSPL={list:[],tex:null,puffs:[]};
+function inkSplatTex(){ if(INKSPL.tex) return INKSPL.tex; const c=document.createElement("canvas"); c.width=c.height=128; const g=c.getContext("2d"); g.fillStyle="#15131a";
+  g.beginPath(); g.arc(64,64,30,0,TAU); g.fill(); for(let i=0;i<16;i++){ const a=srand()*TAU, r=30+srand()*26, s=3+srand()*9; g.beginPath(); g.arc(64+Math.cos(a)*r,64+Math.sin(a)*r,s,0,TAU); g.fill(); g.lineWidth=s*.8; g.strokeStyle="#15131a"; g.beginPath(); g.moveTo(64,64); g.lineTo(64+Math.cos(a)*r,64+Math.sin(a)*r); g.stroke(); }
+  INKSPL.tex=new THREE.CanvasTexture(c); return INKSPL.tex; }
+function addInkPuff(x,y,z,col="#15131a"){ const m=new THREE.Mesh(new THREE.SphereGeometry(.12,6,4),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.9})); m.position.set(x+(srand()-.5)*.6,y,z+(srand()-.5)*.6); scene.add(m); INKSPL.puffs.push({m,t:0,vy:1.5+srand()*2,vx:(srand()-.5)*2,vz:(srand()-.5)*2}); }
+let _inkCd=0;
+function inkSwing(){ if(_inkCd>0||zone!=="world"||RIDE.mode) return; _inkCd=.45; const p=player.position, a=player.rotation.y;
+  const fx=Math.sin(a), fz=Math.cos(a); for(let k=0;k<3;k++){ const d=1.6+k*.9, x=p.x+fx*d+(srand()-.5)*.8, z=p.z+fz*d+(srand()-.5)*.8;
+    const s=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:inkSplatTex(),transparent:true,depthWrite:false,opacity:.92})); s.rotation.set(-Math.PI/2,0,srand()*TAU); const sc=.7+srand()*.8; s.scale.set(sc,sc,1); s.position.set(x,groundY(x,z)+.04+k*.002,z); scene.add(s); INKSPL.list.push({m:s,t:0}); }
+  for(let i=0;i<10;i++) addInkPuff(p.x+fx*1.3,p.y+1,p.z+fz*1.3);
+  const arc=new THREE.Mesh(new THREE.TorusGeometry(1.25,.07,4,20,Math.PI*.9),new THREE.MeshBasicMaterial({color:"#15131a",transparent:true,opacity:.85})); arc.position.set(p.x+fx*.6,p.y+1.1,p.z+fz*.6); arc.rotation.set(Math.PI/2,0,-a+Math.PI*.55); scene.add(arc); INKSPL.puffs.push({m:arc,t:0,arc:true});
+  while(INKSPL.list.length>60){ const o=INKSPL.list.shift(); scene.remove(o.m); o.m.material.dispose(); } }
+function inkFrame(dt){ _inkCd=Math.max(0,_inkCd-dt);
+  for(let i=INKSPL.puffs.length-1;i>=0;i--){ const q=INKSPL.puffs[i]; q.t+=dt; if(q.arc){ q.m.material.opacity=.85*(1-q.t/.3); q.m.scale.setScalar(1+q.t*1.5); } else { q.vy-=9*dt; q.m.position.x+=q.vx*dt; q.m.position.y+=q.vy*dt; q.m.position.z+=q.vz*dt; q.m.material.opacity=.9*(1-q.t/.7); }
+    if(q.t>(q.arc?.3:.7)){ scene.remove(q.m); q.m.geometry.dispose(); q.m.material.dispose(); INKSPL.puffs.splice(i,1); } }
+  for(let i=INKSPL.list.length-1;i>=0;i--){ const o=INKSPL.list[i]; o.t+=dt; if(o.t>40){ o.m.material.opacity=Math.max(0,.92*(1-(o.t-40)/6)); if(o.t>46){ scene.remove(o.m); o.m.material.dispose(); INKSPL.list.splice(i,1); } } } }
+
+// ---------- lag: hide whatever is far away (BotW-style), and only near trees cast shadows ----------
+const CULL={list:null,t:0};
+function cullFrame(dt){ if((CULL.t+=dt)<.4) return; CULL.t=0; if(typeof natReady!=="undefined"&&!natReady) return;
+  const px=player.position.x, pz=player.position.z;
+  if(!CULL.list){ CULL.list=[]; const bx=new THREE.Box3(), sp=new THREE.Sphere(); const skip=new Set([player,sensei,sky,stars,HANDL.g]);
+    for(const o of scene.children){ if(skip.has(o)||o.isLight||o.isCamera||o.userData.keep||o.userData.paper||o.isPoints||!o.visible) continue; try{ bx.setFromObject(o); if(bx.isEmpty()) continue; bx.getBoundingSphere(sp); }catch(e){ continue; } if(sp.radius>140) continue; CULL.list.push({o,ox:sp.center.x-o.position.x,oz:sp.center.z-o.position.z,r:sp.radius}); } }
+  for(const c of CULL.list){ const o=c.o; const d=Math.hypot(o.position.x+c.ox-px,o.position.z+c.oz-pz)-c.r; if(d>300){ if(o.visible){ o.visible=false; o.userData._cull=true; } } else if(o.userData._cull){ o.visible=true; o.userData._cull=false; } }
+  for(const im of plantChunks){ if(!im.boundingSphere||im.userData.small) continue; im.castShadow=Math.hypot(im.boundingSphere.center.x-px,im.boundingSphere.center.z-pz)<110; } }
 
 /* ===================== boot ===================== */
 
@@ -4904,8 +5042,8 @@ dlgEl.addEventListener("click",e=>{ if(!e.target.closest("button")) dlgAdvance()
 setInterval(()=>{ if(DLG.open) dlgFrame(.05); },50);
 
 // ---- who says what ----
-const senseiWho=()=>({name:"Sensei Hakuun",pitch:1,portrait:portraitOf("sensei",drawSensei,320,220)});
-const npcWho=(n,o)=>({name:n.name,pitch:1.45,portrait:portraitOf("npc:"+n.name,(g,w,h)=>drawAnimal(g,w,h,o),256,320)});
+const senseiWho=()=>({obj:sensei,h:2.2,name:"Sensei Hakuun",pitch:1,portrait:portraitOf("sensei",drawSensei,320,220)});
+const npcWho=(n,o)=>({obj:n.rig||n.g||n.root||n.obj||null,h:2.6,name:n.name,pitch:1.45,portrait:portraitOf("npc:"+n.name,(g,w,h)=>drawAnimal(g,w,h,o),256,320)});
 const SENSEI_CH=[{t:"How are you, Sensei?",go:"how"},{t:"Where should I go?",go:"where"},{t:"What is behind the castle gate?",go:"castle"},{t:"Goodbye.",go:"bye"}];
 const SENSEI_TREE={
   start:()=>({say:[pick(["Ah. The student returns. Sit, if you like. Or stand. The pond does not mind.","Hm. You walk louder than the koi swim. Good afternoon.","Welcome back. The water was just telling me about you."])],choices:SENSEI_CH}),
