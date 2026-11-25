@@ -72,3 +72,10 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 - **Endings:** the transformation leads to different endings. You become a god who controls the planet, or there's a twist where you become, or always were, the villain who caused the trauma.
 - Cracks glow through and turn you into a spirit made of many colours that is always changing. Flashy combat. Opening, look/power and theme approved.
 - Music: TBD (options: commissioned composer, licensed indie tracks, AI-assisted drafts plus a human pass).
+
+## Map system (v50, Nov 25)
+- The Scroll: an ink-wash map. Cranes + memory reveal: a crane from a high point inks the region as Sensei remembers it, and visiting corrects it.
+- Colour floods into a region when its spirit is sealed (hook: store.map.colored). Dev: open the scroll, F2 dev mode on, press C to toggle colour, R to toggle the reveal.
+- Gabriel's idea: 2D→3D. Explored and coloured regions pop up as 3D paper dioramas on the scroll (pop-up book). Could also decide the art style: the world starts flat ink and becomes 3D and coloured as you progress.
+- Markers to add: Sensei's margin notes, live panda sightings at sunset, weather drawn as ink swirls, today's footstep trail.
+- Next: a UI pass on everything (HUD, menus, dialogue, prompts) in the same ink/paper style.
