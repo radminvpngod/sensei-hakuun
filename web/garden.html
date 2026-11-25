@@ -1640,7 +1640,7 @@ function cpIgnite(t){ t.igniting=true; chime(); const c=new THREE.Vector3(t.mid.
       const rw=clamp((u*3.2-1.9)/1.1,0,1); ring.scale.setScalar(.3+rw*7); ring.material.opacity=rw>0?(1-rw)*.8:0; },
     done(){ sparks.forEach(k=>{ scene.remove(k.sp); k.sp.material.dispose(); }); scene.remove(ring); ring.geometry.dispose(); t.igniting=false; cpGlow(); toast(t.n+": the lanterns are lit. You can travel here from any lit lantern."); } }); }
 function cpFrame(dt){ for(let i=CPFX.length-1;i>=0;i--){ const f=CPFX[i]; f.t+=dt; const u=Math.min(1,f.t/f.dur); f.tick(u,dt); if(u>=1){ CPFX.splice(i,1); f.done&&f.done(); } } }
-function openTravel(){ const box=$("#travelList"); box.innerHTML=""; const near=zone==="world"&&pmode==="walk"&&TRAVEL.some(t=>isLit(t.id)&&Math.hypot(player.position.x-t.x,player.position.z-t.z)<4.5); if(!near){ const n=document.createElement("p"); n.style.cssText="font-size:12.5px;opacity:.75;margin:0 0 6px"; n.textContent="Stand at a lit stone lantern to travel. Press M to open this map anywhere."; box.appendChild(n); } TRAVEL.forEach(t=>{ const b=document.createElement("div"); b.className="pbtn"+(isLit(t.id)?"":" dim"); b.innerHTML=isLit(t.id)?`${t.n} <b>灯</b>`:`??? <b>unlit</b>`; if(isLit(t.id)&&near) b.onclick=()=>{ $("#travelPanel").classList.remove("show"); travelTo(t); }; box.appendChild(b); }); drawMap($("#bigMap"),true); $("#travelPanel").classList.add("show"); }
+function openTravel(){ if(typeof SCROLL!=="undefined"&&SCROLL.el){ openScroll(); return; } const box=$("#travelList"); box.innerHTML=""; const near=zone==="world"&&pmode==="walk"&&TRAVEL.some(t=>isLit(t.id)&&Math.hypot(player.position.x-t.x,player.position.z-t.z)<4.5); if(!near){ const n=document.createElement("p"); n.style.cssText="font-size:12.5px;opacity:.75;margin:0 0 6px"; n.textContent="Stand at a lit stone lantern to travel. Press M to open this map anywhere."; box.appendChild(n); } TRAVEL.forEach(t=>{ const b=document.createElement("div"); b.className="pbtn"+(isLit(t.id)?"":" dim"); b.innerHTML=isLit(t.id)?`${t.n} <b>灯</b>`:`??? <b>unlit</b>`; if(isLit(t.id)&&near) b.onclick=()=>{ $("#travelPanel").classList.remove("show"); travelTo(t); }; box.appendChild(b); }); drawMap($("#bigMap"),true); $("#travelPanel").classList.add("show"); }
 function travelToPlain(t){ const a=Math.atan2(t.z,t.x); let x=t.x-Math.cos(a)*2.2, z=t.z-Math.sin(a)*2.2; if(insideCollider(x,z,.45)){ outer: for(let r=.5;r<6;r+=.5) for(let k=0;k<12;k++){ const nx=x+Math.cos(k/12*TAU)*r, nz=z+Math.sin(k/12*TAU)*r; if(!insideCollider(nx,nz,.45)){ x=nx; z=nz; break outer; } } } if(pmode!=="walk"){ parkBoat(PIER.x1+1.6,PIER.z,Math.PI/2); } setZone("world",x,H(x,z),z); }
 const VORTEX_MAT=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,uniforms:{time:{value:0},open:{value:0}},
   vertexShader:"varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }",
@@ -2187,7 +2187,7 @@ addEventListener("resize",resize); resize();
 
 /* ===================== input ===================== */
 const keys={};
-addEventListener("keydown",e=>{ if(document.activeElement===$("#inp")) return; keys[e.code]=true; if(e.code==="KeyE"||e.code==="Space"){ e.preventDefault(); if(shodoOpen||pmode==="golf") return; if(e.code==="Space"&&!e.repeat&&(!nearest||ROLL.t>=0)&&pmode==="walk"){ startRoll(); return; } doInteract(); } if(e.code==="KeyF"&&entered&&!uiBlock()) tossFood(.6); if(e.code==="KeyM"&&entered&&!chatOpen){ const tp=$("#travelPanel"); tp.classList.contains("show")?tp.classList.remove("show"):openTravel(); } if(e.code==="Escape"&&pmode==="golf"){ e.preventDefault(); golfEnd(); return; } if(e.code==="Escape"){ if(chatOpen){ e.preventDefault(); closeChat(); } else if(entered){ e.preventDefault(); menuOpen?hideMenu():showMenu(); } } });
+addEventListener("keydown",e=>{ if(document.activeElement===$("#inp")) return; keys[e.code]=true; if(e.code==="KeyE"||e.code==="Space"){ e.preventDefault(); if(shodoOpen||pmode==="golf") return; if(e.code==="Space"&&!e.repeat&&(!nearest||ROLL.t>=0)&&pmode==="walk"){ startRoll(); return; } doInteract(); } if(e.code==="KeyF"&&entered&&!uiBlock()) tossFood(.6); if(e.code==="KeyM"&&entered&&!chatOpen){ SCROLL.open?closeScroll():openScroll(); } if(e.code==="Escape"&&pmode==="golf"){ e.preventDefault(); golfEnd(); return; } if(e.code==="Escape"){ if(chatOpen){ e.preventDefault(); closeChat(); } else if(entered){ e.preventDefault(); menuOpen?hideMenu():showMenu(); } } });
 addEventListener("keyup",e=>{ keys[e.code]=false; });
 const joy={x:0,y:0,id:null}; const joyEl=$("#joy"), knobEl=joyEl.querySelector(".k");
 if (isTouch){ joyEl.style.display="block"; document.body.classList.add("touch","inmenu"); }
@@ -2738,7 +2738,7 @@ function frame(now){
   if(PAPER) paperTick(dt);
   try{ passFrame(dt); }catch(e){}
   try{ worldFrame(dt); }catch(e){ if(!window._wfe){ window._wfe=1; console.warn("[world]",e); } }
-  try{ handLanternFrame(dt); paperTintFrame(); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
+  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
   { const A=frame.ad||(frame.ad={t:0,n:0,s:0,pr:PR}); A.t+=dt; A.n++; A.s+=dt; if(A.t>2){ const avg=A.s/A.n; let pr=A.pr; if(avg>.021&&pr>1) pr=Math.max(1,pr-.25); else if(avg<.013&&pr<PR) pr=Math.min(PR,pr+.25); if(pr!==A.pr){ A.pr=pr; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); } A.t=0; A.n=0; A.s=0; } }
   padPoll(dt); golfFrame(dt); skyFxFrame(dt); lifeFrame(dt); advFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   const advMode=pmode==="climb"||pmode==="fall"||pmode==="glide"||pmode==="koi";
@@ -3113,7 +3113,7 @@ const SFX={tiles:[],fogSaved:null,storm:0,embers:null,seal:null,brazier:null,bra
     const fl=new THREE.PointLight(0xff9a40,2.4,30,1.6); fl.position.set(2.2,14.6,2.2); t.add(fl); SFX.brazier=fl;
     for(let y=.4;y<12.6;y+=.8){ const rung=new THREE.Mesh(new THREE.BoxGeometry(1.1,.1,.1),WOODL); rung.position.set(0,y,3.05); t.add(rung); } [-.55,.55].forEach(x=>{ const rl=new THREE.Mesh(new THREE.BoxGeometry(.12,12.8,.12),WOOD); rl.position.set(x,6.4,3.05); t.add(rl); });
     shadowy(t); addBox(f.x,f.z,3,3,0);
-    addInteract({keep:true,x:f.x,z:f.z+4.4,r:3,k:"",label:"Climb and ring the watch bell",fn:()=>{ try{ chime(); }catch(e){} whisper("From up here the field goes on and on. Far off, through the snow: something huge and tree-shaped, a dark gate in the cliffs, and a roof that glints like glass.",8000); }}); }
+    addInteract({keep:true,x:f.x,z:f.z+4.4,r:3,k:"",label:"Climb and ring the watch bell",fn:()=>{ try{ chime(); }catch(e){} ["gate","frozentree","hyoden"].forEach(id=>{ const m=mapStore(); m.rumors[id]=1; }); save(); whisper("From up here the field goes on and on. Far off, through the snow: something huge and tree-shaped, a dark gate in the cliffs, and a roof that glints like glass.",8000); }}); }
 
   /* --- the old tower, fallen in --- */
   { const f=fy("ruin"); const t=far(new THREE.Group()); t.position.set(f.x,f.y,f.z); scene.add(t);
@@ -3190,7 +3190,7 @@ const SFX={tiles:[],fogSaved:null,storm:0,embers:null,seal:null,brazier:null,bra
   { const LINES=["An old marker. The carving is worn away, except an arrow, pointing east.","A stone with a key carved on it, and a mountain, and a fire.","A marker half buried in snow. It says, very faintly: 'Do not follow the red stranger.'","Someone left a single bead of red glass on this stone.","The carving shows a small round animal sleeping on a big gate.","A marker. Its letters are the same as the ones on the Gate's seal.","Three lines carved deep: a tree, a temple, a gate.","This stone is warm on one side. Only one side.","A marker that just says: 'Too late. It was always too late.'"];
     const SPOTS=[[612,40],[700,-300],[840,-120],[980,200],[1160,-200],[1220,40],[880,420],[620,300],[1040,-360]];
     SPOTS.forEach(([x,z],i)=>{ const m=keep(new THREE.Group()); m.position.set(x,H(x,z),z); m.rotation.y=srand()*TAU; scene.add(m); const st=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,.5),STONE); st.position.y=.8; st.rotation.z=(srand()-.5)*.2; m.add(st); snowCap(1.05,.55,1.75,m); shadowy(m); addCircle(x,z,.7);
-      addInteract({keep:true,x,z,r:2.4,k:"",label:"Read the old marker",fn:()=>whisper(LINES[i],7000)}); }); }
+      addInteract({keep:true,x,z,r:2.4,k:"",label:"Read the old marker",fn:()=>{ whisper(LINES[i],7000); const rm={1:"gate",4:"gate",7:"hollow",8:"dark"}[i]; if(rm) mapRumor(rm); }}); }); }
 
   /* --- forests, dead birches, rocks and logs, spread so the field has groves and open ground --- */
   { const busy=(x,z)=>sfEntryD(x,z)<9||sfRoadD(x,z)<6||SF_FLATS.some(f=>Math.hypot(x-f.x,z-f.z)<f.r+6)||Math.hypot(x-SF_HOLLOW.x,z-SF_HOLLOW.z)<40||Math.hypot(x-1352,z-140)<30||(x>1240&&Math.abs(z-140)<26);
@@ -3320,6 +3320,220 @@ function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"
 function paperTintFrame(){ if(!PAPER) return; const k=1-night*.62;
   for(const m of PAPER_MESHES){ const c=m.material.color; c.setRGB(k,k,k);
     if(HANDL.light.intensity>0){ const d=m.position.distanceTo(HANDL.g.position), w=HANDL.light.intensity/2.3*(1-smooth(1,9,d)); c.r=Math.min(1,c.r+w*.55); c.g=Math.min(1,c.g+w*.36); c.b=Math.min(1,c.b+w*.12); } } }
+
+
+/* ===================== THE SCROLL: the world map (paper cranes + Sensei's memory + colour that floods in) ===================== */
+// The map is an ink-wash scroll. Each region stays blank paper until you release a paper crane from a high point there:
+// the crane flies, and ink follows it. But the ink draws the land the way Sensei REMEMBERS it, from long ago. Walk there
+// yourself and the scroll corrects itself. Each spirit you seal floods its region with that spirit's colour.
+const MAPW={x0:-200,x1:1420,z0:-1660,z1:520,step:4,ppu:.75};
+const MAP_REG=[
+  {id:"valley",n:"The Home Valley",test:(x,z)=>x<=72&&x>-190&&Math.abs(z)<190,cx:0,cz:0},
+  {id:"pass",n:"The Snowy Pass",test:(x,z)=>x>72&&x<=446&&Math.abs(z)<190,cx:260,cz:-20,crane:{x:398,z:-87}},
+  {id:"shirotae",n:"Shirotae Fields",test:(x,z)=>x>446&&x<1420&&z>-524,cx:900,cz:0,crane:{x:590,z:-155}},
+  {id:"withered",n:"The Withered Wood",test:(x,z)=>x>446&&x<1420&&z<=-524,cx:900,cz:-1060,crane:{x:918,z:-482}}];
+const regionAt=(x,z)=>MAP_REG.find(r=>r.test(x,z));
+// what Sensei remembers (then) vs what is really there (now). then:null means it is not on his map at all.
+const MAP_MEM=[
+  {id:"utsuro",x:760,z:-1050,then:{n:"Utsuro",i:"village"},now:{n:"Utsuro (empty)",i:"ruin"}},
+  {id:"hokai",x:980,z:-1460,then:{n:"Hōkai Castle",i:"castle"},now:{n:"Hōkai Castle (fallen)",i:"castleRuin"}},
+  {id:"darkedge",x:930,z:-1580,then:{n:"Kurayami Road ↑",i:"road"},now:{n:"The Edge of the Dark",i:"dark"}},
+  {id:"hyoden",x:930,z:-300,then:{n:"Hyōden Temple",i:"temple"},now:{n:"Hyōden (frozen)",i:"templeIce"}},
+  {id:"frozentree",x:1080,z:-40,then:{n:"The Great Tree",i:"tree"},now:{n:"The Frozen Tree",i:"treeIce"}},
+  {id:"oldtower",x:720,z:140,then:{n:"Old Watch Tower",i:"tower"},now:{n:"The Fallen Tower",i:"towerRuin"}},
+  {id:"hollow",x:790,z:360,then:null,now:{n:"The Warm Hollow",i:"hollow"}},
+  {id:"gate",x:1352,z:140,then:{n:"The Gate",i:"gate"},now:{n:"The Sealed Gate",i:"gate"}},
+  {id:"watchtower",x:590,z:-150,then:null,now:{n:"Watchtower",i:"tower"}}];
+const MAP_PLACES=()=>[
+  ["Sensei's Garden",0,-2,"home"],["Kumo Shrine",SHR.x,SHR.z,"shrine"],["Night Market",SQ.x,SQ.z,"village"],["Kaeru's Farm",GOLF.x+2,GOLF.z,"farm"],["Castle",CASTLE.x,CASTLE.z,"castle"],
+  ["Frozen Falls",206,-27,"falls"],["Yukimura",276,18,"village"],["Yuki Onsen",300,43,"onsen"],["Summit Shrine",334,-32,"shrine"],["Yukidake",404,-82,"peak"],
+  ["Shirotae camp",522,-64,"camp"],["Kōri Lake",SF_LAKE.x,SF_LAKE.z,"lake"]];
+const MAP_RUMOR={gate:{x:1352,z:140,t:"Something huge and dark, in the cliffs"},frozentree:{x:1080,z:-40,t:"A tree-shaped shadow"},hyoden:{x:930,z:-300,t:"A roof that glints like glass"},hollow:{x:790,z:360,t:"Warm stones. Paw prints."},dark:{x:930,z:-1560,t:"Nobody goes north"}};
+const MAP_COLORS={valley:"#8fc87a",pass:"#9ad0ec",shirotae:"#ffb070",withered:"#c09aff"};
+function mapStore(){ const m=store.map||(store.map={}); m.rev=m.rev||{valley:1}; m.seen=m.seen||{}; m.stamps=m.stamps||[]; m.rumors=m.rumors||{}; m.colored=m.colored||{}; if(m.quest===undefined) m.quest=null; return m; }
+function mapRumor(id){ const m=mapStore(); if(m.rumors[id]) return; m.rumors[id]=1; save(); toast("A new rumour is marked on your scroll."); }
+function mapQuest(x,z,label){ mapStore().quest=x==null?null:{x,z,label}; save(); }
+const SCROLL={grid:null,reg:null,row:0,ink:null,masks:{},comp:null,dirty:true,open:false,cx:0,cz:0,zoom:1,stampMode:false,stampK:0,reveal:null,travel:false,paper:null};
+const MAPCOLS=Math.round((MAPW.x1-MAPW.x0)/MAPW.step), MAPROWS=Math.round((MAPW.z1-MAPW.z0)/MAPW.step);
+// the height grid is sampled a few rows at a time while you play, so opening the scroll never hitches
+function scrollSample(budgetMs){ if(SCROLL.row>=MAPROWS) return true; if(!SCROLL.grid){ SCROLL.grid=new Float32Array(MAPCOLS*MAPROWS); SCROLL.reg=new Uint8Array(MAPCOLS*MAPROWS); }
+  const t0=performance.now(); while(SCROLL.row<MAPROWS&&performance.now()-t0<budgetMs){ const j=SCROLL.row++, z=MAPW.z0+(j+.5)*MAPW.step;
+    for(let i=0;i<MAPCOLS;i++){ const x=MAPW.x0+(i+.5)*MAPW.step; let h=-99; try{ h=H(x,z); }catch(e){} SCROLL.grid[j*MAPCOLS+i]=h; const r=regionAt(x,z); SCROLL.reg[j*MAPCOLS+i]=r?MAP_REG.indexOf(r)+1:0; } }
+  if(SCROLL.row>=MAPROWS){ scrollBuildInk(); return true; } return false; }
+const W2C=(x,z)=>[(x-MAPW.x0)*MAPW.ppu,(z-MAPW.z0)*MAPW.ppu];
+function inkBrush(g,pts,w,a,col="#1e1c22"){ for(let k=0;k<3;k++){ g.beginPath(); pts.forEach(([x,z],i)=>{ const [a1,b1]=W2C(x,z); const jx=(srand()-.5)*1.2, jz=(srand()-.5)*1.2; i?g.lineTo(a1+jx,b1+jz):g.moveTo(a1+jx,b1+jz); }); g.strokeStyle=col; g.globalAlpha=a*(k?0.35:1); g.lineWidth=w*(k?1.8:1); g.lineCap=g.lineJoin="round"; g.stroke(); } g.globalAlpha=1; }
+function scrollBuildInk(){ const C=MAPCOLS, R=MAPROWS, G=SCROLL.grid;
+  const small=document.createElement("canvas"); small.width=C; small.height=R; const sg=small.getContext("2d"), im=sg.createImageData(C,R), d=im.data;
+  for(let j=0;j<R;j++) for(let i=0;i<C;i++){ const k=j*C+i, h=G[k], hx=G[j*C+Math.min(C-1,i+1)]-G[j*C+Math.max(0,i-1)], hz=G[Math.min(R-1,j+1)*C+i]-G[Math.max(0,j-1)*C+i];
+    const x=MAPW.x0+(i+.5)*MAPW.step, z=MAPW.z0+(j+.5)*MAPW.step;
+    let lam=clamp(.62+(hx+hz)*.055,0,1); let a=(1-lam)*.62; const steep=Math.hypot(hx,hz)/(2*MAPW.step); a+=smooth(.45,1.2,steep)*.28;
+    if(x<72&&h<-.25) a=.2+((j%3)===0?.12:0);                                   // water in the valley
+    const snow=x>90?1:0; a*=snow?.85:1; if(x>446&&z<-524) a+=.08*smooth(-540,-900,z);
+    const cl=Math.floor(h/8); const cr=Math.floor(G[j*C+Math.min(C-1,i+1)]/8), cd=Math.floor(G[Math.min(R-1,j+1)*C+i]/8); if((cl!==cr||cl!==cd)&&h>-50) a+=.16;
+    a+=(fbm(i*.21,j*.21)-.5)*.08; a=clamp(a,0,.92);
+    d[k*4]=30; d[k*4+1]=28; d[k*4+2]=34; d[k*4+3]=255*a; }
+  sg.putImageData(im,0,0);
+  const W=Math.round(C*MAPW.step*MAPW.ppu), Hh=Math.round(R*MAPW.step*MAPW.ppu); const ink=document.createElement("canvas"); ink.width=W; ink.height=Hh; const g=ink.getContext("2d"); g.imageSmoothingEnabled=true; g.drawImage(small,0,0,W,Hh);
+  // roads and trails, as brush strokes
+  g.setLineDash([7,4]); [...ROADS,...PASS_TRAILS,SF_ENTRY,...SF_ROADS].forEach(t=>inkBrush(g,t,1.6,.8)); g.setLineDash([]);
+  // forests as little ink trees
+  try{ for(const [name,list] of Object.entries(PLANTS)){ const dead=/Dead/.test(name), tree=/Tree|Pine|Birch|Willow/.test(name); if(!tree) continue;
+    for(let q=0;q<list.length;q+=2){ const p=list[q]; if(p.x<MAPW.x0||p.x>MAPW.x1||p.z<MAPW.z0||p.z>MAPW.z1) continue; const [a1,b1]=W2C(p.x,p.z);
+      g.strokeStyle="#1e1c22"; g.globalAlpha=.55; g.lineWidth=1; g.beginPath(); if(dead){ g.moveTo(a1,b1+2.5); g.lineTo(a1,b1-2); g.moveTo(a1,b1-.5); g.lineTo(a1-1.8,b1-2.6); g.moveTo(a1,b1-.8); g.lineTo(a1+1.6,b1-2.8); } else { g.moveTo(a1-2,b1+1.6); g.lineTo(a1,b1-2.8); g.lineTo(a1+2,b1+1.6); } g.stroke(); } } g.globalAlpha=1; }catch(e){}
+  SCROLL.ink=ink;
+  // one soft-edged mask per region
+  for(let r=0;r<MAP_REG.length;r++){ const m=document.createElement("canvas"); m.width=C; m.height=R; const mg=m.getContext("2d"), mi=mg.createImageData(C,R);
+    for(let k=0;k<C*R;k++){ mi.data[k*4+3]=SCROLL.reg[k]===r+1?255:0; } mg.putImageData(mi,0,0);
+    const big=document.createElement("canvas"); big.width=W; big.height=Hh; const bg=big.getContext("2d"); bg.filter="blur(5px)"; bg.drawImage(m,0,0,W,Hh); SCROLL.masks[MAP_REG[r].id]=big; }
+  // the paper
+  const pp=document.createElement("canvas"); pp.width=W; pp.height=Hh; const pg=pp.getContext("2d"); pg.fillStyle="#efe6d0"; pg.fillRect(0,0,W,Hh);
+  for(let i=0;i<W*Hh/90;i++){ pg.fillStyle=`rgba(${srand()<.5?120:255},${srand()<.5?100:245},${srand()<.5?70:220},${srand()*.07})`; pg.fillRect(srand()*W,srand()*Hh,1+srand()*6,1); }
+  for(let i=0;i<40;i++){ const x=srand()*W, y=srand()*Hh, r=40+srand()*160; const gr=pg.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,"rgba(140,120,90,.06)"); gr.addColorStop(1,"rgba(140,120,90,0)"); pg.fillStyle=gr; pg.fillRect(x-r,y-r,r*2,r*2); }
+  SCROLL.paper=pp; SCROLL.comp=document.createElement("canvas"); SCROLL.comp.width=W; SCROLL.comp.height=Hh; SCROLL.dirty=true; }
+function scrollCompose(){ const c=SCROLL.comp, g=c.getContext("2d"), m=mapStore(), W=c.width, Hh=c.height;
+  g.globalCompositeOperation="source-over"; g.drawImage(SCROLL.paper,0,0);
+  const layer=document.createElement("canvas"); layer.width=W; layer.height=Hh; const lg=layer.getContext("2d");
+  const mask=document.createElement("canvas"); mask.width=W; mask.height=Hh; const mg=mask.getContext("2d");
+  for(const r of MAP_REG){ const on=m.rev[r.id], rv=SCROLL.reveal&&SCROLL.reveal.id===r.id; if(!on&&!rv) continue;
+    if(rv){ const t=SCROLL.reveal, [px,py]=W2C(t.x,t.z), rad=t.p*1400*MAPW.ppu; const tmp=document.createElement("canvas"); tmp.width=W; tmp.height=Hh; const tg=tmp.getContext("2d"); tg.drawImage(SCROLL.masks[r.id],0,0); tg.globalCompositeOperation="destination-in";
+      const gr=tg.createRadialGradient(px,py,Math.max(0,rad-60),px,py,rad+1); gr.addColorStop(0,"rgba(0,0,0,1)"); gr.addColorStop(1,"rgba(0,0,0,0)"); tg.fillStyle=gr; tg.fillRect(0,0,W,Hh); mg.drawImage(tmp,0,0); }
+    else mg.drawImage(SCROLL.masks[r.id],0,0); }
+  lg.drawImage(SCROLL.ink,0,0); lg.globalCompositeOperation="destination-in"; lg.drawImage(mask,0,0);
+  // colour floods in for every region whose spirit you have sealed
+  for(const r of MAP_REG){ if(!m.colored[r.id]||!m.rev[r.id]) continue; const cc=document.createElement("canvas"); cc.width=W; cc.height=Hh; const cg=cc.getContext("2d"); cg.fillStyle=m.colored[r.id]; cg.globalAlpha=.3; cg.fillRect(0,0,W,Hh); cg.globalAlpha=1; cg.globalCompositeOperation="destination-in"; cg.drawImage(SCROLL.masks[r.id],0,0); g.globalCompositeOperation="multiply"; g.drawImage(cc,0,0); g.globalCompositeOperation="source-over"; }
+  g.drawImage(layer,0,0); SCROLL.dirty=false; }
+// little brush pictograms
+function mapIcon(g,kind,x,y,s,a=1){ g.save(); g.translate(x,y); g.scale(s,s); g.globalAlpha=a; g.strokeStyle="#1e1c22"; g.fillStyle="#1e1c22"; g.lineWidth=1.6; g.lineCap=g.lineJoin="round";
+  const L=(...p)=>{ g.beginPath(); for(let i=0;i<p.length;i+=2) i?g.lineTo(p[i],p[i+1]):g.moveTo(p[i],p[i+1]); g.stroke(); };
+  const roof=(cx,cy,w)=>{ L(cx-w,cy,cx,cy-w*.7,cx+w,cy); L(cx-w*.7,cy,cx-w*.7,cy+w*.8,cx+w*.7,cy+w*.8,cx+w*.7,cy); };
+  switch(kind){
+    case "home": g.beginPath(); g.ellipse(0,0,7,5,0,0,TAU); g.stroke(); L(-3,0,1,-1.5,4,0,1,1.5,-3,0); break;
+    case "shrine": case "road": if(kind==="road"){ L(0,8,0,-8); L(-3,-5,0,-9,3,-5); break; } L(-7,-6,7,-6); L(-5,-3.5,5,-3.5); L(-4,-6,-4,7); L(4,-6,4,7); break;
+    case "village": roof(-5,0,4); roof(5,-2,4); roof(0,4,3.5); break;
+    case "ruin": L(-8,4,-4,0,-2,3); L(1,4,4,-1,6,2); L(-6,6,7,6); g.globalAlpha=a*.6; L(-3,-3,-1,-6); break;
+    case "farm": for(let i=-1;i<=1;i++) L(-7,i*3.2,7,i*3.2); break;
+    case "castle": L(-8,7,-8,-1,8,-1,8,7); L(-5,-1,-5,-6,5,-6,5,-1); L(-7,-6,0,-11,7,-6); break;
+    case "castleRuin": L(-8,7,-8,-1,8,-1,8,7); L(-5,-1,-5,-5,1,-7); L(-7,-5,-2,-9); L(3,-3,6,-2); break;
+    case "temple": case "templeIce": L(-9,-2,0,-8,9,-2); L(-6,-2,-6,6,6,6,6,-2); L(-4,-5,0,-12,4,-5); if(kind==="templeIce"){ g.strokeStyle="#3a7aa8"; L(-12,8,-11,-3,-6,-11,1,-15,8,-10,12,-2,12,8,-12,8); } break;
+    case "tree": case "treeIce": L(0,9,0,-3); g.beginPath(); g.arc(0,-6,7,0,TAU); kind==="tree"?g.stroke():(g.strokeStyle="#3a7aa8",g.stroke()); break;
+    case "tower": L(-3,8,-2,-6,2,-6,3,8); L(-4,-6,0,-10,4,-6); L(-3,2,3,-2); break;
+    case "towerRuin": L(-3,8,-2,-2,1,-4,2,0,3,8); L(4,6,7,7); break;
+    case "gate": L(-7,9,-7,-8); L(7,9,7,-8); L(-10,-8,10,-8); g.beginPath(); g.arc(0,0,3,0,TAU); g.stroke(); break;
+    case "hollow": g.beginPath(); g.arc(0,0,7,.4,TAU-.2); g.stroke(); g.fillStyle="#b8402a"; g.beginPath(); g.arc(0,0,2.4,0,TAU); g.fill(); break;
+    case "dark": g.globalAlpha=a*.85; g.beginPath(); g.ellipse(0,0,14,6,0,0,TAU); g.fill(); break;
+    case "falls": L(-3,-7,-3,7); L(0,-7,0,8); L(3,-7,3,7); break;
+    case "onsen": for(let i=-1;i<=1;i++){ g.beginPath(); g.moveTo(i*4,6); g.bezierCurveTo(i*4-3,2,i*4+3,-2,i*4,-7); g.stroke(); } break;
+    case "peak": L(-9,7,0,-8,9,7); L(0,-8,0,-13,4,-11.5,0,-10); break;
+    case "camp": L(-6,6,0,-5,6,6); L(-2,6,0,2,2,6); break;
+    case "lake": g.beginPath(); g.ellipse(0,0,9,5,0,0,TAU); g.stroke(); L(-4,0,4,0); break;
+    case "lantern": g.beginPath(); g.ellipse(0,0,3,4,0,0,TAU); g.fill(); break; }
+  g.restore(); }
+// --- the scroll UI ---
+(function(){ const st=document.createElement("style"); st.textContent=`
+#scrollMap,#scrollMap.panel{position:fixed;inset:0;left:0;top:0;width:auto;height:auto;transform:none;padding:0;border-radius:0;box-shadow:none;opacity:1;pointer-events:auto;overflow:visible;max-height:none;z-index:60;display:none;background:rgba(14,12,16,.55);backdrop-filter:blur(3px)}
+#scrollMap.show{display:block;transform:none}
+#scrollMap.show{display:block}
+#scrollMap .roll{position:absolute;left:4vw;right:4vw;top:5vh;bottom:5vh;display:flex;flex-direction:column}
+#scrollMap .rod{height:22px;border-radius:11px;background:linear-gradient(#6a3a24,#3a1e12 55%,#24120a);box-shadow:0 4px 10px rgba(0,0,0,.45);position:relative;z-index:2;margin:0 -14px}
+#scrollMap .rod:before,#scrollMap .rod:after{content:"";position:absolute;top:-3px;width:18px;height:28px;border-radius:6px;background:#2a1a10}
+#scrollMap .rod:before{left:-6px}#scrollMap .rod:after{right:-6px}
+#scrollMap .paper{flex:1;position:relative;overflow:hidden;background:#efe6d0;clip-path:inset(0 0 100% 0);transition:clip-path .7s cubic-bezier(.3,.1,.2,1);box-shadow:inset 0 0 40px rgba(90,60,30,.35)}
+#scrollMap.open .paper{clip-path:inset(0 0 0 0)}
+#scrollMap canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+#scrollMap .top{position:absolute;left:16px;top:12px;font-family:"Shippori Mincho",serif;color:#2a2420;pointer-events:none}
+#scrollMap .top .r{font-size:26px;font-weight:700;letter-spacing:.04em}#scrollMap .top .s{font-size:13px;opacity:.75;margin-top:2px}
+#scrollMap .btns{position:absolute;right:12px;top:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;max-width:60%}
+#scrollMap .b{font-family:"Shippori Mincho",serif;font-weight:700;font-size:14px;padding:7px 13px;border:2px solid #2a2420;border-radius:3px;background:rgba(239,230,208,.9);color:#2a2420;cursor:pointer;user-select:none}
+#scrollMap .b.on{background:#b8302a;color:#f6eedd;border-color:#7a1a14}
+#scrollMap .seals{display:none;gap:6px}#scrollMap .seals.show{display:flex}
+#scrollMap .seal{width:34px;height:34px;display:grid;place-items:center;border:2px solid #b8302a;color:#b8302a;font:700 18px "Shippori Mincho",serif;border-radius:4px;background:rgba(239,230,208,.9);cursor:pointer}
+#scrollMap .seal.on{background:#b8302a;color:#f6eedd}
+#scrollMap .tip{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);font:600 13px "Shippori Mincho",serif;color:#2a2420;background:rgba(239,230,208,.88);padding:6px 12px;border-radius:3px;pointer-events:none;white-space:nowrap}
+#scrollMap .zoom{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}`; document.head.appendChild(st);
+  const el=document.createElement("div"); el.id="scrollMap"; el.className="panel"; el.innerHTML=`<div class="roll"><div class="rod"></div><div class="paper"><canvas></canvas><div class="top"><div class="r"></div><div class="s"></div></div>
+    <div class="btns"><div class="seals">${["印","宝","危","謎","家"].map((k,i)=>`<div class="seal${i?"":" on"}" data-k="${i}">${k}</div>`).join("")}</div><div class="b" data-a="stamp">Stamp</div><div class="b" data-a="me">Me</div><div class="b" data-a="close">Close</div></div>
+    <div class="zoom"><div class="b" data-a="in">+</div><div class="b" data-a="out">−</div></div><div class="tip"></div></div><div class="rod"></div></div>`;
+  document.body.appendChild(el); SCROLL.el=el; SCROLL.cv=el.querySelector("canvas");
+  el.addEventListener("click",e=>{ const a=e.target.dataset.a; if(a==="close") closeScroll(); else if(a==="me"){ SCROLL.cx=player.position.x; SCROLL.cz=player.position.z; } else if(a==="in") SCROLL.zoom=Math.min(4,SCROLL.zoom*1.35); else if(a==="out") SCROLL.zoom=Math.max(.25,SCROLL.zoom/1.35);
+    else if(a==="stamp"){ SCROLL.stampMode=!SCROLL.stampMode; e.target.classList.toggle("on",SCROLL.stampMode); el.querySelector(".seals").classList.toggle("show",SCROLL.stampMode); }
+    if(e.target.classList.contains("seal")){ SCROLL.stampK=+e.target.dataset.k; el.querySelectorAll(".seal").forEach(s=>s.classList.toggle("on",s===e.target)); } });
+  el.addEventListener("pointerdown",e=>{ if(e.target===el) closeScroll(); });
+  // pan, pinch and tap
+  const P=new Map(); let moved=0, pinch0=0, zoom0=1;
+  const cv=SCROLL.cv;
+  cv.addEventListener("pointerdown",e=>{ cv.setPointerCapture(e.pointerId); P.set(e.pointerId,{x:e.clientX,y:e.clientY}); moved=0; if(P.size===2){ const [a,b]=[...P.values()]; pinch0=Math.hypot(a.x-b.x,a.y-b.y); zoom0=SCROLL.zoom; } });
+  cv.addEventListener("pointermove",e=>{ const p=P.get(e.pointerId); if(!p) return; const dx=e.clientX-p.x, dy=e.clientY-p.y; p.x=e.clientX; p.y=e.clientY; moved+=Math.abs(dx)+Math.abs(dy);
+    if(P.size===2){ const [a,b]=[...P.values()]; SCROLL.zoom=clamp(zoom0*Math.hypot(a.x-b.x,a.y-b.y)/Math.max(1,pinch0),.25,4); return; }
+    const s=scrollScale(); SCROLL.cx-=dx/s; SCROLL.cz-=dy/s; });
+  const up=e=>{ const had=P.has(e.pointerId); P.delete(e.pointerId); if(had&&moved<8&&P.size===0) scrollTap(e); };
+  cv.addEventListener("pointerup",up); cv.addEventListener("pointercancel",e=>P.delete(e.pointerId));
+  cv.addEventListener("wheel",e=>{ e.preventDefault(); SCROLL.zoom=clamp(SCROLL.zoom*(e.deltaY<0?1.12:1/1.12),.25,4); },{passive:false});
+  addEventListener("keydown",e=>{ if(!SCROLL.open) return; if(e.code==="Escape"||e.code==="KeyM"){ e.preventDefault(); e.stopImmediatePropagation(); closeScroll(); }
+    else if(e.code==="KeyC"&&typeof DEV!=="undefined"&&DEV.on){ const rg=regionAt(SCROLL.cx,SCROLL.cz), m=mapStore(); if(rg){ if(m.colored[rg.id]) delete m.colored[rg.id]; else m.colored[rg.id]=MAP_COLORS[rg.id]; save(); SCROLL.dirty=true; } }
+    else if(e.code==="KeyR"&&typeof DEV!=="undefined"&&DEV.on){ const rg=regionAt(SCROLL.cx,SCROLL.cz), m=mapStore(); if(rg){ if(m.rev[rg.id]&&rg.id!=="valley") delete m.rev[rg.id]; else m.rev[rg.id]=1; save(); SCROLL.dirty=true; } } },true);
+})();
+function scrollScale(){ const r=SCROLL.cv.getBoundingClientRect(); const fit=Math.min(r.width/(MAPW.x1-MAPW.x0),r.height/(MAPW.z1-MAPW.z0)); return fit*2.2*SCROLL.zoom; }
+function scrollW2S(x,z){ const r=SCROLL.cv.getBoundingClientRect(), s=scrollScale(); return [r.width/2+(x-SCROLL.cx)*s,r.height/2+(z-SCROLL.cz)*s]; }
+function scrollS2W(sx,sy){ const r=SCROLL.cv.getBoundingClientRect(), s=scrollScale(); return [SCROLL.cx+(sx-r.width/2)/s,SCROLL.cz+(sy-r.height/2)/s]; }
+function scrollTap(e){ const r=SCROLL.cv.getBoundingClientRect(), sx=e.clientX-r.left, sy=e.clientY-r.top, m=mapStore();
+  // travel by lantern, when standing at a lit one
+  if(SCROLL.travel){ for(const t of TRAVEL){ if(!isLit(t.id)) continue; const [a,b]=scrollW2S(t.x,t.z); if(Math.hypot(a-sx,b-sy)<16){ closeScroll(); travelTo(t); return; } } }
+  if(!SCROLL.stampMode) return; const [wx,wz]=scrollS2W(sx,sy);
+  const hit=m.stamps.findIndex(s=>{ const [a,b]=scrollW2S(s.x,s.z); return Math.hypot(a-sx,b-sy)<16; });
+  if(hit>=0) m.stamps.splice(hit,1); else m.stamps.push({x:Math.round(wx),z:Math.round(wz),k:SCROLL.stampK}); save(); try{ chime(); }catch(e){} }
+function openScroll(o={}){ if(!SCROLL.ink){ while(!scrollSample(50)); } mapStore();
+  SCROLL.travel=zone==="world"&&pmode==="walk"&&TRAVEL.some(t=>isLit(t.id)&&Math.hypot(player.position.x-t.x,player.position.z-t.z)<4.5);
+  SCROLL.cx=o.x??player.position.x; SCROLL.cz=o.z??player.position.z; if(o.zoom) SCROLL.zoom=o.zoom; SCROLL.dirty=true; SCROLL.open=true;
+  SCROLL.el.classList.add("show"); requestAnimationFrame(()=>requestAnimationFrame(()=>SCROLL.el.classList.add("open"))); try{ document.exitPointerLock(); }catch(e){} scrollDraw(); }
+function closeScroll(){ SCROLL.open=false; SCROLL.el.classList.remove("open"); setTimeout(()=>{ if(!SCROLL.open) SCROLL.el.classList.remove("show"); },380); }
+const STAMPK=["印","宝","危","謎","家"];
+function scrollDraw(){ if(!SCROLL.open) return; const cv=SCROLL.cv, r=cv.getBoundingClientRect(), dpr=Math.min(2,devicePixelRatio||1);
+  if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){ cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); }
+  if(SCROLL.reveal){ SCROLL.reveal.p=Math.min(1,SCROLL.reveal.p+.012); SCROLL.dirty=true; if(SCROLL.reveal.p>=1){ mapStore().rev[SCROLL.reveal.id]=1; save(); SCROLL.reveal=null; } }
+  if(SCROLL.dirty) scrollCompose();
+  const g=cv.getContext("2d"), m=mapStore(), s=scrollScale(); g.setTransform(dpr,0,0,dpr,0,0); g.fillStyle="#efe6d0"; g.fillRect(0,0,r.width,r.height);
+  const [ox,oy]=scrollW2S(MAPW.x0,MAPW.z0); const k=s/MAPW.ppu; g.imageSmoothingEnabled=true; g.drawImage(SCROLL.comp,ox,oy,SCROLL.comp.width*k,SCROLL.comp.height*k);
+  const shown=id=>m.rev[id]||(SCROLL.reveal&&SCROLL.reveal.id===id&&SCROLL.reveal.p>.6);
+  const lab=(t,x,z,o={})=>{ const [a,b]=scrollW2S(x,z); g.font=`${o.w||700} ${o.size||14}px "Shippori Mincho",serif`; g.textAlign="center"; g.globalAlpha=o.a??1; g.lineWidth=3.5; g.strokeStyle="rgba(239,230,208,.9)"; g.strokeText(t,a,b+(o.dy??20)); g.fillStyle=o.col||"#1e1c22"; g.fillText(t,a,b+(o.dy??20)); if(o.strike){ const w=g.measureText(t).width; g.strokeStyle="#b8302a"; g.lineWidth=1.6; g.beginPath(); g.moveTo(a-w/2-2,b+(o.dy??20)-4); g.lineTo(a+w/2+2,b+(o.dy??20)-6); g.stroke(); } g.globalAlpha=1; };
+  const ic=Math.min(1.6,Math.max(.8,s*1.6));
+  for(const [t,x,z,i] of MAP_PLACES()){ const rg=regionAt(x,z); if(!rg||!shown(rg.id)) continue; const [a,b]=scrollW2S(x,z); mapIcon(g,i,a,b,ic); lab(t,x,z,{size:13}); }
+  for(const mm of MAP_MEM){ const rg=regionAt(mm.x,mm.z); if(!rg||!shown(rg.id)) continue; const seen=m.seen[mm.id], [a,b]=scrollW2S(mm.x,mm.z);
+    if(!seen){ if(mm.then){ mapIcon(g,mm.then.i,a,b,ic); lab(mm.then.n,mm.x,mm.z,{size:13}); } continue; }
+    if(mm.then&&mm.then.n!==mm.now.n){ mapIcon(g,mm.then.i,a-14,b-6,ic*.8,.28); lab(mm.then.n,mm.x,mm.z,{size:11,a:.45,dy:-14,strike:true}); }
+    mapIcon(g,mm.now.i,a,b,ic); lab(mm.now.n,mm.x,mm.z,{size:13,col:mm.then?"#1e1c22":"#7a1a14"}); }
+  for(const id in m.rumors){ const q=MAP_RUMOR[id]; if(!q) continue; const mm=MAP_MEM.find(v=>v.id===id); if(mm&&m.seen[id]) continue; const [a,b]=scrollW2S(q.x,q.z);
+    g.globalAlpha=.55; g.strokeStyle="#3a3036"; g.lineWidth=1.4; g.setLineDash([3,3]); g.beginPath(); g.arc(a,b,13,0,TAU); g.stroke(); g.setLineDash([]); g.globalAlpha=1; lab("?",q.x,q.z,{size:18,dy:6,col:"#3a3036",a:.7}); lab(q.t,q.x,q.z,{size:11,w:500,a:.65,dy:28}); }
+  for(const t of TRAVEL){ if(!isLit(t.id)) continue; const [a,b]=scrollW2S(t.x,t.z); g.fillStyle="#d8642a"; g.beginPath(); g.ellipse(a,b,4.5,6,0,0,TAU); g.fill(); g.strokeStyle="#5a2410"; g.lineWidth=1.2; g.stroke(); if(SCROLL.travel){ g.strokeStyle="#d8642a"; g.lineWidth=1.5; g.beginPath(); g.arc(a,b,11+Math.sin(clock*4)*2,0,TAU); g.stroke(); } }
+  for(const st of m.stamps){ const [a,b]=scrollW2S(st.x,st.z); g.save(); g.translate(a,b); g.rotate(-.08); g.fillStyle="rgba(184,48,42,.88)"; g.fillRect(-12,-12,24,24); g.fillStyle="#f4ead4"; g.font='700 15px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText(STAMPK[st.k]||"印",0,5.5); g.restore(); }
+  if(m.quest){ const [a,b]=scrollW2S(m.quest.x,m.quest.z); g.strokeStyle="#b8302a"; g.lineWidth=2.4; g.beginPath(); g.arc(a,b,14+Math.sin(clock*3)*2.5,0,TAU); g.stroke(); g.fillStyle="#b8302a"; g.beginPath(); g.arc(a,b,3,0,TAU); g.fill(); lab(m.quest.label||"",m.quest.x,m.quest.z,{col:"#7a1a14",dy:32}); }
+  { const [a,b]=scrollW2S(player.position.x,player.position.z), yaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z)+Math.PI; g.save(); g.translate(a,b); g.rotate(-yaw+Math.PI); g.fillStyle="#b8302a"; g.strokeStyle="#5a1410"; g.lineWidth=1.2; g.beginPath(); g.moveTo(0,-11); g.lineTo(7,8); g.lineTo(0,4); g.lineTo(-7,8); g.closePath(); g.fill(); g.stroke(); g.restore(); }
+  const here=regionAt(player.position.x,player.position.z), rr=SCROLL.el;
+  rr.querySelector(".top .r").textContent=here?(m.rev[here.id]?here.n:"Uncharted land"):"";
+  const nRev=MAP_REG.filter(x=>m.rev[x.id]).length; rr.querySelector(".top .s").textContent=`${nRev} of ${MAP_REG.length} regions drawn · ${Object.keys(m.colored).length} in colour`;
+  const tip=rr.querySelector(".tip"); tip.textContent=SCROLL.travel?"Tap a lit lantern to travel there":SCROLL.stampMode?"Tap to press a seal · tap a seal to lift it":here&&!m.rev[here.id]?"This region is blank. Find a high place and release a paper crane.":"Drag to move · scroll or pinch to zoom";
+  requestAnimationFrame(scrollDraw); }
+// --- paper cranes ---
+const CRANE_MAT=new THREE.MeshToonMaterial({color:"#f6f0e2",gradientMap:gm,side:THREE.DoubleSide});
+function makeCrane(){ const g=new THREE.Group(); const tri=(pts)=>{ const geo=new THREE.BufferGeometry(); geo.setAttribute("position",new THREE.Float32BufferAttribute(pts,3)); geo.computeVertexNormals(); return new THREE.Mesh(geo,CRANE_MAT); };
+  g.add(tri([0,0,.9, 0,.12,-.5, 0,-.05,-.4])); g.add(tri([0,.05,-.45, 0,.55,-.95, 0,.1,-.6]));  g.add(tri([0,.05,.7, 0,.5,1.1, 0,.12,.9]));
+  const wl=new THREE.Group(), wr=new THREE.Group(); wl.add(tri([0,0,.35, 0,0,-.35, -1.2,.05,0])); wr.add(tri([0,0,.35, 0,0,-.35, 1.2,.05,0])); g.add(wl,wr); g.userData.w=[wl,wr]; return g; }
+function releaseCrane(reg){ const m=mapStore(); if(SCROLL.reveal||(SCROLL.crane)) return;
+  const first=!Object.keys(m.rev).some(k=>k!=="valley");
+  const c=makeCrane(); c.position.copy(player.position).add(new THREE.Vector3(0,1.6,0)); scene.add(c); SCROLL.crane={c,t:0,reg,x0:player.position.x,z0:player.position.z,y0:player.position.y+1.6};
+  try{ chime(); }catch(e){}
+  whisper(first?"You fold the old paper Sensei gave you into a crane and let it go. It flies, and wherever it flies, ink follows. But the ink draws the land the way Sensei remembers it, from a long time ago.":"The crane climbs into the wind. Ink follows it across the scroll.",first?9500:5000); }
+function craneFrame(dt){ const C=SCROLL.crane; if(!C) return; C.t+=dt; const t=C.t, a=t*1.4, rad=2+t*t*3.2;
+  C.c.position.set(C.x0+Math.cos(a)*rad,C.y0+t*t*2.2+Math.sin(t*3)*.4,C.z0+Math.sin(a)*rad); C.c.rotation.y=-a; C.c.rotation.z=.35;
+  const f=Math.sin(t*12)*.7; C.c.userData.w[0].rotation.z=f; C.c.userData.w[1].rotation.z=-f;
+  if(t>3.6){ scene.remove(C.c); SCROLL.crane=null; SCROLL.reveal={id:C.reg.id,x:C.x0,z:C.z0,p:0}; openScroll({x:C.reg.cx,z:C.reg.cz,zoom:.55}); } }
+// walking there yourself corrects the scroll
+let _memT=0; function memoryFrame(dt){ if((_memT+=dt)<.5) return; _memT=0; const m=mapStore(), px=player.position.x, pz=player.position.z;
+  for(const mm of MAP_MEM){ if(m.seen[mm.id]) continue; if(Math.hypot(px-mm.x,pz-mm.z)<(mm.id==="darkedge"?80:45)){ m.seen[mm.id]=1; save(); const rg=regionAt(mm.x,mm.z);
+    if(rg&&m.rev[rg.id]){ if(!mm.then) toast("Your scroll: "+mm.now.n+" was never on Sensei's map. You ink it in."); else if(mm.then.n!==mm.now.n) toast("Your scroll: "+mm.then.n+" is not what Sensei remembers. You correct the ink."); } } }
+  if(!SCROLL.ink) scrollSample(3); }
+// crane points: high places in each region
+MAP_REG.forEach(r=>{ if(!r.crane) return; const c=r.crane;
+  addInteract({keep:true,x:c.x,z:c.z,r:3.2,k:"",get label(){ return mapStore().rev[r.id]?"Look out over the land":"Release a paper crane"; },fn:()=>{ if(mapStore().rev[r.id]) openScroll({x:r.cx,z:r.cz,zoom:.6}); else releaseCrane(r); }}); });
 
 /* ===================== boot ===================== */
 

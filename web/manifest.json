@@ -1,7 +1,7 @@
 {
- "version": 49,
+ "version": 50,
  "shellApi": 2,
- "notes": "North of the snow: a pass through the ridge leads into the Withered Wood, where the snow thins into grey dead forest, then Utsuro (an empty, burnt village), H\u014dkai Castle collapsed on its hill, and the Edge of the Dark, a black mist wall where the Shadow begins. Also K\u014dri Lake, frozen solid, with an ice-fishing hut.",
+ "notes": "The Scroll: a new ink-wash world map (M or the Map button). Regions stay blank until you release a paper crane from a high place there (Yukidake peak, the Watchtower, the ridge above the Withered Wood). The crane's ink draws the land as Sensei remembers it, and visiting places corrects it. Also hanko seal stamps, rumours, quest marks, lantern travel from the map, and colour that floods in as spirits are sealed.",
  "files": [
   "brain-client.js",
   "core.js",
