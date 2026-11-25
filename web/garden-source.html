@@ -682,6 +682,146 @@ function drawSamurai(g,W,H,back,step){
   g.strokeStyle="#b48a44"; g.lineWidth=3; for(let i=-3;i<=3;i++){ g.beginPath(); g.moveTo(X+i*8,26); g.lineTo(X+i*28,68); g.stroke(); }
   g.fillStyle="#8a6232"; g.beginPath(); g.ellipse(X,64,96,7,0,0,7); g.fill(); g.restore();
 }
+// ---------- Paper Samurai v2: a richer cutout, many poses, and real lighting on paper ----------
+// o: {back, ph (0..1 through a stride), pose: idle|walk|run|ride|sled|swing, k (pose progress), br (breath 0/1)}
+function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const X=128, ink="#1d1a22", back=!!o.back, pose=o.pose||"idle", ph=o.ph||0;
+  const S=Math.sin(ph*TAU), C=Math.cos(ph*TAU);
+  const amp=pose==="run"?.62:pose==="walk"?.36:0, legA=S*amp, armA=-S*amp*.9, bob=pose==="run"?Math.abs(C)*-9:pose==="walk"?Math.abs(C)*-5:(o.br?-1.5:0);
+  const tilt=pose==="run"?.07:0;
+  const OL=(w=4)=>{ g.lineWidth=w; g.strokeStyle=ink; g.lineJoin=g.lineCap="round"; g.stroke(); };
+  const fillOL=(c,w=4)=>{ g.fillStyle=c; g.fill(); OL(w); };
+  g.translate(X,300); g.rotate(tilt); g.translate(-X,-300+bob);
+  // ---- scarf tails (behind in front view) ----
+  const scarf=()=>{ const fl=pose==="run"?1:pose==="walk"?.55:pose==="ride"?1:.25, w=Math.sin(ph*TAU*2)*8*fl+Math.sin(performance.now?0:0);
+    g.beginPath(); g.moveTo(X+20,136); g.bezierCurveTo(X+50+fl*20,130+w,X+70+fl*36,146-w,X+86+fl*44,150+fl*-12+w); g.lineTo(X+80+fl*44,166+fl*-10+w*.6); g.bezierCurveTo(X+62+fl*30,160,X+44+fl*14,150+w*.5,X+18,150); g.closePath(); fillOL("#d8402e",3.5);
+    g.beginPath(); g.moveTo(X+18,144); g.bezierCurveTo(X+40+fl*10,152+w,X+52+fl*24,168,X+60+fl*30,180-fl*8+w); g.lineTo(X+50+fl*28,186-fl*8+w); g.bezierCurveTo(X+40,170,X+30,160,X+14,152); g.closePath(); fillOL("#b8302a",3.5); };
+  // ---- katana ----
+  const sword=(front)=>{ g.save(); g.translate(X,176); g.rotate(front?.78:-.78); const d=front?1:-1;
+    g.beginPath(); g.rect(-100*d<0?-100:-10,-6,110,12); g.restore(); g.save(); g.translate(X,176); g.rotate(front?.78:-.78);
+    // saya (sheath)
+    g.beginPath(); rr(g,front?-102:-8,-6.5,110,13,6); fillOL("#20181e",3.5); g.strokeStyle="#6e2b2b"; g.lineWidth=2; for(let i=0;i<4;i++){ const x=(front?-90:8)+i*22; g.beginPath(); g.moveTo(x,-6); g.lineTo(x+6,6); g.stroke(); }
+    // tsuba + tsuka (hilt, diamond wrap)
+    const hx=front?-102:102; g.beginPath(); g.ellipse(hx+(front?-2:2),0,4,11,0,0,TAU); fillOL("#e8c25a",3);
+    g.beginPath(); rr(g,front?hx-46:hx+4,-6,42,12,5); fillOL("#efe9dc",3);
+    g.strokeStyle="#2a2028"; g.lineWidth=2.2; for(let i=0;i<5;i++){ const x=(front?hx-42:hx+8)+i*8; g.beginPath(); g.moveTo(x,-5); g.lineTo(x+5,5); g.moveTo(x+5,-5); g.lineTo(x,5); g.stroke(); }
+    g.beginPath(); g.arc(front?hx-48:hx+48,0,4.5,0,TAU); fillOL("#e8c25a",2.5);
+    g.strokeStyle="#c8402e"; g.lineWidth=3; g.beginPath(); g.moveTo(front?-60:60,6); g.quadraticCurveTo(front?-56:56,26,front?-44:44,30); g.stroke(); g.restore(); };
+  // ---- legs (tabi + waraji) ----
+  const leg=(side,a,len=56,ang0=0)=>{ g.save(); g.translate(X+side*17,236); g.rotate(a+ang0*side);
+    g.beginPath(); rr(g,-11,0,22,len,9); fillOL("#efe9dc",3.5); g.strokeStyle="rgba(29,26,34,.25)"; g.lineWidth=2; g.beginPath(); g.moveTo(-2,len-14); g.lineTo(-2,len-4); g.stroke();
+    g.beginPath(); rr(g,-14,len-6,28,10,5); fillOL("#b48a44",3); g.strokeStyle="#b8302a"; g.lineWidth=3; g.beginPath(); g.moveTo(-9,len-6); g.lineTo(0,len-14); g.lineTo(9,len-6); g.stroke(); g.restore(); };
+  // ---- sleeve + hand ----
+  const arm=(side,a,hold)=>{ g.save(); g.translate(X+side*40,150); g.rotate(a*side+side*.12);
+    g.beginPath(); g.moveTo(-14,-6); g.lineTo(16,-6); g.quadraticCurveTo(24,30,18,58); g.lineTo(-18,58); g.quadraticCurveTo(-22,24,-14,-6); g.closePath(); fillOL("#2c3f6e",4);
+    g.fillStyle="#3c5a8c"; g.beginPath(); g.moveTo(-12,-2); g.lineTo(-4,-2); g.lineTo(-8,52); g.lineTo(-15,52); g.closePath(); g.fill();
+    g.beginPath(); rr(g,-18,50,36,9,3); fillOL("#c8402e",3);
+    g.beginPath(); g.arc(0,66,9,0,TAU); fillOL("#f6d9bb",3);
+    if(hold==="brush"){ g.save(); g.translate(0,66); g.rotate(-.4); g.beginPath(); rr(g,-3,-58,6,70,3); fillOL("#c8a060",2.5); g.beginPath(); g.moveTo(-6,-58); g.quadraticCurveTo(0,-84,6,-58); g.closePath(); fillOL("#15131a",2); g.restore(); }
+    g.restore(); };
+  // ================= BACK VIEW =================
+  if(back){
+    sword(false); leg(-1,legA); leg(1,-legA);
+    hakama(g,X,legA,back,fillOL); arm(-1,armA); arm(1,-armA);
+    g.beginPath(); rr(g,X-46,136,92,64,22); fillOL("#2c3f6e",4); g.fillStyle="#3c5a8c"; g.fillRect(X-40,140,10,56);
+    g.beginPath(); g.arc(X,166,17,0,TAU); fillOL("#efe6d0",3); g.fillStyle="#b8302a"; g.font='700 20px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("紙",X,173);
+    g.beginPath(); rr(g,X-47,190,94,14,6); fillOL("#b8302a",3);
+    scarf();
+    g.beginPath(); g.ellipse(X,100,44,42,0,0,TAU); fillOL("#2a2026",4); g.beginPath(); g.arc(X,62,11,0,TAU); fillOL("#1d161b",3); g.strokeStyle="#b8302a"; g.lineWidth=3; g.beginPath(); g.moveTo(X-9,66); g.lineTo(X+9,66); g.stroke();
+    g.beginPath(); rr(g,X-37,126,74,16,8); fillOL("#d8402e",3);
+    kasa(g,X,fillOL,true); g.restore(); return; }
+  // ================= FRONT VIEW =================
+  scarf(); sword(true);
+  if(pose==="ride"){ leg(-1,.95,46); leg(1,-.95,46); }
+  else if(pose==="sled"){ leg(-1,.5,34); leg(1,-.5,34); }
+  else { leg(-1,legA); leg(1,-legA); }
+  hakama(g,X,pose==="ride"?0:legA,false,fillOL,pose==="ride"?1:pose==="sled"?.6:0);
+  // arms behind body first when swinging
+  const hold=pose==="swing"?"brush":null;
+  if(pose==="ride"||pose==="sled"){ arm(-1,-.5); arm(1,-.5); }
+  else if(pose==="swing"){ const k=o.k||0; arm(-1,.15); }
+  else { arm(-1,armA); }
+  // torso: haori over kimono
+  g.beginPath(); rr(g,X-46,134,92,66,22); fillOL("#2c3f6e",4);
+  g.fillStyle="#3c5a8c"; g.beginPath(); g.moveTo(X-40,140); g.lineTo(X-28,140); g.lineTo(X-30,194); g.lineTo(X-42,194); g.closePath(); g.fill();
+  g.strokeStyle="rgba(29,26,34,.35)"; g.lineWidth=2; for(let i=0;i<3;i++){ g.beginPath(); g.moveTo(X+14+i*9,142); g.lineTo(X+10+i*9,196); g.stroke(); }
+  g.beginPath(); g.moveTo(X-20,136); g.lineTo(X,180); g.lineTo(X+20,136); g.closePath(); fillOL("#efe9dc",3);
+  g.strokeStyle="#c8402e"; g.lineWidth=5; g.beginPath(); g.moveTo(X-17,137); g.lineTo(X,174); g.lineTo(X+17,137); g.stroke();
+  g.strokeStyle="#efe9dc"; g.lineWidth=7; g.beginPath(); g.moveTo(X-26,136); g.lineTo(X-6,182); g.moveTo(X+26,136); g.lineTo(X+6,182); g.stroke(); g.strokeStyle=ink; g.lineWidth=2;
+  [-1,1].forEach(sd=>{ g.beginPath(); g.arc(X+sd*30,152,8,0,TAU); g.fillStyle="#efe6d0"; g.fill(); g.stroke(); g.fillStyle="#b8302a"; g.font='700 10px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("紙",X+sd*30,156); });
+  // obi with knot
+  g.beginPath(); rr(g,X-47,182,94,16,6); fillOL("#b8302a",3); g.beginPath(); rr(g,X-9,180,18,20,4); fillOL("#e8c25a",3);
+  g.strokeStyle="#7a1a14"; g.lineWidth=2; g.beginPath(); g.moveTo(X-44,190); g.lineTo(X-12,190); g.moveTo(X+12,190); g.lineTo(X+44,190); g.stroke();
+  // front arm
+  if(pose==="ride"||pose==="sled"){ }
+  else if(pose==="swing"){ const k=o.k||0; arm(1,[-2.6,-1.1,.6][Math.min(2,Math.floor(k*3))],"brush"); }
+  else arm(1,-armA);
+  // head
+  g.beginPath(); g.ellipse(X,100,44,42,0,0,TAU); fillOL("#f6d9bb",4);
+  g.fillStyle="#2a2026"; g.beginPath(); g.moveTo(X-44,96); g.quadraticCurveTo(X-46,58,X,58); g.quadraticCurveTo(X+46,58,X+44,96); g.lineTo(X+30,84); g.lineTo(X+22,92); g.lineTo(X+12,80); g.lineTo(X,90); g.lineTo(X-12,80); g.lineTo(X-24,92); g.lineTo(X-32,84); g.closePath(); g.fill(); OL(3);
+  g.strokeStyle=ink; g.lineWidth=3.5; g.beginPath(); g.moveTo(X-26,92); g.lineTo(X-10,95); g.moveTo(X+26,92); g.lineTo(X+10,95); g.stroke();
+  const blink=pose==="idle"&&o.br; g.fillStyle=ink;
+  [-1,1].forEach(d=>{ if(blink){ g.lineWidth=3; g.beginPath(); g.moveTo(X+d*16-6,106); g.lineTo(X+d*16+6,106); g.stroke(); } else { g.beginPath(); g.ellipse(X+d*16,106,6,9,0,0,TAU); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(X+d*16+2,102,2.6,0,TAU); g.fill(); g.fillStyle=ink; } });
+  g.fillStyle="rgba(232,110,100,.5)"; g.beginPath(); g.ellipse(X-30,120,9,5,0,0,TAU); g.ellipse(X+30,120,9,5,0,0,TAU); g.fill();
+  g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); if(pose==="run"||pose==="swing"){ g.ellipse(X,123,5,4,0,0,TAU); g.fillStyle="#7a2a22"; g.fill(); g.stroke(); } else { g.arc(X,119,6,.25,Math.PI-.25); g.stroke(); }
+  g.strokeStyle="#b8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(X-40,96); g.quadraticCurveTo(X-30,132,X,140); g.quadraticCurveTo(X+30,132,X+40,96); g.stroke();
+  g.beginPath(); rr(g,X-37,126,74,15,7); fillOL("#d8402e",3);
+  kasa(g,X,fillOL,false);
+  if(pose==="swing"&&(o.k||0)>.3&&(o.k||0)<.7){ g.strokeStyle="rgba(21,19,26,.85)"; g.lineWidth=9; g.lineCap="round"; g.beginPath(); g.arc(X,150,104,-2.4,-.2); g.stroke(); g.lineWidth=3; g.beginPath(); g.arc(X,150,118,-2.1,-.5); g.stroke(); }
+  g.restore(); }
+function hakama(g,X,legA,back,fillOL,spread=0){ const sw=legA*14, wd=50+spread*22;
+  g.beginPath(); g.moveTo(X-38,190); g.lineTo(X+38,190); g.lineTo(X+wd+sw*.4,266); g.quadraticCurveTo(X+sw*.3,276,X-wd+sw*.4,266); g.closePath(); fillOL("#23283d",4);
+  g.save(); g.clip(); g.strokeStyle="#3a4466"; g.lineWidth=2.2; for(let r=0;r<3;r++) for(let i=-4;i<=4;i++){ const cx=X+i*16+(r%2)*8, cy=262-r*9; for(let k=1;k<=3;k++){ g.beginPath(); g.arc(cx,cy,k*3.6,Math.PI,0); g.stroke(); } } g.restore();
+  g.strokeStyle="rgba(10,10,20,.55)"; g.lineWidth=2.5; [-22,-8,8,22].forEach(d=>{ g.beginPath(); g.moveTo(X+d*.8,194); g.lineTo(X+d*1.3+sw*.3,262); g.stroke(); }); }
+function kasa(g,X,fillOL,back){ g.beginPath(); g.moveTo(X-100,74); g.quadraticCurveTo(X,0,X+100,74); g.quadraticCurveTo(X,60,X-100,74); fillOL("#d9b56b",4);
+  g.save(); g.clip(); g.strokeStyle="#a8823e"; g.lineWidth=2.4; for(let i=-5;i<=5;i++){ g.beginPath(); g.moveTo(X+i*4,22); g.lineTo(X+i*22,74); g.stroke(); } for(let r=0;r<4;r++){ g.beginPath(); g.ellipse(X,72-r*12,92-r*20,9-r*1.5,0,Math.PI,TAU); g.stroke(); } g.restore();
+  g.beginPath(); g.ellipse(X,67,100,7,0,0,TAU); fillOL("#8a6232",3); g.beginPath(); g.arc(X,22,5,0,TAU); fillOL("#8a6232",2.5); }
+// gallop frames for the paper horse: origami facets, red lacquer armour, a crest on the saddle cloth
+function drawHorse2(g,W,H,f){ g.save(); g.translate(W/2,H/2+6); const s=W/300; g.scale(s,s); const ink="#1d1a22"; g.lineJoin=g.lineCap="round";
+  const OL=(w=4)=>{ g.lineWidth=w; g.strokeStyle=ink; g.stroke(); }; const F=(c,w=4)=>{ g.fillStyle=c; g.fill(); OL(w); };
+  const ph=f/4*TAU, fr=Math.sin(ph), bk=Math.sin(ph+Math.PI*.8);
+  const leg=(x,y,a,b,front)=>{ g.save(); g.translate(x,y); g.rotate(a); g.beginPath(); g.moveTo(-9,0); g.lineTo(9,0); g.lineTo(7,34); g.lineTo(-7,34); g.closePath(); F(front?"#f2ecde":"#ddd4c2",3.5); g.translate(0,34); g.rotate(b); g.beginPath(); g.moveTo(-7,0); g.lineTo(7,0); g.lineTo(6,30); g.lineTo(-6,30); g.closePath(); F(front?"#f2ecde":"#ddd4c2",3.5); g.beginPath(); rr(g,-8,28,16,9,3); F("#2a2420",2.5); g.restore(); };
+  leg(-58,20,bk*.7,Math.max(0,-bk)*.8,false); leg(52,18,-fr*.7,Math.max(0,fr)*.9,false);
+  // tail
+  g.beginPath(); g.moveTo(-92,-4); g.bezierCurveTo(-140,-26+fr*8,-150,20,-128,52+fr*6); g.bezierCurveTo(-124,20,-112,8,-90,10); g.closePath(); F("#15131a",3);
+  g.strokeStyle="#3a3440"; g.lineWidth=2; for(let i=0;i<3;i++){ g.beginPath(); g.moveTo(-96,0+i*4); g.bezierCurveTo(-126,-10+i*6,-136,18,-124+i*4,44); g.stroke(); }
+  // body facets
+  const P=(pts,c)=>{ g.beginPath(); pts.forEach(([x,y],i)=>i?g.lineTo(x,y):g.moveTo(x,y)); g.closePath(); F(c,3.5); };
+  P([[-96,-6],[-20,-20],[-10,30],[-86,30]],"#e9e2d2"); P([[-20,-20],[70,-22],[84,24],[-10,30]],"#f6f0e2"); P([[-86,30],[-10,30],[84,24],[60,36],[-70,38]],"#d8cfbc");
+  leg(-40,22,-bk*.7,Math.max(0,bk)*.8,true); leg(70,20,fr*.7,Math.max(0,-fr)*.9,true);
+  // neck + head
+  P([[56,-18],[96,-78],[118,-70],[86,12]],"#f6f0e2"); P([[96,-78],[140,-64],[136,-50],[110,-48],[118,-70]],"#ece5d5"); P([[110,-48],[136,-50],[132,-40],[112,-38]],"#d8cfbc");
+  g.beginPath(); g.arc(116,-66,4,0,TAU); g.fillStyle=ink; g.fill(); g.beginPath(); g.moveTo(100,-80); g.lineTo(104,-98); g.lineTo(110,-78); g.closePath(); F("#e9e2d2",3);
+  // brush-stroke mane
+  for(let i=0;i<6;i++){ const t=i/5; const x=lerp(96,58,t), y=lerp(-80,-16,t); g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo(x-18-fr*4,y+4,x-26-fr*6,y+16); g.lineTo(x-18,y+12); g.closePath(); F("#15131a",2); }
+  // red lacquer chest armour with gold studs, and a tasselled bridle
+  g.beginPath(); g.moveTo(70,-20); g.lineTo(92,-8); g.lineTo(90,26); g.lineTo(66,30); g.closePath(); F("#b8302a",3.5); g.fillStyle="#e8c25a"; [[78,-4],[80,10],[78,22]].forEach(([x,y])=>{ g.beginPath(); g.arc(x,y,3,0,TAU); g.fill(); });
+  g.strokeStyle="#b8302a"; g.lineWidth=3; g.beginPath(); g.moveTo(108,-74); g.lineTo(128,-50); g.moveTo(112,-44); g.lineTo(60,-8); g.stroke();
+  [[60,0],[14,-14],[-40,-10]].forEach(([x,y])=>{ g.beginPath(); g.moveTo(x,y); g.lineTo(x-4,y+22+fr*3); g.lineTo(x+4,y+22+fr*3); g.closePath(); F("#d8402e",2); g.beginPath(); g.arc(x,y,3.5,0,TAU); F("#e8c25a",2); });
+  // saddle and crest cloth
+  g.beginPath(); g.moveTo(-44,-18); g.lineTo(24,-22); g.lineTo(30,24); g.lineTo(-48,28); g.closePath(); F("#2c3f6e",3.5);
+  g.strokeStyle="#e8c25a"; g.lineWidth=3; g.beginPath(); g.moveTo(-44,20); g.lineTo(28,16); g.stroke(); g.beginPath(); g.arc(-10,4,11,0,TAU); F("#efe6d0",2.5); g.fillStyle="#b8302a"; g.font='700 13px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("紙",-10,9);
+  g.beginPath(); g.moveTo(-34,-20); g.quadraticCurveTo(-10,-36,16,-22); g.lineTo(12,-14); g.lineTo(-30,-12); g.closePath(); F("#5a3a28",3);
+  g.restore(); }
+// normal maps from a cutout's silhouette, so a flat paper sprite catches light like a puffy paper doll
+function paperNormalMap(img){ const w=img.width, h=img.height; const a=document.createElement("canvas"); a.width=w; a.height=h; const ag=a.getContext("2d"); ag.filter="blur(7px)"; ag.drawImage(img,0,0); const ad=ag.getImageData(0,0,w,h).data;
+  const b=document.createElement("canvas"); b.width=w; b.height=h; const bg=b.getContext("2d"); bg.drawImage(img,0,0); const src=bg.getImageData(0,0,w,h).data;
+  const out=bg.createImageData(w,h), o=out.data, hgt=(x,y)=>{ x=Math.max(0,Math.min(w-1,x)); y=Math.max(0,Math.min(h-1,y)); const i=(y*w+x)*4; return ad[i+3]/255*1.0-(src[i+3]>0?(1-(src[i]+src[i+1]+src[i+2])/765)*.08:0); };
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const dx=(hgt(x+1,y)-hgt(x-1,y))*3.2, dy=(hgt(x,y-1)-hgt(x,y+1))*3.2; let nx=-dx, ny=-dy, nz=1; const l=Math.hypot(nx,ny,nz); nx/=l; ny/=l; nz/=l; const i=(y*w+x)*4; o[i]=(nx*.5+.5)*255; o[i+1]=(ny*.5+.5)*255; o[i+2]=(nz*.5+.5)*255; o[i+3]=255; }
+  bg.putImageData(out,0,0); const t=new THREE.CanvasTexture(b); return t; }
+let SAMF=null;
+function buildSamFrames(){ if(SAMF) return SAMF; const mk=o=>{ const t=paperCut(256,320,(g,w,h)=>drawSamurai2(g,w,h,o),0); return t; };
+  SAMF={idleF:[0,1].map(b=>mk({pose:"idle",br:b})),idleB:[0,1].map(b=>mk({pose:"idle",br:b,back:true})),
+    walkF:[0,1,2,3,4,5].map(i=>mk({pose:"walk",ph:i/6})),walkB:[0,1,2,3,4,5].map(i=>mk({pose:"walk",ph:i/6,back:true})),
+    runF:[0,1,2,3,4,5].map(i=>mk({pose:"run",ph:i/6})),runB:[0,1,2,3,4,5].map(i=>mk({pose:"run",ph:i/6,back:true})),
+    ride:[0,1].map(i=>mk({pose:"ride",ph:i/2})),sled:[mk({pose:"sled"})],swing:[0,1,2].map(i=>mk({pose:"swing",k:(i+.5)/3}))}; return SAMF; }
+const SAMST={bt:0,br:0};
+function samFrame(P,dt){ const F=buildSamFrames(), back=P.back; SAMST.bt+=dt; if(SAMST.bt>(SAMST.br?.12:2.6)){ SAMST.bt=0; SAMST.br^=1; }
+  if(typeof RIDE!=="undefined"&&RIDE.mode==="horse") return F.ride[Math.floor(clock*6)%2];
+  if(typeof RIDE!=="undefined"&&RIDE.mode==="sled") return F.sled[0];
+  if(typeof _inkCd!=="undefined"&&_inkCd>0) return F.swing[Math.min(2,Math.floor((1-_inkCd/.45)*3))];
+  const fi=Math.floor(((walkPh/TAU)%1+1)%1*6)%6;
+  if(speedNow>6.5) return (back?F.runB:F.runF)[fi]; if(speedNow>.3) return (back?F.walkB:F.walkF)[fi]; return (back?F.idleB:F.idleF)[SAMST.br]; }
+
 function drawSensei(g,W,H){
   const s=W/320; g.save(); g.scale(s,s);
   g.fillStyle="rgba(170,225,255,.85)"; [[-1,0],[0,1],[1,.6]].forEach(([k,o])=>{ g.beginPath(); g.moveTo(96,120); g.quadraticCurveTo(50,100+k*30,8,96+k*44); g.quadraticCurveTo(46,118+k*12,96,132); g.fill(); });
@@ -750,8 +890,9 @@ function drawKoi(g,W,H,base,spot,side){
 function drawKoiTail(g,W,H,base){ const s=W/128; g.save(); g.scale(s,s); g.fillStyle=base; g.globalAlpha=.92; g.beginPath(); g.moveTo(124,64); g.quadraticCurveTo(70,40,10,8); g.quadraticCurveTo(40,52,30,64); g.quadraticCurveTo(40,76,10,120); g.quadraticCurveTo(70,88,124,64); g.fill(); g.globalAlpha=1; g.strokeStyle=shade(base,.8); g.lineWidth=2; for(let i=-2;i<=2;i++){ g.beginPath(); g.moveTo(120,64); g.lineTo(30,64+i*22); g.stroke(); } g.restore(); }
 const PAPER_MESHES=[];
 function paperPlane(tex,w,h,o={}){ const geo=new THREE.PlaneGeometry(w,h); if(o.tx||o.ty) geo.translate(o.tx||0,o.ty||0,0);
-  const m=new THREE.MeshBasicMaterial({map:tex,transparent:!!o.ghost,opacity:o.ghost?.85:1,alphaTest:o.ghost?.2:.45,side:THREE.DoubleSide,depthWrite:!o.ghost});
-  const mesh=new THREE.Mesh(geo,m); mesh.userData.paper=true; PAPER_MESHES.push(mesh); if(o.shadow){ mesh.castShadow=true; mesh.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:tex,alphaTest:.45}); } return mesh; }
+  const lit=!o.ghost&&!o.basic; if(lit&&!tex.userData.nm){ try{ tex.userData.nm=paperNormalMap(tex.image); }catch(e){} }
+  const m=lit?new THREE.MeshToonMaterial({map:tex,normalMap:tex.userData.nm||null,normalScale:new THREE.Vector2(1,1),gradientMap:gm,emissive:new THREE.Color(1,1,1),emissiveMap:tex,emissiveIntensity:.14,alphaTest:.45,side:THREE.DoubleSide}):new THREE.MeshBasicMaterial({map:tex,transparent:!!o.ghost,opacity:o.ghost?.85:1,alphaTest:o.ghost?.2:.45,side:THREE.DoubleSide,depthWrite:!o.ghost});
+  const mesh=new THREE.Mesh(geo,m); mesh.userData.paper=true; mesh.userData.lit=lit; if(lit) mesh.receiveShadow=true; PAPER_MESHES.push(mesh); if(o.shadow){ mesh.castShadow=true; mesh.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:tex,alphaTest:.45}); } return mesh; }
 function hideFromCamera(root){ root.traverse(o=>{ if(o.isMesh||o.isPoints||o.isLine||o.isSprite) o.layers.set(5); }); }
 const KOI_TEX=new Map();
 function paperKoi(g,tp2,base,spot,o){
@@ -2051,12 +2192,12 @@ const PAPERSP={};
 if(PAPER){
   const S_=(b,st)=>paperCut(256,320,(g,w,h)=>drawSamurai(g,w,h,b,st),9);
   const texs=[S_(false,0),S_(false,1),S_(true,0),S_(true,1)];
-  PAPERSP.p=paperPlane(texs[0],1.8,2.25,{ty:1.095,shadow:true}); PAPERSP.p.userData.texs=texs; scene.add(PAPERSP.p);
-  PAPERSP.s=paperPlane(paperCut(320,220,drawSensei,8),3.6,2.48,{ty:-.01}); scene.add(PAPERSP.s);
+  PAPERSP.p=paperPlane(buildSamFrames().idleF[0],1.8,2.25,{ty:1.095,shadow:true}); PAPERSP.p.userData.texs=texs; scene.add(PAPERSP.p);
+  PAPERSP.s=paperPlane(paperCut(320,220,drawSensei,8),3.6,2.48,{ty:-.01,basic:true}); scene.add(PAPERSP.s);
   hideFromCamera(pRig); hideFromCamera(sRig);
   document.title="Paper Samurai (WIP)";
 }
-function paperSetTex(m,t){ if(m.material.map!==t){ m.material.map=t; m.material.needsUpdate=true; if(m.customDepthMaterial){ m.customDepthMaterial.map=t; m.customDepthMaterial.needsUpdate=true; } } }
+function paperSetTex(m,t){ if(m.material.map!==t){ m.material.map=t; if(m.userData.lit){ if(!t.userData.nm){ try{ t.userData.nm=paperNormalMap(t.image); }catch(e){} } m.material.normalMap=t.userData.nm||null; m.material.emissiveMap=t; } m.material.needsUpdate=true; if(m.customDepthMaterial){ m.customDepthMaterial.map=t; m.customDepthMaterial.needsUpdate=true; } } }
 const _pv=new THREE.Vector3(), _pax=new THREE.Vector3(), _pq=new THREE.Quaternion(), _pqy=new THREE.Quaternion(), _pup=new THREE.Vector3(0,1,0), _poff=new THREE.Vector3();
 let _sPrev=null, _sFace=1, _sSx=1;
 function paperTick(dt){
@@ -2064,7 +2205,7 @@ function paperTick(dt){
   const yaw=Math.atan2(camera.position.x-controls.target.x, camera.position.z-controls.target.z);
   const p=PAPERSP.p, P=PAPERX, rolling=ROLL.t>=0, moving=P.mag>.08||rolling;
   P.ft+=dt; if(moving&&P.ft>.14){ P.ft=0; P.step^=1; } if(!moving) P.step=0;
-  paperSetTex(p,p.userData.texs[(P.back?2:0)+P.step]);
+  paperSetTex(p,samFrame(P,dt));
   P.sx+=Math.sign(P.face-P.sx)*Math.min(Math.abs(P.face-P.sx),dt*11);           // the paper flip
   const bob=moving&&!rolling?Math.abs(Math.sin(clock*13))*.07:0, breathe=moving?1:1+Math.sin(clock*2.2)*.012;
   p.scale.set(Math.abs(P.sx)<.02?.02*Math.sign(P.sx||1):P.sx, breathe, 1);
@@ -3305,7 +3446,7 @@ const HANDL=(()=>{ const g=new THREE.Group(); g.userData.keep=true;
   const capM=toon("#2b2420"); [-.12,-.56].forEach(y=>{ const c=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.06,10),capM); c.position.y=y; g.add(c); });
   for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(.172,.008,4,16),toon("#8a3a2a")); r.rotation.x=Math.PI/2; r.position.y=-.34+(i-1)*.1; r.scale.set(1-Math.abs(i-1)*.12,1-Math.abs(i-1)*.12,1); g.add(r); }
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.34,5),toon("#5a3a28")); pole.position.y=-.02; g.add(pole);
-  const light=new THREE.PointLight(0xffa850,0,9,2); light.position.y=-.34; g.add(light);
+  const light=new THREE.PointLight(0xffa850,0,11,1.4); light.position.set(0,-.2,.9); g.add(light);
   scene.add(g); return {g,paper,light,sw:0}; })();
 const _hlR=new THREE.Vector3();
 function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"&&zone!=="sky"&&!(typeof ROLL!=="undefined"&&ROLL.t>=0);
@@ -3316,10 +3457,10 @@ function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"
   L.g.position.set(player.position.x+_hlR.x*side*.62,player.position.y+1.08+(moving?Math.abs(Math.sin(L.sw))*.04:0),player.position.z+_hlR.z*side*.62);
   L.g.rotation.z=Math.sin(L.sw)*(moving?.18:.05);
   const dark=clamp(night*1.15+(player.position.x>440?SFX.storm*.25:0),0,1);
-  L.paper.emissiveIntensity=.1+dark*.55; L.light.intensity=dark*2.3; }
+  L.paper.emissiveIntensity=.1+dark*.32; L.light.intensity=dark*1.15; }
 function paperTintFrame(){ if(!PAPER) return; const k=1-night*.62;
-  for(const m of PAPER_MESHES){ const c=m.material.color; c.setRGB(k,k,k);
-    if(HANDL.light.intensity>0){ const d=m.position.distanceTo(HANDL.g.position), w=HANDL.light.intensity/2.3*(1-smooth(1,9,d)); c.r=Math.min(1,c.r+w*.55); c.g=Math.min(1,c.g+w*.36); c.b=Math.min(1,c.b+w*.12); } } }
+  for(const m of PAPER_MESHES){ if(m.userData.lit) continue; const c=m.material.color; c.setRGB(k,k,k);
+    if(HANDL.light.intensity>0){ const d=m.position.distanceTo(HANDL.g.position), w=HANDL.light.intensity/1.15*(1-smooth(1,9,d)); c.r=Math.min(1,c.r+w*.55); c.g=Math.min(1,c.g+w*.36); c.b=Math.min(1,c.b+w*.12); } } }
 
 
 /* ===================== THE SCROLL: the world map (paper cranes + Sensei's memory + colour that floods in) ===================== */
@@ -3716,8 +3857,9 @@ function drawHorse(g,W,H,step){ g.save(); g.translate(W/2,H/2); const s=W/260; g
   g.fillStyle="#b8302a"; g.beginPath(); g.moveTo(-84,-4); g.quadraticCurveTo(-118,-20,-112,30); g.quadraticCurveTo(-100,6,-82,10); g.fill();
   g.fillStyle="#3a4a7a"; g.fillRect(-26,-22,46,18); g.strokeRect(-26,-22,46,18); g.restore(); }
 const RIDE={mode:null,horse:null,sled:null,lift:0,v:new THREE.Vector2(),fold:0,frames:null,ft:0,step:0};
-function toggleHorse(){ if(RIDE.mode==="horse"){ rideEnd(); return; } if(zone!=="world"||pmode!=="walk"){ toast("No room for a horse here."); return; } if(RIDE.mode) rideEnd();
-  if(!RIDE.frames){ RIDE.frames=[0,1].map(st=>paperCut(320,240,(g,w,h)=>drawHorse(g,w,h,st),0)); RIDE.horse=paperPlane(RIDE.frames[0],3.4,2.55,{ty:1.0,shadow:true}); RIDE.horse.userData.keep=true; scene.add(RIDE.horse); }
+const inHomeTown=()=>{ const r=regionAt(player.position.x,player.position.z); return !!r&&r.id==="valley"; };
+function toggleHorse(){ if(RIDE.mode==="horse"){ rideEnd(); return; } if(inHomeTown()){ toast("The home town is for walking. Your horse waits outside it."); return; } if(zone!=="world"||pmode!=="walk"){ toast("No room for a horse here."); return; } if(RIDE.mode) rideEnd();
+  if(!RIDE.frames){ RIDE.frames=[0,1,2,3].map(st=>paperCut(320,240,(g,w,h)=>drawHorse2(g,w,h,st),0)); RIDE.horse=paperPlane(RIDE.frames[0],3.6,2.7,{ty:1.0,shadow:true}); RIDE.horse.userData.keep=true; scene.add(RIDE.horse); }
   RIDE.mode="horse"; RIDE.fold=0; RIDE.horse.visible=true; try{ chime(); }catch(e){} toast("You unfold the paper horse. (H to fold it away)"); }
 function toggleSled(){ if(RIDE.mode==="sled"){ rideEnd(); return; } const it=store.items||{}; if(!it.sled){ toast("You don't have a sled. There's one by the fishing hut at Kōri Lake."); return; }
   if(player.position.x<90){ toast("A sled needs snow."); return; } if(zone!=="world"||pmode!=="walk") return; if(RIDE.mode) rideEnd();
@@ -3729,12 +3871,12 @@ function sledMove(dt,ix,iz){ const p=player.position, e=1.2; const gx=(H(p.x+e,p
   RIDE.v.x+=(-gx*16+(rx*ix-fwd.x*iz)*3.2)*dt; RIDE.v.y+=(-gz*16+(rz*ix-fwd.z*iz)*3.2)*dt; RIDE.v.multiplyScalar(Math.pow(.62,dt)); const sp=RIDE.v.length(); if(sp>24) RIDE.v.multiplyScalar(24/sp);
   const np={x:p.x+RIDE.v.x*dt,z:p.z+RIDE.v.y*dt}; collide(np); if(Math.abs(np.x-(p.x+RIDE.v.x*dt))>.01||Math.abs(np.z-(p.z+RIDE.v.y*dt))>.01) RIDE.v.multiplyScalar(.3);
   p.x=np.x; p.z=np.z; speedNow=Math.min(9,RIDE.v.length()); if(RIDE.v.length()>.4) player.rotation.y=angLerp(player.rotation.y,Math.atan2(RIDE.v.x,RIDE.v.y),Math.min(1,dt*6)); if(p.x<90) rideEnd(); }
-function rideFrame(dt){ const p=player.position;
+function rideFrame(dt){ const p=player.position; if(RIDE.mode&&inHomeTown()){ rideEnd(); toast("You fold your ride away. The home town is for walking."); }
   if(RIDE.mode==="horse"&&RIDE.horse){ RIDE.fold=Math.min(1,RIDE.fold+dt*3); RIDE.lift=lerp(RIDE.lift,1.05,Math.min(1,dt*8)); const h=RIDE.horse;
     h.position.set(p.x,p.y-RIDE.lift+Math.abs(Math.sin(clock*(speedNow>6?14:8)))*(speedNow>.5?.12:0),p.z);
     const yaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z); h.rotation.set(0,yaw,0);
     const face=(typeof PAPERX!=="undefined"?PAPERX.face:1)<0?-1:1; h.scale.set(face*RIDE.fold,RIDE.fold,1);
-    RIDE.ft+=dt*(speedNow>.5?speedNow*.6:0); if(RIDE.ft>1){ RIDE.ft=0; RIDE.step^=1; paperSetTex(h,RIDE.frames[RIDE.step]); }
+    RIDE.ft+=dt*(speedNow>.5?speedNow*.9:0); if(RIDE.ft>1){ RIDE.ft=0; RIDE.step=(RIDE.step+1)%4; paperSetTex(h,RIDE.frames[RIDE.step]); }
     if(zone!=="world"||pmode!=="walk") rideEnd(); }
   else if(RIDE.mode==="sled"&&RIDE.sled){ RIDE.lift=lerp(RIDE.lift,.32,Math.min(1,dt*8)); RIDE.sled.position.set(p.x,p.y-RIDE.lift,p.z); RIDE.sled.rotation.y=player.rotation.y;
     if(RIDE.v.length()>3&&srand()<dt*20) addInkPuff(p.x,p.y-RIDE.lift+.1,p.z,"#ffffff"); }

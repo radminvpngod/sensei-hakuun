@@ -1,7 +1,7 @@
 {
- "version": 53,
+ "version": 54,
  "shellApi": 2,
- "notes": "UI pass 2: the Journal (J or \u5e33) with Scroll, Memories, Spirits (your vessel), Items and Settings tabs; Tsushima-style speech bubbles over whoever is talking, with replies at the bottom; the paper horse (H); a sled (T, pick it up at K\u014dri Lake); the ink brush (Q, splashes ink). Faster: far-away objects are hidden and only nearby trees cast shadows.",
+ "notes": "The Paper Samurai redesign: a richer cutout (patterned hakama, haori with \u7d19 crests, tasselled katana, flowing scarf, woven kasa), 6-frame walk and run, idle blinking, ride, sled and brush-swing poses, and back views. Paper characters are now lit by the sun, lanterns and your hand lantern, and catch shadows like BotW. New origami war-horse with 4-frame gallop and red lacquer armour. No horse or sled in the home town.",
  "files": [
   "brain-client.js",
   "core.js",
