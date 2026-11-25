@@ -1,7 +1,7 @@
 {
- "version": 48,
+ "version": 49,
  "shellApi": 2,
- "notes": "Shirotae Fields: a huge snowfield past Yukidake peak, with a watchtower, a fallen tower, the Frozen Tree, Hy\u014dden (a temple sealed in ice), a giant sealed Gate, a warm hidden hollow, old markers and blizzards. The south and west regions from v47 are gone. Paper characters now darken at night and you carry a hand lantern.",
+ "notes": "North of the snow: a pass through the ridge leads into the Withered Wood, where the snow thins into grey dead forest, then Utsuro (an empty, burnt village), H\u014dkai Castle collapsed on its hill, and the Edge of the Dark, a black mist wall where the Shadow begins. Also K\u014dri Lake, frozen solid, with an ice-fishing hut.",
  "files": [
   "brain-client.js",
   "core.js",

@@ -544,34 +544,44 @@ const PASS_SNOW=x=>smooth(100,165,x);
 // Out there: a watchtower on a hill, an old tower in ruins, a frozen tree as tall as a castle, a temple sealed in ice,
 // a giant Gate at the far end of a canyon that needs a key, and a hollow where the snow never settles.
 const SF_ENTRY=[[402,-80],[418,-88],[440,-88],[466,-80],[494,-70],[522,-64]];
-const SF_ROADS=[[[522,-64],[600,-92],[700,-160],[800,-238],[900,-282]],[[522,-64],[640,-24],[780,36],[940,82],[1100,112],[1260,140],[1318,140]]];
+const SF_ROADS=[[[522,-64],[600,-92],[700,-160],[800,-238],[900,-282]],[[522,-64],[640,-24],[780,36],[940,82],[1100,112],[1260,140],[1318,140]],
+  [[900,-282],[912,-400],[905,-515],[884,-640],[826,-820],[776,-990],[762,-1050]],[[762,-1050],[850,-1250],[930,-1400],[962,-1436]],[[940,82],[1040,200],[1080,290]]];
+const SF_LAKE={x:1110,z:330,r:50};
+const SF_DARK_Z=-1596;
 const SF_HOLLOW={x:790,z:360,gap:Math.atan2(300-360,700-790)};
 const sfSeg=(T,x,z)=>{ let d=1e9; for(let i=0;i<T.length-1;i++) d=Math.min(d,distSeg(x,z,T[i][0],T[i][1],T[i+1][0],T[i+1][1])); return d; };
-const sfEntryD=(x,z)=>sfSeg(SF_ENTRY,x,z), sfRoadD=(x,z)=>Math.min(sfSeg(SF_ROADS[0],x,z),sfSeg(SF_ROADS[1],x,z));
+const sfEntryD=(x,z)=>sfSeg(SF_ENTRY,x,z), sfRoadD=(x,z)=>{ let d=1e9; for(const r of SF_ROADS) d=Math.min(d,sfSeg(r,x,z)); return d; };
+const sfWither=z=>smooth(-540,-900,z);   // 0 in the snow, 1 deep in the Withered Wood
 function sfHills(x,z){ let h=48+(fbm(x*.005+3,z*.005-1)-.5)*64+(fbm(x*.017+7,z*.017)-.5)*14+(fbm(x*.07,z*.07)-.5)*1.6;
   h+=16*(1-smooth(10,50,Math.hypot(x-590,z+150)));      // the watchtower hill
   h+=8*(1-smooth(30,70,Math.hypot(x-930,z+300)));        // the temple terrace
+  h+=26*(1-smooth(24,80,Math.hypot(x-980,z+1460)));       // the castle hill
   return h; }
-function sfRim(x,z){ let e=Math.min(x-470,1390-x,z+510,490-z)+(fbm(x*.01+5,z*.01-3)-.5)*44; let r=1-smooth(-20,60,e);
+function sfRim(x,z){ let e=Math.min(x-470,1390-x,z+1640,490-z)+(fbm(x*.01+5,z*.01-3)-.5)*44; let r=1-smooth(-20,60,e);
+  r=Math.max(r,(1-smooth(8,40,Math.abs(z+515+(fbm(x*.02,1)-.5)*30)))*smooth(26,58,Math.abs(x-906))*.95);   // the ridge between the snow and the Withered Wood, with one pass through it
   if(x<600) r*=smooth(16,64,sfEntryD(x,z));                                                   // the saddle down from the peak
   if(x>1230) r*=1-(1-smooth(10,26,Math.abs(z-140)))*smooth(1230,1280,x)*(1-smooth(1356,1368,x)); // the canyon to the Gate
   return clamp(r,0,1); }
-const SF_FLATS=[{id:"hub",x:522,z:-64,r:12},{id:"tower",x:590,z:-150,r:7},{id:"temple",x:930,z:-300,r:30},{id:"gate",x:1320,z:140,r:20},{id:"tree",x:1080,z:-40,r:13},{id:"ruin",x:720,z:140,r:11}];
-SF_FLATS.forEach(f=>f.y=sfHills(f.x,f.z));
+const SF_FLATS=[{id:"hub",x:522,z:-64,r:12},{id:"tower",x:590,z:-150,r:7},{id:"temple",x:930,z:-300,r:30},{id:"gate",x:1320,z:140,r:20},{id:"tree",x:1080,z:-40,r:13},{id:"ruin",x:720,z:140,r:11},
+  {id:"lake",x:SF_LAKE.x,z:SF_LAKE.z,r:SF_LAKE.r,dy:-1.5,e:70},{id:"town",x:760,z:-1050,r:42},{id:"castle",x:980,z:-1460,r:28}];
+SF_FLATS.forEach(f=>f.y=sfHills(f.x,f.z)+(f.dy||0));
 const SF_PEAKY=passAlt(404);
 function Hsnow(x,z){ const r=sfRim(x,z); let h=sfHills(x,z)+r*(130+fbm(x*.03,z*.03)*40);
   // the hollow: a warm bowl ringed by a wall, with one narrow way in
   const dh=Math.hypot(x-SF_HOLLOW.x,z-SF_HOLLOW.z); if(dh<64){ let da=Math.abs(Math.atan2(z-SF_HOLLOW.z,x-SF_HOLLOW.x)-SF_HOLLOW.gap); if(da>Math.PI) da=TAU-da;
     const ring=22*smooth(24,34,dh)*(1-smooth(40,62,dh))*(1-.96*(1-smooth(.12,.32,da))); const fy=sfHills(SF_HOLLOW.x,SF_HOLLOW.z)-4;
     h=lerp(h,fy,1-smooth(20,30,dh)); h+=ring; }
-  for(const f of SF_FLATS){ const k=1-smooth(f.r,f.r+10,Math.hypot(x-f.x,z-f.z)); if(k>0) h=lerp(h,f.y,k); }
+  for(const f of SF_FLATS){ const k=1-smooth(f.r,f.r+(f.e||10),Math.hypot(x-f.x,z-f.z)); if(k>0) h=lerp(h,f.y,k); }
   const de=sfEntryD(x,z); if(de<20){ const ty=lerp(SF_PEAKY,SF_FLATS[0].y,smooth(404,522,x)); h=lerp(h,ty,1-smooth(4,20,de)); }
   const dr=sfRoadD(x,z); if(dr<9) h=lerp(h,h-.25,1-smooth(2,9,dr));
   return h; }
-function snowWalk(x,z){ if(x<398) return false; if(x<476) return sfEntryD(x,z)<7; return x<1392&&z>-512&&z<492&&sfRim(x,z)<.42; }
+function snowWalk(x,z){ if(x<398) return false; if(x<476) return sfEntryD(x,z)<7; return x<1392&&z>SF_DARK_Z+6&&z<492&&(sfRim(x,z)<.42||sfRoadD(x,z)<6); }
 const worldWalk=(x,z)=>passWalk(x,z)||snowWalk(x,z);
 const SF_ROAD_C=new THREE.Color("#c9cdd8"), SF_EARTH=new THREE.Color("#5a4034"), SF_LEAF=new THREE.Color("#a8452e");
-function snowColor(x,z,h,c){ const dr=Math.min(sfRoadD(x,z),sfEntryD(x,z)); if(dr<4) c.lerp(SF_ROAD_C,(1-smooth(1.5,4,dr))*.55);
+const SF_DEAD=new THREE.Color("#6e675c"), SF_DEAD2=new THREE.Color("#4e4a46"), SF_ICE=new THREE.Color("#bcdcec");
+function snowColor(x,z,h,c){ const wt=sfWither(z); if(wt>0){ const n=fbm(x*.05+4,z*.05); const dead=SF_DEAD.clone().lerp(SF_DEAD2,n*.8+smooth(-1200,-1590,z)*.5); c.lerp(dead,wt*(n>.62-.2*(1-wt)?.35:1)); }
+  if(Math.hypot(x-SF_LAKE.x,z-SF_LAKE.z)<SF_LAKE.r+1) c.lerp(SF_ICE,.85);
+  const dr=Math.min(sfRoadD(x,z),sfEntryD(x,z)); if(dr<4) c.lerp(wt>.5?SF_DEAD2:SF_ROAD_C,(1-smooth(1.5,4,dr))*.55);
   const dh=Math.hypot(x-SF_HOLLOW.x,z-SF_HOLLOW.z); if(dh<34){ c.copy(SF_EARTH).lerp(SF_LEAF,fbm(x*.4,z*.4)*.6); c.lerp(new THREE.Color("#f4f8fc"),smooth(22,34,dh)); }
   return c; }
 
@@ -3054,7 +3064,7 @@ const SFX={tiles:[],fogSaved:null,storm:0,embers:null,seal:null,brazier:null,bra
   const SP2=2*380/210, X0=190+146*(380/210), N=70, CW=N*SP2, Z0=-190-2*CW;
   const ROCKC=new THREE.Color("#6e6c74"), c=new THREE.Color();
   const tm=new THREE.MeshToonMaterial({vertexColors:true,gradientMap:gm});
-  for(let ix=0;ix<4;ix++) for(let iz=0;iz<5;iz++){ const x0=X0+ix*CW, z0=Z0+iz*CW;
+  for(let ix=0;ix<4;ix++) for(let iz=-4;iz<5;iz++){ const x0=X0+ix*CW, z0=Z0+iz*CW;
     const g=new THREE.PlaneGeometry(CW,CW,N,N); g.rotateX(-Math.PI/2); g.translate(x0+CW/2,0,z0+CW/2); const pos=g.attributes.position, cols=[];
     for(let i=0;i<pos.count;i++){ const x=pos.getX(i), z=pos.getZ(i), h=H(x,z); pos.setY(i,h); terrainColor(x,z,h,c);
       const sl=Math.abs(H(x+1.2,z)-H(x-1.2,z))+Math.abs(H(x,z+1.2)-H(x,z-1.2)); if(sl>2.6) c.lerp(ROCKC,clamp((sl-2.6)/3,0,1)*.8); cols.push(c.r,c.g,c.b); }
@@ -3190,13 +3200,88 @@ const SFX={tiles:[],fogSaved:null,storm:0,embers:null,seal:null,brazier:null,bra
     for(let k=0;k<200;k++){ const x=rand(476,1385), z=rand(-505,485); if(sfRim(x,z)>.6||busy(x,z)) continue; const rs=rand(.5,1.6); plant("Rock_Snow_"+(1+Math.floor(srand()*7)),x,z,rs,{y:H(x,z)-.2}); circles.push({x,z,r:1.2*rs}); }
     for(let k=0;k<60;k++){ const x=rand(476,1385), z=rand(-505,485); if(sfRim(x,z)>.45||busy(x,z)) continue; plant(srand()<.5?"WoodLog_Snow":"TreeStump_Snow",x,z,rand(.9,1.3)); circles.push({x,z,r:.7}); } }
 
-  AREAS.unshift({id:"shirotae",k:"",n:"Shirotae Fields",test:(x,z)=>x>470&&!(x>1250&&Math.abs(z-140)<40)});
+  /* --- Kōri Lake: frozen solid (hockey and sledding, later) --- */
+  { const L=SF_LAKE, ly=SF_FLATS.find(f=>f.id==="lake").y; const lg=far(new THREE.Group()); lg.position.set(L.x,ly,L.z); scene.add(lg);
+    const ice=new THREE.Mesh(new THREE.CircleGeometry(L.r+.5,48),new THREE.MeshToonMaterial({color:"#cfe8f4",emissive:new THREE.Color("#5a90b0"),emissiveIntensity:.12,gradientMap:gm})); ice.rotation.x=-Math.PI/2; ice.position.y=.06; ice.receiveShadow=true; lg.add(ice);
+    const crk=new THREE.MeshBasicMaterial({color:"#7fa8c0"}); for(let i=0;i<26;i++){ const a=srand()*TAU, r=srand()*L.r*.85; const c=new THREE.Mesh(new THREE.PlaneGeometry(.12,3+srand()*9),crk); c.rotation.set(-Math.PI/2,0,srand()*TAU); c.position.set(Math.cos(a)*r,.08,Math.sin(a)*r); lg.add(c); }
+    const hut=new THREE.Group(); hut.position.set(14,0,-10); lg.add(hut); const hb=new THREE.Mesh(new THREE.BoxGeometry(3,2.2,2.6),T("#7a4a32")); hb.position.y=1.1; hut.add(hb); const hr=gableRoof(3.8,3.4,1.2,ROOF); hr.position.y=2.2; hut.add(hr); snowCap(3.9,3.5,3.35,hut).scale.set(1,1,.3);
+    const hole=new THREE.Mesh(new THREE.CircleGeometry(.6,16),new THREE.MeshBasicMaterial({color:"#123040"})); hole.rotation.x=-Math.PI/2; hole.position.set(11.6,.1,-8); lg.add(hole);
+    const rod=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,2,5),WOOD); rod.position.set(12.2,.8,-8.3); rod.rotation.z=.9; lg.add(rod);
+    const sled=new THREE.Group(); sled.position.set(17,0,-7); sled.rotation.y=.6; lg.add(sled); const sd=new THREE.Mesh(new THREE.BoxGeometry(1,.12,2.2),WOODL); sd.position.y=.35; sled.add(sd); [-.4,.4].forEach(x=>{ const ru=new THREE.Mesh(new THREE.BoxGeometry(.08,.3,2.4),T("#8a2a20")); ru.position.set(x,.15,0); sled.add(ru); });
+    shadowy(lg); ice.castShadow=false; addBox(L.x+14,L.z-10,1.7,1.5,0);
+    addInteract({keep:true,x:L.x+11.6,z:L.z-8,r:2.6,k:"",label:"Look into the fishing hole",fn:()=>whisper("Black water. Something long and pale turns over far below the ice, slow as a cloud, and is gone.",7000)});
+    AREAS.unshift({id:"korilake",k:"",n:"Kōri Lake",test:(x,z)=>Math.hypot(x-L.x,z-L.z)<L.r+6}); }
+
+  /* --- the pass north, and the Withered Wood beyond it --- */
+  sign(918,-470,Math.PI,"The Withered Wood","North. Nobody goes north.");
+  { const busy=(x,z)=>sfRoadD(x,z)<6||SF_FLATS.some(f=>Math.hypot(x-f.x,z-f.z)<f.r+8)||z<SF_DARK_Z+20;
+    const DEAD=["CommonTree_Dead_","BirchTree_Dead_","Willow_Dead_"]; let n=0;
+    for(let t=0;t<40000&&n<1000;t++){ const x=rand(476,1385), z=rand(-1590,-530); if(sfRim(x,z)>.45||busy(x,z)) continue; const wt=sfWither(z), grove=fbm(x*.012-9,z*.012+2); if(grove<.47&&srand()>.08) continue;
+      const sl=Math.abs(H(x+1,z)-H(x-1,z))+Math.abs(H(x,z+1)-H(x,z-1)); if(sl>3.4) continue;
+      let name; if(srand()>wt*1.1) name="PineTree_Snow_"+r15(); else if(srand()<.18*(1-wt)) name="BirchTree_Dead_Snow_"+r15(); else name=DEAD[Math.floor(srand()*3)]+r15();
+      const sc=rand(.9,1.7); plant(name,x,z,sc,{y:H(x,z)}); circles.push({x,z,r:.45*sc}); n++; }
+    for(let k=0;k<150;k++){ const x=rand(476,1385), z=rand(-1590,-530); if(sfRim(x,z)>.6||busy(x,z)) continue; const rs=rand(.5,1.5); plant((sfWither(z)>.5?"Rock_":"Rock_Snow_")+(1+Math.floor(srand()*7)),x,z,rs,{y:H(x,z)-.2,tint:sfWither(z)>.5?"#7a7470":null}); circles.push({x,z,r:1.2*rs}); }
+    for(let k=0;k<70;k++){ const x=rand(476,1385), z=rand(-1590,-560); if(sfRim(x,z)>.45||busy(x,z)) continue; plant(srand()<.5?"WoodLog":"TreeStump",x,z,rand(.9,1.3)); circles.push({x,z,r:.7}); } }
+
+  /* --- Utsuro, the empty village --- */
+  { const f=fy("town"); const OLD=T("#6a5a4a"), OLDW=T("#9a8e7a"), BURNT=T("#2e2a28");
+    const ruinHouse=(x,z,ry,w,d,k)=>{ const g=keep(new THREE.Group()); g.position.set(x,H(x,z),z); g.rotation.y=ry; scene.add(g);
+      const base=new THREE.Mesh(new THREE.BoxGeometry(w+.3,.4,d+.3),STONED); base.position.y=.1; g.add(base);
+      const wall=(ww,hh,px,pz,rot)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(ww,hh,.25),srand()<.3?BURNT:OLDW); m.position.set(px,hh/2+.3,pz); m.rotation.y=rot; g.add(m); };
+      wall(w,2.6*(.5+srand()*.5),0,-d/2,0); wall(d,2.6*(.3+srand()*.7),-w/2,0,Math.PI/2); if(k%2) wall(d,2.6*(.4+srand()*.4),w/2,0,Math.PI/2); wall(w*.4,2.4,-w*.3,d/2,0);
+      [-w/2,w/2].forEach(px=>[-d/2,d/2].forEach(pz=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.24,2.8*(.6+srand()*.4),.24),BURNT); p.position.set(px,1.6,pz); g.add(p); }));
+      if(k%3===0){ const rf=gableRoof(w+1,d+1,1.6,OLD); rf.position.set(.4,1.4,.2); rf.rotation.set(.35,0,-.25); g.add(rf); }
+      for(let i=0;i<4;i++){ const b=new THREE.Mesh(new THREE.BoxGeometry(.2,.2,1.6+srand()*1.4),BURNT); b.position.set((srand()-.5)*w,.4,(srand()-.5)*d); b.rotation.set(0,srand()*3,(srand()-.5)*.4); g.add(b); }
+      shadowy(g); addBox(x,z,w/2+.2,d/2+.2,-ry); };
+    [[-22,-14,.2,6,5],[-26,6,1.5,5,4],[-12,22,2.9,6,5],[10,24,-2.7,6,4.5],[24,8,-1.4,5,5],[22,-16,-.3,6,5],[-4,-26,.1,5,4],[6,-4,.6,4,4]].forEach(([dx,dz,r,w,d],i)=>ruinHouse(f.x+dx,f.z+dz,r,w,d,i));
+    // a broken torii, a dry well and a fallen bell
+    { const g=keep(new THREE.Group()); g.position.set(f.x+2,f.y,f.z+40); g.rotation.y=Math.PI; scene.add(g); const p1=new THREE.Mesh(new THREE.CylinderGeometry(.45,.55,8,10),T("#7a3a30")); p1.position.set(-3.6,4,0); g.add(p1);
+      const p2=new THREE.Mesh(new THREE.CylinderGeometry(.45,.55,3.4,10),T("#7a3a30")); p2.position.set(3.6,1.7,0); g.add(p2); const kb=new THREE.Mesh(new THREE.BoxGeometry(10,.7,.9),BURNT); kb.position.set(1,4.2,0); kb.rotation.z=-.5; g.add(kb); shadowy(g); addCircle(f.x-1.6,f.z+40,.7); addCircle(f.x+5.6,f.z+40,.7); }
+    { const g=keep(new THREE.Group()); g.position.set(f.x,f.y,f.z); scene.add(g); const w=new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.7,1.1,14,1,true),STONE); w.material.side=THREE.DoubleSide; w.position.y=.55; g.add(w); const dk=new THREE.Mesh(new THREE.CircleGeometry(1.5,14),new THREE.MeshBasicMaterial({color:"#050506"})); dk.rotation.x=-Math.PI/2; dk.position.y=.3; g.add(dk); shadowy(g); addCircle(f.x,f.z,1.8);
+      addInteract({keep:true,x:f.x,z:f.z,r:3,k:"",label:"Look down the well",fn:()=>whisper("Very deep. At the bottom, something small catches the light: a paper doll, folded the way a child would fold it.",7500)}); }
+    { const b=keep(new THREE.Group()); b.position.set(f.x-10,f.y,f.z-6); scene.add(b); const bell=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.8,2.6,14),T("#5a4a2a")); bell.rotation.z=1.4; bell.position.y=1.2; b.add(bell); shadowy(b); addCircle(f.x-10,f.z-6,1.8);
+      addInteract({keep:true,x:f.x-10,z:f.z-6,r:3,k:"",label:"Read the bell",fn:()=>whisper("The temple bell lies on its side. Carved around the rim: the names of everyone who lived here. Someone scratched out the last name, hard.",8000)}); }
+    sign(f.x+6,f.z+34,Math.PI,"Utsuro","(the sign is burnt)");
+    AREAS.unshift({id:"utsuro",k:"",n:"Utsuro, the Empty Village",test:(x,z)=>Math.hypot(x-f.x,z-f.z)<50});
+    travel([{id:"utsuro",n:"Utsuro",x:f.x+2,z:f.z+50}],ALL_TR); }
+
+  /* --- Hōkai Castle, collapsed on its hill --- */
+  { const f=fy("castle"); const g=far(new THREE.Group()); g.position.set(f.x,f.y,f.z); g.rotation.y=.2; scene.add(g);
+    const STN=T("#5f5c60"), DK=T("#2a2628"), WALLW=T("#8a8478");
+    for(let i=0;i<3;i++){ const b=new THREE.Mesh(new THREE.CylinderGeometry(15-i*3.2,17-i*3.2,4,4),STN); b.rotation.y=Math.PI/4; b.position.y=2+i*4; g.add(b); }
+    const k1=new THREE.Mesh(new THREE.BoxGeometry(12,6,10),WALLW); k1.position.y=15; g.add(k1); const r1=gableRoof(15,13,3,DK); r1.position.y=18; g.add(r1);
+    const k2=new THREE.Mesh(new THREE.BoxGeometry(8,5,7),WALLW); k2.position.set(-1,22,0); k2.rotation.z=.08; g.add(k2); const r2=gableRoof(11,9.6,2.6,DK); r2.position.set(-1.4,24.6,0); r2.rotation.z=.12; g.add(r2);
+    const k3=new THREE.Mesh(new THREE.BoxGeometry(5,3.6,4.6),T("#5a5048")); k3.position.set(-3,28,1); k3.rotation.set(.1,.3,.42); g.add(k3); // the top storey, sliding off
+    const hole=new THREE.Mesh(new THREE.BoxGeometry(5,4,10.2),new THREE.MeshBasicMaterial({color:"#0c0a0c"})); hole.position.set(4,15.5,0); g.add(hole);
+    for(let i=0;i<10;i++){ const a=i/10*TAU; if(i===3) continue; const w=new THREE.Mesh(new THREE.BoxGeometry(14,3+srand()*3,1.4),STN); w.position.set(Math.cos(a)*24,1.6,Math.sin(a)*24); w.rotation.y=-a+Math.PI/2; g.add(w); }
+    for(let i=0;i<24;i++){ const k=new THREE.Mesh(new THREE.BoxGeometry(1.5+srand()*2.5,1+srand()*1.6,1.5+srand()*2.5),i%2?STN:DK); const a=srand()*TAU, r=16+srand()*14; k.position.set(Math.cos(a)*r,.5,Math.sin(a)*r); k.rotation.set(srand(),srand()*3,srand()); g.add(k); }
+    shadowy(g); addCircle(f.x,f.z,15.5);
+    addInteract({keep:true,x:f.x-1,z:f.z+19,r:4,k:"",label:"Try the castle door",fn:()=>whisper("Barred from the inside. Whoever barred it never came back out. Claw marks run up the stone, too high for any animal you know.",8000)});
+    AREAS.unshift({id:"hokai",k:"",n:"Hōkai Castle",test:(x,z)=>Math.hypot(x-f.x,z-f.z)<40}); }
+
+  /* --- the edge of the dark: where the Shadow begins --- */
+  { const zw=SF_DARK_Z; const N=24, W=920/N; const mcv=document.createElement("canvas"); mcv.width=64; mcv.height=256; { const g=mcv.getContext("2d"); const im=g.createImageData(64,256); for(let y=0;y<256;y++) for(let x=0;x<64;x++){ const v=1-y/255, hx=Math.sin(Math.PI*x/63); const a=Math.pow(1-smooth(.25,1,v),1)*hx; const i=(y*64+x)*4; im.data[i]=6; im.data[i+1]=5; im.data[i+2]=10; im.data[i+3]=255*a; } g.putImageData(im,0,0); }
+    const mtx=new THREE.CanvasTexture(mcv); const mist=new THREE.MeshBasicMaterial({map:mtx,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide,fog:false});
+    const wall=far(new THREE.Group()); scene.add(wall);
+    for(let i=0;i<N;i++){ const x=470+(i+.5)*W, y=H(x,zw); const p=new THREE.Mesh(new THREE.PlaneGeometry(W*1.9,160),mist); p.position.set(x,y+40,zw-srand()*6); wall.add(p); }
+    const fade=new THREE.MeshBasicMaterial({map:mtx,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,fog:false}); for(let i=0;i<N;i++){ const x=470+(i+.5)*W; const p=new THREE.Mesh(new THREE.PlaneGeometry(W*1.9,120),fade); p.position.set(x,H(x,zw+14)+30,zw+14); wall.add(p); }
+    SFX.dark=wall;
+    const SP=T("#08070c"); for(let i=0;i<18;i++){ const x=520+srand()*820, z=zw-30-srand()*80, hh=40+srand()*70; const sp=new THREE.Mesh(new THREE.ConeGeometry(2+srand()*4,hh,4),SP); sp.position.set(x,H(x,zw)+hh/2+20,z); wall.add(sp); }
+    { const N2=260, geo=new THREE.BufferGeometry(), p=new Float32Array(N2*3); for(let i=0;i<N2;i++){ p[i*3]=480+srand()*900; p[i*3+1]=srand()*40; p[i*3+2]=zw+srand()*30; } geo.setAttribute("position",new THREE.BufferAttribute(p,3));
+      const pts=new THREE.Points(geo,new THREE.PointsMaterial({color:0x7a5aa0,size:.35,transparent:true,opacity:.7,depthWrite:false})); pts.userData.keep=pts.userData.far=true; scene.add(pts); SFX.motes={pts}; }
+    const tx=930, tz=zw+26; const tg=keep(new THREE.Group()); tg.position.set(tx,H(tx,tz),tz); scene.add(tg);
+    [-3.4,3.4].forEach(x=>{ const p=new THREE.Mesh(new THREE.CylinderGeometry(.4,.5,7,8),T("#141016")); p.position.set(x,3.5,0); tg.add(p); }); const kb=new THREE.Mesh(new THREE.BoxGeometry(9.4,.6,.8),T("#141016")); kb.position.y=7.2; tg.add(kb); shadowy(tg);
+    addInteract({keep:true,x:tx,z:tz-2,r:4,k:"",label:"Step into the dark",fn:()=>whisper("The dark pushes back, soft and cold, like a hand on your chest. Not yet. Somewhere in there, bells are ringing backwards.",8000)});
+    AREAS.unshift({id:"darkedge",k:"",n:"The Edge of the Dark",test:(x,z)=>z<SF_DARK_Z+60}); }
+  AREAS.unshift({id:"withered",k:"",n:"The Withered Wood",test:(x,z)=>x>470&&z<-530});
+  AREAS.unshift({id:"shirotae",k:"",n:"Shirotae Fields",test:(x,z)=>x>470&&z>-530&&!(x>1250&&Math.abs(z-140)<40)});
   AREAS.unshift({id:"watchtower",k:"",n:"The Watchtower",test:(x,z)=>Math.hypot(x-590,z+150)<16});
   AREAS.unshift({id:"oldtower",k:"",n:"The Fallen Tower",test:(x,z)=>Math.hypot(x-720,z-140)<20});
   AREAS.unshift({id:"frozentree",k:"",n:"The Frozen Tree",test:(x,z)=>Math.hypot(x-1080,z+40)<22});
   // AREAS are checked first-to-last, so put the general field name after the named places
-  { const i=AREAS.findIndex(a=>a.id==="shirotae"); const a=AREAS.splice(i,1)[0]; const j=AREAS.findIndex(a=>!["hollow","greatgate","hyoden","watchtower","oldtower","frozentree"].includes(a.id)); AREAS.splice(j,0,a); }
+  { const i=AREAS.findIndex(a=>a.id==="shirotae"); const a=AREAS.splice(i,1)[0]; const j=AREAS.findIndex(a=>!["hollow","greatgate","hyoden","watchtower","oldtower","frozentree","korilake","utsuro","hokai","darkedge","withered"].includes(a.id)); AREAS.splice(j,0,a); const wi=AREAS.findIndex(a=>a.id==="withered"); const wa=AREAS.splice(wi,1)[0]; const wj=AREAS.findIndex(a=>a.id==="shirotae"); AREAS.splice(wj,0,wa); }
 }
+const _sfGrey=new THREE.Color("#8a8680"), _sfDark=new THREE.Color("#16131c");
 function worldFrame(dt){ const px=player.position.x, pz=player.position.z, inSF=px>440;
   for(const t of SFX.tiles){ const b=t.userData.box; t.visible=px>300&&px>b.x0-700&&px<b.x1+700&&pz>b.z0-700&&pz<b.z1+700; }
   // weather: long clear spells, then a blizzard rolls through
@@ -3204,6 +3289,10 @@ function worldFrame(dt){ const px=player.position.x, pz=player.position.z, inSF=
   if(scene.fog&&zone!=="hall"){ if(inSF){ if(!SFX.fogSaved) SFX.fogSaved=[scene.fog.near,scene.fog.far]; scene.fog.near=lerp(70,8,SFX.storm); scene.fog.far=lerp(720,110,SFX.storm); }
     else if(SFX.fogSaved){ scene.fog.near=SFX.fogSaved[0]; scene.fog.far=SFX.fogSaved[1]; SFX.fogSaved=null; } }
   if(PASSFX.snow&&inSF){ const p=PASSFX.snow.geometry.attributes.position.array; const wind=SFX.storm*dt*9; for(let i=0;i<p.length;i+=3){ p[i]+=wind; p[i+1]-=dt*SFX.storm*3; if(p[i]>30) p[i]-=60; } PASSFX.snow.material.size=.13+SFX.storm*.07; }
+  const wt=inSF?sfWither(pz):0; if(PASSFX.snow){ PASSFX.snow.material.color.setRGB(1-wt*.45,1-wt*.47,1-wt*.44); if(!inSF) PASSFX.snow.material.size=.13; }
+  if(scene.fog&&wt>0){ scene.fog.color.lerp(_sfGrey,wt*.7*(1-smooth(-1300,-1590,pz))).lerp(_sfDark,smooth(-1300,-1590,pz)*.85); PASSFX.last=scene.fog.color.clone(); if(inSF){ scene.fog.far=Math.min(scene.fog.far,lerp(720,260,smooth(-900,-1550,pz))); } }
+  if(SFX.motes&&pz<-1200){ const p=SFX.motes.pts.geometry.attributes.position.array; for(let i=0;i<p.length;i+=3){ p[i+1]+=dt*.5; p[i]+=Math.sin(clock*.5+i)*dt*.4; if(p[i+1]>40) p[i+1]=0; } SFX.motes.pts.geometry.attributes.position.needsUpdate=true; }
+  if(SFX.dark){ SFX.dark.visible=inSF&&pz<-1150; if(SFX.motes) SFX.motes.pts.visible=SFX.dark.visible; }
   if(SFX.seal) SFX.seal.emissiveIntensity=.45+Math.sin(clock*.9)*.25;
   if(SFX.braz){ SFX.braz.scale.set(1+Math.sin(clock*9)*.15,1+Math.sin(clock*7)*.25,1); SFX.brazier.intensity=(1.6+Math.sin(clock*11)*.3)*(.4+night); }
   if(SFX.embers&&Math.hypot(px-SF_HOLLOW.x,pz-SF_HOLLOW.z)<160){ const p=SFX.embers.pts.geometry.attributes.position.array; for(let i=0;i<p.length;i+=3){ p[i+1]+=dt*(.6+(i%5)*.15); p[i]+=Math.sin(clock+i)*dt*.3; if(p[i+1]>SFX.embers.y0+10) p[i+1]=SFX.embers.y0; } SFX.embers.pts.geometry.attributes.position.needsUpdate=true; }
