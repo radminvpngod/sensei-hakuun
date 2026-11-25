@@ -1,7 +1,7 @@
 {
- "version": 47,
+ "version": 48,
  "shellApi": 2,
- "notes": "The world gets bigger: a south road to the fishing village Shiohama (docks, boats, lighthouse) with a sunken city under the bay; a west Bamboo Road to the bamboo town Takemura; and a cave mouth leading down to Hotaru-machi, a glowing town underground. New travel lanterns at Shiohama and Takemura.",
+ "notes": "Shirotae Fields: a huge snowfield past Yukidake peak, with a watchtower, a fallen tower, the Frozen Tree, Hy\u014dden (a temple sealed in ice), a giant sealed Gate, a warm hidden hollow, old markers and blizzards. The south and west regions from v47 are gone. Paper characters now darken at night and you carry a hand lantern.",
  "files": [
   "brain-client.js",
   "core.js",

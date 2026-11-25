@@ -495,7 +495,7 @@ const inGolf=(x,z,p=0)=>false; /* (v44) golf course removed; grass is back */
 let zone="world", pmode="walk";
 const FLATS=[], BUNKERS=[];
 function H(x,z){ let h0=H0(x,z); for(const f of FLATS){ const d=Math.hypot(x-f.x,z-f.z); if(d<f.r+4) h0=lerp(f.y,h0,smooth(f.r,f.r+4,d)); } return h0; }
-function H0(x,z){ if(x<-540) return Hcave(x,z);
+function H0(x,z){ if(x>440) return Hsnow(x,z);
   const r=Math.hypot(x,z);
   let h=(fbm(x*.05,z*.05)-.5)*.9;
   h += smooth(80,128,r)*(6+fbm(x*.025+7,z*.025)*26);                  // the hills that hold the valley
@@ -510,8 +510,7 @@ function H0(x,z){ if(x<-540) return Hcave(x,z);
   // (v42) Mirror Lake removed from the starter valley
   const e=(x/PRX)**2+(z/PRZ)**2; if (e<1.4) h=lerp(-1.7,h,smooth(.72,1.12,e));
   if(x>68) h=passBlend(x,z,h);
-  if(x<-66) h=westBlend(x,z,h);
-  if(z>78) h=southBlend(x,z,h);
+  if(x>396) h=lerp(h,Hsnow(x,z),smooth(400,440,x));
   return h;
 }
 /* ===================== THE SNOWY PASS: terrain shape (used by H0) ===================== */
@@ -540,48 +539,40 @@ function Hpass(x,z){
 function passBlend(x,z,h){ const d=passTrailDist(x,z); let k=smooth(78,132,x); k=Math.max(k,(1-smooth(5,14,d))*smooth(70,82,x)); return k>0?lerp(h,Hpass(x,z),k):h; }
 function passWalk(x,z){ return x>70&&x<440&&(passTrailDist(x,z)<7.5||!!passFlat(x,z,1.5)); }
 const PASS_SNOW=x=>smooth(100,165,x);
-/* ===================== THE WIDER WORLD: terrain shapes for the regions around the valley ===================== */
-// South: the road to Shiohama, a fishing village on the coast; the Sunken City sleeps on the sea floor offshore.
-// West: the Bamboo Road to Takemura, a bamboo town; a cave mouth in the cliffs leads down to Hotaru-machi, a town underground.
-const SEA_Y=-1.2;
-const SOUTH_TRAILS=[[[8,80],[10,98],[4,116],[-6,134],[0,150],[12,166],[14,176]],[[14,176],[2,188],[0,214]],[[14,176],[24,188],[24,210]],[[14,176],[40,182],[58,182],[70,186]]];
-const WEST_TRAILS=[[[-80,-6],[-100,-12],[-122,-4],[-146,6],[-168,2],[-188,0]],[[-188,0],[-204,-18],[-213,-30]]];
-const SFLATS=[{id:"shiohama",x:14,z:174,r:15,y:1.6},{id:"light",x:72,z:186,r:6,y:null}], WFLATS=[{id:"takemura",x:-200,z:4,r:22,y:5},{id:"cavemouth",x:-213,z:-32,r:5,y:5.4}];
-const ATL={x:64,z:300,r:46,y:-28};
-const CAVE={x:-720,z:0,r:66};
-const DOCKS=[{x0:2,z0:188,x1:0,z1:214,w:1.6},{x0:24,z0:188,x1:24,z1:210,w:1.6}], DOCK_Y=SEA_Y+.75;
-function trailsDist(T,x,z){ let d=1e9; for(const t of T) for(let i=0;i<t.length-1;i++) d=Math.min(d,distSeg(x,z,t[i][0],t[i][1],t[i+1][0],t[i+1][1])); return d; }
-const shoreZ=x=>196+7*Math.sin(x*.035)+4*Math.sin(x*.11);
-function Hsouth(x,z){ const d=trailsDist(SOUTH_TRAILS,x,z), m=fbm(x*.024+31,z*.024-7)*.65+fbm(x*.07+3,z*.07)*.35, sh=shoreZ(x);
-  let land=1.8+(fbm(x*.03,z*.03)-.5)*2.4;
-  land+=smooth(8,40,d)*(8+m*26)*(1-smooth(sh-44,sh-10,z));
-  land+=smooth(46,74,x)*16*(1-smooth(sh-2,sh+12,z));                    // the lighthouse headland
-  land+=smooth(110,230,Math.abs(x))*50*(1-smooth(sh-34,sh-2,z));         // mountains far to either side
-  for(const f of SFLATS){ if(f.y===null) continue; const k=1-smooth(f.r,f.r+7,Math.hypot(x-f.x,z-f.z)); if(k>0) land=lerp(land,f.y,k); }
-  const s=z-sh; let h=land; if(s>0){ h=lerp(land,SEA_Y-1.6,smooth(0,9,s)); h=lerp(h,-31,smooth(9,96,s)); }
-  const da=Math.hypot(x-ATL.x,z-ATL.z); if(da<ATL.r+22) h=lerp(h,ATL.y,1-smooth(ATL.r,ATL.r+22,da));
+/* ===================== SHIROTAE FIELDS: the snowfields past Yukidake (terrain shape) ===================== */
+// A huge snowy basin over the summit. You come down through a saddle from Yukidake peak and the whole field opens up.
+// Out there: a watchtower on a hill, an old tower in ruins, a frozen tree as tall as a castle, a temple sealed in ice,
+// a giant Gate at the far end of a canyon that needs a key, and a hollow where the snow never settles.
+const SF_ENTRY=[[402,-80],[418,-88],[440,-88],[466,-80],[494,-70],[522,-64]];
+const SF_ROADS=[[[522,-64],[600,-92],[700,-160],[800,-238],[900,-282]],[[522,-64],[640,-24],[780,36],[940,82],[1100,112],[1260,140],[1318,140]]];
+const SF_HOLLOW={x:790,z:360,gap:Math.atan2(300-360,700-790)};
+const sfSeg=(T,x,z)=>{ let d=1e9; for(let i=0;i<T.length-1;i++) d=Math.min(d,distSeg(x,z,T[i][0],T[i][1],T[i+1][0],T[i+1][1])); return d; };
+const sfEntryD=(x,z)=>sfSeg(SF_ENTRY,x,z), sfRoadD=(x,z)=>Math.min(sfSeg(SF_ROADS[0],x,z),sfSeg(SF_ROADS[1],x,z));
+function sfHills(x,z){ let h=48+(fbm(x*.005+3,z*.005-1)-.5)*64+(fbm(x*.017+7,z*.017)-.5)*14+(fbm(x*.07,z*.07)-.5)*1.6;
+  h+=16*(1-smooth(10,50,Math.hypot(x-590,z+150)));      // the watchtower hill
+  h+=8*(1-smooth(30,70,Math.hypot(x-930,z+300)));        // the temple terrace
   return h; }
-function southBlend(x,z,h){ const d=trailsDist(SOUTH_TRAILS,x,z); let k=smooth(84,132,z); k=Math.max(k,(1-smooth(5,14,d))*smooth(76,86,z)); return k>0?lerp(h,Hsouth(x,z),k):h; }
-function Hwest(x,z){ const u=-x, d=trailsDist(WEST_TRAILS,x,z), m=fbm(x*.024-17,z*.024+5)*.65+fbm(x*.07,z*.07-9)*.35;
-  let h=4.5*smooth(80,160,u)+smooth(9,38,d)*(10+m*34)+smooth(320,440,u)*70+smooth(120,185,Math.abs(z))*45;
-  const dc=Math.hypot(x+224,z+46); h+=34*(1-smooth(7,26,dc));            // the cliff that holds the cave mouth
-  for(const f of WFLATS){ const k=1-smooth(f.r,f.r+7,Math.hypot(x-f.x,z-f.z)); if(k>0) h=lerp(h,f.y,k); }
+function sfRim(x,z){ let e=Math.min(x-470,1390-x,z+510,490-z)+(fbm(x*.01+5,z*.01-3)-.5)*44; let r=1-smooth(-20,60,e);
+  if(x<600) r*=smooth(16,64,sfEntryD(x,z));                                                   // the saddle down from the peak
+  if(x>1230) r*=1-(1-smooth(10,26,Math.abs(z-140)))*smooth(1230,1280,x)*(1-smooth(1356,1368,x)); // the canyon to the Gate
+  return clamp(r,0,1); }
+const SF_FLATS=[{id:"hub",x:522,z:-64,r:12},{id:"tower",x:590,z:-150,r:7},{id:"temple",x:930,z:-300,r:30},{id:"gate",x:1320,z:140,r:20},{id:"tree",x:1080,z:-40,r:13},{id:"ruin",x:720,z:140,r:11}];
+SF_FLATS.forEach(f=>f.y=sfHills(f.x,f.z));
+const SF_PEAKY=passAlt(404);
+function Hsnow(x,z){ const r=sfRim(x,z); let h=sfHills(x,z)+r*(130+fbm(x*.03,z*.03)*40);
+  // the hollow: a warm bowl ringed by a wall, with one narrow way in
+  const dh=Math.hypot(x-SF_HOLLOW.x,z-SF_HOLLOW.z); if(dh<64){ let da=Math.abs(Math.atan2(z-SF_HOLLOW.z,x-SF_HOLLOW.x)-SF_HOLLOW.gap); if(da>Math.PI) da=TAU-da;
+    const ring=22*smooth(24,34,dh)*(1-smooth(40,62,dh))*(1-.96*(1-smooth(.12,.32,da))); const fy=sfHills(SF_HOLLOW.x,SF_HOLLOW.z)-4;
+    h=lerp(h,fy,1-smooth(20,30,dh)); h+=ring; }
+  for(const f of SF_FLATS){ const k=1-smooth(f.r,f.r+10,Math.hypot(x-f.x,z-f.z)); if(k>0) h=lerp(h,f.y,k); }
+  const de=sfEntryD(x,z); if(de<20){ const ty=lerp(SF_PEAKY,SF_FLATS[0].y,smooth(404,522,x)); h=lerp(h,ty,1-smooth(4,20,de)); }
+  const dr=sfRoadD(x,z); if(dr<9) h=lerp(h,h-.25,1-smooth(2,9,dr));
   return h; }
-function westBlend(x,z,h){ const d=trailsDist(WEST_TRAILS,x,z); let k=smooth(70,122,-x); k=Math.max(k,(1-smooth(5,14,d))*smooth(64,76,-x)); return k>0?lerp(h,Hwest(x,z),k):h; }
-function Hcave(x,z){ const dc=Math.hypot(x-CAVE.x,z-CAVE.z); let h=(fbm(x*.08,z*.08)-.5)*1.4+smooth(CAVE.r-8,CAVE.r+6,dc)*46;
-  const dl=Math.hypot(x-(CAVE.x+14),z-(CAVE.z+22)); h-=2.6*(1-smooth(9,13,dl)); return h; }
-function dockY(x,z){ for(const d of DOCKS){ if(distSeg(x,z,d.x0,d.z0,d.x1,d.z1)<d.w) return DOCK_Y; } return null; }
-function southWalk(x,z){ if(z<70) return false; if(dockY(x,z)!==null) return true; if(trailsDist(SOUTH_TRAILS,x,z)<7) return true; if(SFLATS.some(f=>Math.hypot(x-f.x,z-f.z)<f.r+1.5)) return true;
-  return z>shoreZ(x)-26&&x>-70&&x<66&&H(x,z)>SEA_Y-.35; }   // the beach
-function westWalk(x,z){ return x<-64&&x>-450&&(trailsDist(WEST_TRAILS,x,z)<7||WFLATS.some(f=>Math.hypot(x-f.x,z-f.z)<f.r+1.5)); }
-function caveWalk(x,z){ return x<-540&&Math.hypot(x-CAVE.x,z-CAVE.z)<CAVE.r-4; }
-const worldWalk=(x,z)=>passWalk(x,z)||southWalk(x,z)||westWalk(x,z)||caveWalk(x,z);
-const SANDC=new THREE.Color("#e6d3a3"), WETC=new THREE.Color("#b8a27a"), SEABED=new THREE.Color("#6e8a86"), BAMBOOF=new THREE.Color("#5f8a44"), CAVEC=new THREE.Color("#3e3946"), CAVEW=new THREE.Color("#28252e"), DIRTC=new THREE.Color("#a58a62");
-function regionColor(x,z,h,c){
-  if(x<-540){ c.copy(CAVEC).lerp(CAVEW,smooth(CAVE.r-14,CAVE.r,Math.hypot(x-CAVE.x,z-CAVE.z))); if(fbm(x*.3,z*.3)>.62) c.lerp(new THREE.Color("#4a6a7a"),.35); return c; }
-  if(z>90){ const sh=shoreZ(x); if(h<SEA_Y+.2) c.lerp(SEABED,.85); else if(z>sh-12&&h<SEA_Y+2.2) c.lerp(z>sh-3?WETC:SANDC,.9);
-    const d=trailsDist(SOUTH_TRAILS,x,z); if(d<4.2&&h>SEA_Y) c.lerp(DIRTC,(1-smooth(2.2,4.2,d))*.8); }
-  if(x<-80){ const d=trailsDist(WEST_TRAILS,x,z); c.lerp(BAMBOOF,smooth(90,140,-x)*.35); if(d<4.2) c.lerp(DIRTC,(1-smooth(2.2,4.2,d))*.8); }
+function snowWalk(x,z){ if(x<398) return false; if(x<476) return sfEntryD(x,z)<7; return x<1392&&z>-512&&z<492&&sfRim(x,z)<.42; }
+const worldWalk=(x,z)=>passWalk(x,z)||snowWalk(x,z);
+const SF_ROAD_C=new THREE.Color("#c9cdd8"), SF_EARTH=new THREE.Color("#5a4034"), SF_LEAF=new THREE.Color("#a8452e");
+function snowColor(x,z,h,c){ const dr=Math.min(sfRoadD(x,z),sfEntryD(x,z)); if(dr<4) c.lerp(SF_ROAD_C,(1-smooth(1.5,4,dr))*.55);
+  const dh=Math.hypot(x-SF_HOLLOW.x,z-SF_HOLLOW.z); if(dh<34){ c.copy(SF_EARTH).lerp(SF_LEAF,fbm(x*.4,z*.4)*.6); c.lerp(new THREE.Color("#f4f8fc"),smooth(22,34,dh)); }
   return c; }
 
 const SNOWC=new THREE.Color("#eef3f8"), SNOWS=new THREE.Color("#c9d6e6"), TRAILC=new THREE.Color("#b9ab98"), ICEC=new THREE.Color("#bfe3f2");
@@ -642,7 +633,7 @@ const MAT={}; const toon=(c,o={})=>{ const k=c+JSON.stringify(Object.keys(o)); i
 /* ===================== PAPER SAMURAI: paper-cutout drawing helpers ===================== */
 const PAPERX={ix:0,iz:1,mag:0,face:1,sx:1,back:false,ft:0,step:0};
 function paperInput(ix,iz,mag){ PAPERX.mag=mag; if(mag>.08){ if(Math.abs(ix)>.25) PAPERX.face=ix>0?1:-1; if(Math.abs(iz)>.3) PAPERX.back=iz<0; } }
-function paperCanvas(w,h,draw,border=10){
+function paperCanvas(w,h,draw,border=10){ border=0;
   const a=document.createElement("canvas"); a.width=w; a.height=h; const g=a.getContext("2d"); draw(g,w,h);
   const c=document.createElement("canvas"); c.width=w; c.height=h; const o=c.getContext("2d");
   if(border>0){
@@ -747,9 +738,10 @@ function drawKoi(g,W,H,base,spot,side){
   g.restore();
 }
 function drawKoiTail(g,W,H,base){ const s=W/128; g.save(); g.scale(s,s); g.fillStyle=base; g.globalAlpha=.92; g.beginPath(); g.moveTo(124,64); g.quadraticCurveTo(70,40,10,8); g.quadraticCurveTo(40,52,30,64); g.quadraticCurveTo(40,76,10,120); g.quadraticCurveTo(70,88,124,64); g.fill(); g.globalAlpha=1; g.strokeStyle=shade(base,.8); g.lineWidth=2; for(let i=-2;i<=2;i++){ g.beginPath(); g.moveTo(120,64); g.lineTo(30,64+i*22); g.stroke(); } g.restore(); }
+const PAPER_MESHES=[];
 function paperPlane(tex,w,h,o={}){ const geo=new THREE.PlaneGeometry(w,h); if(o.tx||o.ty) geo.translate(o.tx||0,o.ty||0,0);
   const m=new THREE.MeshBasicMaterial({map:tex,transparent:!!o.ghost,opacity:o.ghost?.85:1,alphaTest:o.ghost?.2:.45,side:THREE.DoubleSide,depthWrite:!o.ghost});
-  const mesh=new THREE.Mesh(geo,m); mesh.userData.paper=true; if(o.shadow){ mesh.castShadow=true; mesh.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:tex,alphaTest:.45}); } return mesh; }
+  const mesh=new THREE.Mesh(geo,m); mesh.userData.paper=true; PAPER_MESHES.push(mesh); if(o.shadow){ mesh.castShadow=true; mesh.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:tex,alphaTest:.45}); } return mesh; }
 function hideFromCamera(root){ root.traverse(o=>{ if(o.isMesh||o.isPoints||o.isLine||o.isSprite) o.layers.set(5); }); }
 const KOI_TEX=new Map();
 function paperKoi(g,tp2,base,spot,o){
@@ -816,7 +808,7 @@ function terrainColor(x,z,h,out=new THREE.Color()){
   const dq=Math.hypot(x-SQ.x,z-SQ.z); if(dq<SQ.r) out.lerp(TCOL.stone,.85*(1-smooth(SQ.r-1.5,SQ.r,dq)));
   const ds=Math.hypot(x-SHR.x,z-SHR.z); if(ds<SHR.r) out.lerp(TCOL.gravel,.75*(1-smooth(SHR.r-2,SHR.r,ds)));
   if(x>90) passColor(x,z,h,out);
-  if(z>90||x<-80) regionColor(x,z,h,out);
+  if(x>440) snowColor(x,z,h,out);
 
 
 
@@ -1124,11 +1116,11 @@ if(S!=="winter"){ scatter(420,11,88,(x,z)=>plant("Flowers",x,z,rand(.9,1.4)),-1.
 
 /* ===================== mountains & sky decor ===================== */
 const farMat=toon("#93a9bd",{flatShading:true}), midMat=toon("#6f8a8e",{flatShading:true}), snowMat=toon("#f6f4ee",{flatShading:true});
-function mountain(x,z,r,h,cap){ if((x+r>100&&Math.abs(z)<230)||z+r>100||(x-r<-100&&Math.abs(z)<230)){ rand(0,1); return; }   /* (v45) the Snowy Pass is real terrain over there now */ const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,8,1),farMat); m.position.set(x,h/2-2,z); m.rotation.y=rand(0,TAU); scene.add(m);
+function mountain(x,z,r,h,cap){ if(x+r>100&&Math.abs(z)<230){ rand(0,1); return; }   /* (v45) the Snowy Pass is real terrain over there now */ const m=new THREE.Mesh(new THREE.ConeGeometry(r,h,8,1),farMat); m.position.set(x,h/2-2,z); m.rotation.y=rand(0,TAU); scene.add(m);
   if(cap){ const ch=h*.26; const c=new THREE.Mesh(new THREE.ConeGeometry(r*.265,ch,8,1),snowMat); c.position.set(x,h-2-ch/2+.05,z); c.rotation.y=m.rotation.y; scene.add(c);} }
 mountain(-50,-300,120,120,true);
 for(let i=0;i<22;i++){ const a=i/22*TAU+rand(-.1,.1),d=rand(230,320),h=rand(50,95); mountain(Math.cos(a)*d,Math.sin(a)*d,rand(55,90),h,S==="winter"||h>78); }
-for(let i=0;i<16;i++){ const a=i/16*TAU+rand(-.15,.15),d=rand(160,210); const hill=new THREE.Mesh(new THREE.SphereGeometry(1,14,8),midMat); hill.scale.set(rand(26,44),rand(10,20),rand(24,36)); hill.position.set(Math.cos(a)*d,-3,Math.sin(a)*d); if(hill.position.z<-120) scene.add(hill); }
+for(let i=0;i<16;i++){ const a=i/16*TAU+rand(-.15,.15),d=rand(160,210); const hill=new THREE.Mesh(new THREE.SphereGeometry(1,14,8),midMat); hill.scale.set(rand(26,44),rand(10,20),rand(24,36)); hill.position.set(Math.cos(a)*d,-3,Math.sin(a)*d); if(hill.position.x+40<100||Math.abs(hill.position.z)>230) scene.add(hill); }
 const cloudGroup=new THREE.Group(); scene.add(cloudGroup); const mistMats=[];
 for(let i=0;i<22;i++){ const m=new THREE.SpriteMaterial({map:GLOW,transparent:true,opacity:.35,depthWrite:false,fog:false}); mistMats.push(m); const s=new THREE.Sprite(m); const a=rand(0,TAU),d=rand(150,280); s.position.set(Math.cos(a)*d,i<10?rand(8,22):rand(50,100),Math.sin(a)*d); s.scale.set(rand(110,200),rand(18,32),1); cloudGroup.add(s); }
 
@@ -1674,7 +1666,7 @@ function drawMap(cv,big=false){ const g=cv.getContext("2d"), W=cv.width, R=W/2, 
   g.fillStyle="#6a5a44"; { const [a,b]=P(VIL.x0+4,VIL.z0); g.fillRect(a,b,(VIL.x1-VIL.x0-8)*sc,(SQ.z-VIL.z0)*sc); } g.beginPath(); g.arc(...P(SQ.x,SQ.z),SQ.r*sc,0,TAU); g.fill();
   const lab=(x,z,t,k)=>{ const [a,b]=P(x,z); g.fillStyle="#3a2c1e"; g.font=(big?"600 13px":"600 11px")+" Shippori Mincho, serif"; g.textAlign="center"; g.fillText(big?t:k,a,b+4); };
   g.fillStyle="#c23a2a"; for(const t of TRAVEL){ if(!isLit(t.id)) continue; const [a,b]=P(t.x,t.z); g.beginPath(); g.arc(a,b,big?3.5:2.5,0,TAU); g.fill(); }
-  if(big){ [["Sensei's Garden",0,-2,""],["Kumo Shrine",SHR.x,SHR.z,""],["Night Market",SQ.x,SQ.z,""],["Kaeru's Farm",GOLF.x+2,GOLF.z,""],["Castle",CASTLE.x,CASTLE.z,""],["Snowy Pass →",70,-4,""],["↓ Shiohama",10,84,""],["← Takemura",-72,-4,""]].forEach(([t,x,z,k])=>lab(x,z,t,k)); }
+  if(big){ [["Sensei's Garden",0,-2,""],["Kumo Shrine",SHR.x,SHR.z,""],["Night Market",SQ.x,SQ.z,""],["Kaeru's Farm",GOLF.x+2,GOLF.z,""],["Castle",CASTLE.x,CASTLE.z,""],["Snowy Pass →",70,-4,""]].forEach(([t,x,z,k])=>lab(x,z,t,k)); }
 
   // Sensei + you
   { const [a,b]=P(sensei.position.x,sensei.position.z); g.fillStyle="#ffffff"; g.strokeStyle="#5a7aa0"; g.lineWidth=2; g.beginPath(); g.arc(a,b,big?5:4,0,TAU); g.fill(); g.stroke(); }
@@ -2160,8 +2152,8 @@ function applyTime(){
   const sa=(h-6)/12*Math.PI, ma=(((h-18)%24+24)%24)/12*Math.PI;
   const sdir=new THREE.Vector3(Math.cos(sa),Math.sin(sa)*.95,-.5).normalize(), mdir=new THREE.Vector3(Math.cos(ma),Math.sin(ma)*.85,-.55).normalize();
   const sunUp=Math.max(0,Math.sin(sa)), moonUp=Math.max(0,Math.sin(ma));
-  sunSpr.position.copy(sdir).multiplyScalar(700); sunSpr.material.opacity=Math.min(1,sunUp*4);
-  moonSpr.position.copy(mdir).multiplyScalar(700); moonSpr.material.opacity=Math.min(1,moonUp*4)*.95;
+  sunSpr.position.copy(sdir).multiplyScalar(700).add(camera.position); sunSpr.material.opacity=Math.min(1,sunUp*4);
+  moonSpr.position.copy(mdir).multiplyScalar(700).add(camera.position); moonSpr.material.opacity=Math.min(1,moonUp*4)*.95;
   if (sunUp>.02){ lightDir.copy(sdir); sun.intensity=.6+2.1*Math.sqrt(sunUp); sun.color.copy(C("#ffb070")).lerp(C("#fff4e2"),Math.min(1,sunUp*2.2)); }
   else { lightDir.copy(mdir.y>0?mdir:new THREE.Vector3(.3,1,.2)); sun.intensity=.45; sun.color.set("#8fa6ff"); }
   windowMats.forEach(m=>m.emissiveIntensity=night*1.6);
@@ -2574,13 +2566,12 @@ function collide(p){
     if(Math.abs(lx)<hx&&Math.abs(lz)<hz){ if(hx-Math.abs(lx)<hz-Math.abs(lz)) lx=Math.sign(lx||1)*hx; else lz=Math.sign(lz||1)*hz; p.x=b.x+lx*b.c+lz*b.s; p.z=b.z-lx*b.s+lz*b.c; } }
   const ea=pondEllipse.a+PRAD, eb=pondEllipse.b+PRAD, e=Math.hypot(p.x/ea,p.z/eb); if(e<1&&e>1e-4){ p.x/=e; p.z/=e; }
   const r=Math.hypot(p.x,p.z);
-  if(r>WALK_R||p.x>70||p.x<-64||p.z>70){ if(worldWalk(p.x,p.z)||r<=WALK_R){ PASSL.x=p.x; PASSL.z=p.z; PASSL.ok=true; }
+  if(r>WALK_R||p.x>70){ if(worldWalk(p.x,p.z)||r<=WALK_R){ PASSL.x=p.x; PASSL.z=p.z; PASSL.ok=true; }
     else if(PASSL.ok&&Math.hypot(p.x-PASSL.x,p.z-PASSL.z)<3){ if(worldWalk(p.x,PASSL.z)||Math.hypot(p.x,PASSL.z)<=WALK_R) p.z=PASSL.z; else if(worldWalk(PASSL.x,p.z)||Math.hypot(PASSL.x,p.z)<=WALK_R) p.x=PASSL.x; else { p.x=PASSL.x; p.z=PASSL.z; } }
     else { p.x*=WALK_R/r; p.z*=WALK_R/r; } } else { PASSL.x=p.x; PASSL.z=p.z; PASSL.ok=true; }
 }
 function groundY(x,z){ if(zone==="sky"){ const y=skyWalk(x,z); return y===null?SKY.y:y; } if(zone==="hall") return HALL.y; if(zone==="balcony") return BALC.y; if(pmode==="boat") return -.05;
   if(onPier(x,z)&&lakeE(x,z)<1.3) return PIER.y+.05;
-  { const dk=dockY(x,z); if(dk!==null) return Math.max(dk,H(x,z)); }
   { const ag=advGround(x,z); if(ag!==null) return Math.max(ag,H(x,z)); }
   let y=H(x,z); if(streamDist(x,z)<1.6) y=Math.max(y,H(x,z)); // shallow stream: walk through
   const dx=x-BR.x, dz=z-BR.z; const along=dx*BR.px+dz*BR.pz, across=dx*BR.ux+dz*BR.uz;
@@ -2736,7 +2727,8 @@ function frame(now){
   if((PL.locked||document.pointerLockElement)&&!wantLock()&&pmode!=="koi"){ try{ document.exitPointerLock(); }catch(e){} PL.locked=false; }
   if(PAPER) paperTick(dt);
   try{ passFrame(dt); }catch(e){}
-  try{ worldFrame(dt); }catch(e){}
+  try{ worldFrame(dt); }catch(e){ if(!window._wfe){ window._wfe=1; console.warn("[world]",e); } }
+  try{ handLanternFrame(dt); paperTintFrame(); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
   { const A=frame.ad||(frame.ad={t:0,n:0,s:0,pr:PR}); A.t+=dt; A.n++; A.s+=dt; if(A.t>2){ const avg=A.s/A.n; let pr=A.pr; if(avg>.021&&pr>1) pr=Math.max(1,pr-.25); else if(avg<.013&&pr<PR) pr=Math.min(PR,pr+.25); if(pr!==A.pr){ A.pr=pr; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); } A.t=0; A.n=0; A.s=0; } }
   padPoll(dt); golfFrame(dt); skyFxFrame(dt); lifeFrame(dt); advFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   const advMode=pmode==="climb"||pmode==="fall"||pmode==="glide"||pmode==="koi";
@@ -3005,7 +2997,7 @@ const PASSFX={snow:null,base:null,last:null,steam:[]};
 const _snowW=new THREE.Color("#e6edf5");
 let _passCullT=0, _passObjs=null;
 function passFrame(dt){ const x=player.position.x, a=PASS_SNOW(x);
-  if((_passCullT+=dt)>.5){ _passCullT=0; if(!_passObjs){ _passObjs=scene.children.filter(o=>o.userData.keep&&!o.isPoints&&o.name!=="Snowy Pass terrain"&&o.position.x>85); }
+  if((_passCullT+=dt)>.5){ _passCullT=0; if(!_passObjs){ _passObjs=scene.children.filter(o=>o.userData.keep&&!o.userData.far&&!o.isPoints&&o.name!=="Snowy Pass terrain"&&o.position.x>85); }
     const px=player.position.x, pz=player.position.z; for(const o of _passObjs){ o.visible=Math.hypot(o.position.x-px,o.position.z-pz)<170; } }
   const S_=PASSFX.snow; if(S_){ S_.material.opacity=.9*a; S_.visible=a>.01; if(S_.visible){ S_.position.set(camera.position.x,camera.position.y-10,camera.position.z); const p=S_.geometry.attributes.position.array; for(let i=0;i<p.length;i+=3){ p[i+1]-=dt*(1.4+(i%7)*.12); p[i]+=Math.sin(clock*.8+i)*dt*.35; if(p[i+1]<0) p[i+1]+=26; } S_.geometry.attributes.position.needsUpdate=true; } }
   if(scene.fog){ if(!PASSFX.last||!scene.fog.color.equals(PASSFX.last)) PASSFX.base=scene.fog.color.clone(); if(PASSFX.base){ scene.fog.color.copy(PASSFX.base).lerp(_snowW,a*.6); PASSFX.last=scene.fog.color.clone(); } }
@@ -3055,166 +3047,190 @@ function passFrame(dt){ const x=player.position.x, a=PASS_SNOW(x);
 }
 
 
-/* ===================== THE WIDER WORLD: terrain tiles, the sea, and the places in each region ===================== */
-const WORLDFX={sea:null,boats:[],light:null,base:null,lastS:null,lastH:null,cave:0,crystals:[]};
+
+/* ===================== SHIROTAE FIELDS: the land itself, and what is out there ===================== */
+const SFX={tiles:[],fogSaved:null,storm:0,embers:null,seal:null,brazier:null,braz:null};
 {
-  const SP=380/210;
-  const ROCKC=new THREE.Color("#6e6c74");
-  function terrainTile(name,x0,z0,nx,nz,spacing=SP){ const W=nx*spacing, D=nz*spacing; const g=new THREE.PlaneGeometry(W,D,nx,nz); g.rotateX(-Math.PI/2); g.translate(x0+W/2,0,z0+D/2);
-    const pos=g.attributes.position, cols=[], c=new THREE.Color();
+  const SP2=2*380/210, X0=190+146*(380/210), N=70, CW=N*SP2, Z0=-190-2*CW;
+  const ROCKC=new THREE.Color("#6e6c74"), c=new THREE.Color();
+  const tm=new THREE.MeshToonMaterial({vertexColors:true,gradientMap:gm});
+  for(let ix=0;ix<4;ix++) for(let iz=0;iz<5;iz++){ const x0=X0+ix*CW, z0=Z0+iz*CW;
+    const g=new THREE.PlaneGeometry(CW,CW,N,N); g.rotateX(-Math.PI/2); g.translate(x0+CW/2,0,z0+CW/2); const pos=g.attributes.position, cols=[];
     for(let i=0;i<pos.count;i++){ const x=pos.getX(i), z=pos.getZ(i), h=H(x,z); pos.setY(i,h); terrainColor(x,z,h,c);
-      const slope=Math.abs(H(x+.7,z)-H(x-.7,z))+Math.abs(H(x,z+.7)-H(x,z-.7)); if(slope>1.7&&h>SEA_Y+.5) c.lerp(x<-540?new THREE.Color("#2a2730"):ROCKC,clamp((slope-1.7)/2.2,0,1)*.85);
-      cols.push(c.r,c.g,c.b); }
+      const sl=Math.abs(H(x+1.2,z)-H(x-1.2,z))+Math.abs(H(x,z+1.2)-H(x,z-1.2)); if(sl>2.6) c.lerp(ROCKC,clamp((sl-2.6)/3,0,1)*.8); cols.push(c.r,c.g,c.b); }
     g.setAttribute("color",new THREE.Float32BufferAttribute(cols,3)); g.computeVertexNormals();
-    const m=new THREE.Mesh(g,new THREE.MeshToonMaterial({vertexColors:true,gradientMap:gm})); m.receiveShadow=true; m.name=name; m.userData.keep=true; m.userData.tile={x0,z0,x1:x0+W,z1:z0+D}; scene.add(m); return m; }
-  const NX=144;
-  WORLDFX.tiles=[
-    terrainTile("South terrain",-190,190,210,NX),
-    terrainTile("West terrain",-190-NX*SP,-190,NX,210),
-    terrainTile("Southwest terrain",-190-NX*SP,190,NX,NX),
-    terrainTile("Southeast terrain",190,190,146,NX),
-    terrainTile("Cave terrain",CAVE.x-90,CAVE.z-90,100,100),
-  ];
+    const m=new THREE.Mesh(g,tm); m.receiveShadow=true; m.name="Snowfield terrain"; m.userData.keep=m.userData.far=true; m.userData.box={x0,z0,x1:x0+CW,z1:z0+CW}; scene.add(m); SFX.tiles.push(m); }
+
   const keep=o=>{ o.userData.keep=true; o.traverse(k=>k.userData.keep=true); return o; };
-  const T=(c,o={})=>toon(c,o);
-  const WOOD=T("#5a3a28"), WOODL=T("#8a6242"), PLASTER=T("#ece6d8"), ROOF=T("#3a3f52"), STONE=T("#8c8a92"), WARM=new THREE.MeshToonMaterial({color:"#ffd27a",emissive:new THREE.Color("#ffb24a"),emissiveIntensity:.9,gradientMap:gm});
-  const groundAt=(x,z)=>{ const f=[...SFLATS,...WFLATS].find(f=>f.y!==null&&Math.hypot(x-f.x,z-f.z)<f.r); return f?f.y:H(x,z); };
-  const sign=(x,z,ry,title,sub)=>{ const y=groundAt(x,z); const sg=keep(new THREE.Group()); sg.position.set(x,y,z); sg.rotation.y=ry; scene.add(sg);
+  const far=o=>{ keep(o); o.userData.far=true; return o; };
+  const T=(col,o={})=>toon(col,o);
+  const WOOD=T("#5a3a28"), WOODL=T("#8a6242"), STONE=T("#8c8a92"), STONED=T("#5d6470"), SNOWM=T("#f4f8fc"), ROOF=T("#3a3f52"), RED=T("#c23a2a");
+  const fy=id=>SF_FLATS.find(f=>f.id===id);
+  const sign=(x,z,ry,title,sub)=>{ const sg=keep(new THREE.Group()); sg.position.set(x,H(x,z),z); sg.rotation.y=ry; scene.add(sg);
     const post=new THREE.Mesh(new THREE.BoxGeometry(.16,2.1,.16),WOOD); post.position.y=1.05; sg.add(post);
-    const cv=document.createElement("canvas"); cv.width=512; cv.height=256; const k=cv.getContext("2d"); const draw=()=>{ k.fillStyle="#e9dcc0"; k.fillRect(0,0,512,256); k.strokeStyle="#5a3a28"; k.lineWidth=14; k.strokeRect(7,7,498,242); k.fillStyle="#2b2420"; k.textAlign="center"; k.font='700 64px "Shippori Mincho",serif'; k.fillText(title,256,118); k.font='500 34px "Shippori Mincho",serif'; k.fillText(sub||"",256,184); }; draw();
+    const cv=document.createElement("canvas"); cv.width=512; cv.height=256; const k=cv.getContext("2d"); const draw=()=>{ k.fillStyle="#e9dcc0"; k.fillRect(0,0,512,256); k.strokeStyle="#5a3a28"; k.lineWidth=14; k.strokeRect(7,7,498,242); k.fillStyle="#2b2420"; k.textAlign="center"; k.font='700 60px "Shippori Mincho",serif'; k.fillText(title,256,118); k.font='500 32px "Shippori Mincho",serif'; k.fillText(sub||"",256,184); }; draw();
     const tx=new THREE.CanvasTexture(cv); tx.colorSpace=THREE.SRGBColorSpace; document.fonts&&document.fonts.ready.then(()=>{ draw(); tx.needsUpdate=true; });
     const fm=new THREE.MeshToonMaterial({map:tx,gradientMap:gm}); const b=new THREE.Mesh(new THREE.BoxGeometry(1.7,.85,.08),[WOOD,WOOD,WOOD,WOOD,fm,fm]); b.position.set(0,1.85,.13); sg.add(b); shadowy(sg); addCircle(x,z,.25); return sg; };
-  const house=(x,z,ry,w=6,d=5,o={})=>{ const y=groundAt(x,z); const hg=keep(new THREE.Group()); hg.position.set(x,y,z); hg.rotation.y=ry; scene.add(hg);
-    const base=new THREE.Mesh(new THREE.BoxGeometry(w+.3,.45,d+.3),o.base||STONE); base.position.y=.12; hg.add(base);
-    const walls=new THREE.Mesh(new THREE.BoxGeometry(w,2.6,d),o.wall||PLASTER); walls.position.y=1.65; hg.add(walls);
-    [-w/2,w/2].forEach(px=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.22,2.7,.22),WOOD); p.position.set(px,1.65,d/2+.02); hg.add(p); const p2=p.clone(); p2.position.z=-d/2-.02; hg.add(p2); });
-    const beam=new THREE.Mesh(new THREE.BoxGeometry(w+.1,.22,d+.1),WOOD); beam.position.y=2.9; hg.add(beam);
-    const roof=gableRoof(w+1.2,d+1.2,1.9,o.roof||ROOF); roof.position.y=3.0; hg.add(roof);
-    const door=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.9,.08),WOODL); door.position.set(0,1.3,d/2+.05); hg.add(door);
-    [-1,1].forEach(s=>{ const win=new THREE.Mesh(new THREE.BoxGeometry(.8,.6,.06),WARM); win.position.set(s*w*.3,1.9,d/2+.05); hg.add(win); });
-    if(o.noren){ const n=new THREE.Mesh(new THREE.BoxGeometry(1.4,.7,.04),T(o.noren)); n.position.set(0,2.1,d/2+.12); hg.add(n); }
-    shadowy(hg); addBox(x,z,w/2+.2,d/2+.2,-ry); return hg; };
+  const snowCap=(w,d,y,parent)=>{ const s=new THREE.Mesh(new THREE.BoxGeometry(w,.35,d),SNOWM); s.position.y=y; parent.add(s); return s; };
   const travel=(list,TR)=>list.forEach(t=>{ t.keep=true;
-    const seg=TR.flatMap(tr=>tr.slice(0,-1).map((a,i)=>[a,tr[i+1]])).reduce((b,[a,c])=>{ const d=distSeg(t.x,t.z,a[0],a[1],c[0],c[1]); return d<b.d?{d,a,c}:b; },{d:1e9});
+    const seg=TR.flatMap(tr=>tr.slice(0,-1).map((a,i)=>[a,tr[i+1]])).reduce((b,[a,cc])=>{ const d=distSeg(t.x,t.z,a[0],a[1],cc[0],cc[1]); return d<b.d?{d,a,c:cc}:b; },{d:1e9});
     const dx=seg.c[0]-seg.a[0], dz=seg.c[1]-seg.a[1], l=Math.hypot(dx,dz), px=-dz/l, pz=dx/l; { const u=clamp(((t.x-seg.a[0])*dx+(t.z-seg.a[1])*dz)/(l*l),0,1); t.x=seg.a[0]+dx*u; t.z=seg.a[1]+dz*u; } t.pair=[];
     [1,-1].forEach(sg=>{ const L=keep(lantern(t.x+px*sg*2.6,t.z+pz*sg*2.6,false,1.05,true)); const pl=new THREE.PointLight(0xffb45a,0,14,2); pl.position.y=2.05; L.add(pl); L.userData.light=pl; t.pair.push(L); });
     t.mid={x:(t.pair[0].position.x+t.pair[1].position.x)/2,z:(t.pair[0].position.z+t.pair[1].position.z)/2}; TRAVEL.push(t);
     addInteract({keep:true,x:t.x,z:t.z,r:3.4,k:"",get label(){ return isLit(t.id)?"Travel by lantern":"Light the lanterns"; },fn:()=>{ if(!isLit(t.id)){ store.lit=[...new Set([...(store.lit||["gate"]),t.id])]; save(); cpIgnite(t); } else openTravel(); }}); });
+  const ALL_TR=[SF_ENTRY,...SF_ROADS];
 
-  /* ---------- the sea ---------- */
-  { const sea=new THREE.Mesh(new THREE.PlaneGeometry(2600,1500,1,1),new THREE.MeshToonMaterial({color:"#2f8fa6",gradientMap:gm,transparent:true,opacity:.74,depthWrite:false}));
-    sea.rotation.x=-Math.PI/2; sea.position.set(0,SEA_Y,186+750); sea.name="Sea"; sea.userData.keep=true; sea.renderOrder=2; scene.add(sea); WORLDFX.sea=sea;
-    const foam=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({color:"#f4fbff",transparent:true,opacity:.0})); foam.visible=false; }
+  /* --- the waystation where the saddle meets the field --- */
+  { const f=fy("hub"); const hg=keep(new THREE.Group()); hg.position.set(f.x+5,f.y,f.z-7); hg.rotation.y=.3; scene.add(hg);
+    const w=new THREE.Mesh(new THREE.BoxGeometry(4.6,2.4,3.6),T("#7a5a40")); w.position.y=1.2; hg.add(w);
+    const r=gableRoof(5.6,4.6,1.6,ROOF); r.position.y=2.4; hg.add(r); snowCap(5.8,4.8,3.6,hg).scale.set(1,1,.3);
+    const d=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,.08),WOODL); d.position.set(0,.95,1.84); hg.add(d);
+    shadowy(hg); addBox(f.x+5,f.z-7,2.6,2.1,-.3);
+    sign(f.x-6,f.z+3,-Math.PI/2+.4,"Shirotae Fields","The white beyond");
+    travel([{id:"shirotae",n:"Shirotae Fields",x:f.x-4,z:f.z}],ALL_TR); }
 
-  /* ---------- SOUTH: the road down to Shiohama ---------- */
-  sign(14,86,Math.PI,"Shiohama","↓ The sea");
-  [[12,104],[0,126],[-4,144]].forEach(([x,z])=>keep(lantern(x,z,false,1)));
-  { const v=SFLATS[0];
-    [[-10,-6,.4],[-12,6,Math.PI/2],[10,-8,-.4],[12,6,-Math.PI/2],[-2,-12,0]].forEach(([dx,dz,r],i)=>house(v.x+dx,v.z+dz,r+Math.PI,5.5,4.5,{roof:T(i%2?"#2e4a6a":"#5a3a2c"),wall:T("#e6dcc4"),noren:i===2?"#2e5a8a":null}));
-    // fish drying racks and nets
-    [[-4,8],[6,10]].forEach(([dx,dz])=>{ const r=keep(new THREE.Group()); r.position.set(v.x+dx,v.y,v.z+dz); scene.add(r); [-1,1].forEach(s=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.12,1.8,.12),WOOD); p.position.set(s*1.4,.9,0); r.add(p); }); const bar=new THREE.Mesh(new THREE.BoxGeometry(3,.08,.08),WOOD); bar.position.y=1.7; r.add(bar);
-      for(let i=0;i<6;i++){ const f=new THREE.Mesh(new THREE.ConeGeometry(.12,.55,5),T("#b8c4cc")); f.position.set(-1.2+i*.48,1.35,0); f.rotation.x=Math.PI; r.add(f); } shadowy(r); addCircle(v.x+dx,v.z+dz,.4); });
-    sign(v.x-6,v.z+12,Math.PI,"Shiohama","Fishing village"); }
-  // docks on posts, and boats
-  for(const d of DOCKS){ const L=Math.hypot(d.x1-d.x0,d.z1-d.z0), ang=Math.atan2(d.x1-d.x0,d.z1-d.z0); const dg=keep(new THREE.Group()); dg.position.set((d.x0+d.x1)/2,DOCK_Y,(d.z0+d.z1)/2); dg.rotation.y=ang; scene.add(dg);
-    const deck=new THREE.Mesh(new THREE.BoxGeometry(d.w*2,.18,L),WOODL); deck.position.y=-.09; dg.add(deck);
-    for(let k=-L/2;k<=L/2;k+=2.4){ [-1,1].forEach(s=>{ const p=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,5,6),WOOD); p.position.set(s*(d.w-.1),-2.4,k); dg.add(p); }); } shadowy(dg); }
-  [[-6,206,.3],[10,214,-.5],[32,204,.9],[-18,212,-.2]].forEach(([x,z,r],i)=>{ const b=keep(new THREE.Group()); b.position.set(x,SEA_Y,z); b.rotation.y=r; scene.add(b);
-    const hull=new THREE.Mesh(new THREE.CylinderGeometry(.9,.9,4.2,10,1,false,0,Math.PI),T(i%2?"#8a5a3a":"#6a4a32",{side:THREE.DoubleSide})); hull.rotation.set(0,0,Math.PI/2); hull.rotation.x=Math.PI/2; hull.scale.set(1,1,.7); hull.position.y=.35; b.add(hull);
-    if(i%2===0){ const mast=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,3.4,5),WOOD); mast.position.y=1.9; b.add(mast); const sail=new THREE.Mesh(new THREE.PlaneGeometry(1.6,2.2),T("#f2ead6",{side:THREE.DoubleSide})); sail.position.set(0,2.1,.4); b.add(sail); }
-    shadowy(b); WORLDFX.boats.push({b,ph:i*1.7,y:SEA_Y}); });
-  // the lighthouse on the headland
-  { const x=72,z=186,y=H(x,z); const lh=keep(new THREE.Group()); lh.position.set(x,y,z); scene.add(lh);
-    for(let i=0;i<5;i++){ const s=new THREE.Mesh(new THREE.CylinderGeometry(1.5-i*.18,1.7-i*.18,2,14),T(i%2?"#c8452f":"#f4f0e6")); s.position.y=1+i*2; lh.add(s); }
-    const lamp=new THREE.Mesh(new THREE.CylinderGeometry(.8,.8,1.2,10),new THREE.MeshToonMaterial({color:"#fff2c0",emissive:new THREE.Color("#ffd27a"),emissiveIntensity:1.4,gradientMap:gm})); lamp.position.y=10.6; lh.add(lamp);
-    const cap=new THREE.Mesh(new THREE.ConeGeometry(1.2,1.2,10),T("#2b2420")); cap.position.y=11.8; lh.add(cap);
-    const beam=new THREE.Mesh(new THREE.ConeGeometry(2.4,22,16,1,true),new THREE.MeshBasicMaterial({color:"#fff6d0",transparent:true,opacity:.12,depthWrite:false,side:THREE.DoubleSide})); beam.rotation.z=Math.PI/2; beam.position.set(11,0,0); const pivot=new THREE.Group(); pivot.position.y=10.6; pivot.add(beam); lh.add(pivot); WORLDFX.light=pivot;
-    shadowy(lh); addCircle(x,z,1.9); sign(x-5,z-3,-Math.PI/2,"Lighthouse","Shiohama point"); }
-  // the Sunken City on the sea floor (diving comes later)
-  { const a=keep(new THREE.Group()); a.position.set(ATL.x,ATL.y,ATL.z); scene.add(a);
-    const MARBLE=T("#d8e0e4"), MARBLED=T("#9fb4bc"), CORAL=[0xff7a9a,0x5ce0d0,0xffc04a,0xb07aff];
-    for(let i=0;i<24;i++){ const t=i/24*TAU, r=30; const h=4+((i*7)%5)*2.2; const c=new THREE.Mesh(new THREE.CylinderGeometry(.9,1.1,h,10),i%3?MARBLE:MARBLED); c.position.set(Math.cos(t)*r,h/2,Math.sin(t)*r); a.add(c); }
-    const plat=new THREE.Mesh(new THREE.CylinderGeometry(14,16,2,24),MARBLED); plat.position.y=1; a.add(plat);
-    const dome=new THREE.Mesh(new THREE.SphereGeometry(10,20,12,0,TAU,0,Math.PI/2),T("#c8d8dc")); dome.position.y=2; a.add(dome);
-    for(let i=0;i<8;i++){ const t=i/8*TAU; const arch=new THREE.Mesh(new THREE.TorusGeometry(3,.5,6,12,Math.PI),MARBLE); arch.position.set(Math.cos(t)*18,0,Math.sin(t)*18); arch.rotation.y=-t+Math.PI/2; a.add(arch); }
-    for(let i=0;i<5;i++){ const t=i/5*TAU+.3; const fp=new THREE.Mesh(new THREE.CylinderGeometry(.9,.9,9,10),MARBLED); fp.rotation.z=Math.PI/2; fp.rotation.y=t; fp.position.set(Math.cos(t)*36,.8,Math.sin(t)*36); a.add(fp); }
-    for(let i=0;i<60;i++){ const t=srand()*TAU, r=8+srand()*34, col=CORAL[i%4]; const cm=new THREE.MeshToonMaterial({color:col,emissive:new THREE.Color(col),emissiveIntensity:.45,gradientMap:gm});
-      const cr=new THREE.Mesh(i%2?new THREE.ConeGeometry(.5,1.6+srand()*1.6,6):new THREE.IcosahedronGeometry(.7+srand()*.5,0),cm); cr.position.set(Math.cos(t)*r,.6,Math.sin(t)*r); a.add(cr); }
-    for(let i=0;i<70;i++){ const t=srand()*TAU, r=4+srand()*44; const sw=new THREE.Mesh(new THREE.PlaneGeometry(.5,3+srand()*3),T("#3f8a5a",{side:THREE.DoubleSide})); sw.position.set(Math.cos(t)*r,1.8,Math.sin(t)*r); sw.rotation.y=srand()*TAU; a.add(sw); }
-    const glow=new THREE.PointLight(0x7fe6ff,3,70,1.6); glow.position.y=14; a.add(glow);
-    sign(0.5,213.5,0,"The Sunken City","Out there, under the bay"); }
-  AREAS.unshift({id:"shiohama",k:"",n:"Shiohama",test:(x,z)=>Math.hypot(x-14,z-176)<20||(z>184&&z<216&&x>-4&&x<28)});
-  AREAS.unshift({id:"southroad",k:"",n:"The South Road",test:(x,z)=>z>92&&z<160&&trailsDist(SOUTH_TRAILS,x,z)<10});
-  AREAS.unshift({id:"lighthouse",k:"",n:"Shiohama Lighthouse",test:(x,z)=>Math.hypot(x-72,z-186)<9});
-  travel([{id:"shiohama",n:"Shiohama",x:12,z:166}],SOUTH_TRAILS);
+  /* --- the watchtower on the hill (a yagura with a fire basket you can see from anywhere) --- */
+  { const f=fy("tower"); const t=far(new THREE.Group()); t.position.set(f.x,f.y,f.z); scene.add(t);
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b])=>{ const leg=new THREE.Mesh(new THREE.CylinderGeometry(.32,.42,13,7),WOOD); leg.position.set(a*2.6,6.5,b*2.6); leg.rotation.set(-b*.04,0,a*.04); t.add(leg); });
+    for(let y=3;y<12;y+=4.2) for(let s=0;s<4;s++){ const br=new THREE.Mesh(new THREE.BoxGeometry(5.6,.18,.18),WOODL); const a=s*Math.PI/2; br.position.set(Math.sin(a)*2.55,y,Math.cos(a)*2.55); br.rotation.y=a+Math.PI/2; br.rotation.z=.62; t.add(br); const br2=br.clone(); br2.rotation.z=-.62; t.add(br2); }
+    const pl=new THREE.Mesh(new THREE.BoxGeometry(6.8,.4,6.8),WOODL); pl.position.y=12.8; t.add(pl);
+    for(let s=0;s<4;s++){ const a=s*Math.PI/2; const rail=new THREE.Mesh(new THREE.BoxGeometry(6.8,.9,.12),WOOD); rail.position.set(Math.sin(a)*3.35,13.5,Math.cos(a)*3.35); rail.rotation.y=a; t.add(rail); }
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([a,b])=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(.22,3.4,.22),WOOD); p.position.set(a*3.2,14.6,b*3.2); t.add(p); });
+    const rf=gableRoof(8,8,2.4,ROOF); rf.position.y=16.2; t.add(rf); snowCap(8.2,8.2,17.6,t).scale.set(1,1,.35);
+    const bell=new THREE.Mesh(new THREE.CylinderGeometry(.35,.55,.9,12),T("#b08a3a")); bell.position.set(0,15.3,0); t.add(bell);
+    const braz=new THREE.Mesh(new THREE.CylinderGeometry(.7,.45,.7,10),T("#2b2420")); braz.position.set(2.2,13.4,2.2); t.add(braz);
+    const fire=new THREE.Mesh(new THREE.ConeGeometry(.55,1.2,8),new THREE.MeshBasicMaterial({color:"#ffb040"})); fire.position.set(2.2,14.3,2.2); t.add(fire); SFX.braz=fire;
+    const fl=new THREE.PointLight(0xff9a40,2.4,30,1.6); fl.position.set(2.2,14.6,2.2); t.add(fl); SFX.brazier=fl;
+    for(let y=.4;y<12.6;y+=.8){ const rung=new THREE.Mesh(new THREE.BoxGeometry(1.1,.1,.1),WOODL); rung.position.set(0,y,3.05); t.add(rung); } [-.55,.55].forEach(x=>{ const rl=new THREE.Mesh(new THREE.BoxGeometry(.12,12.8,.12),WOOD); rl.position.set(x,6.4,3.05); t.add(rl); });
+    shadowy(t); addBox(f.x,f.z,3,3,0);
+    addInteract({keep:true,x:f.x,z:f.z+4.4,r:3,k:"",label:"Climb and ring the watch bell",fn:()=>{ try{ chime(); }catch(e){} whisper("From up here the field goes on and on. Far off, through the snow: something huge and tree-shaped, a dark gate in the cliffs, and a roof that glints like glass.",8000); }}); }
 
-  /* ---------- WEST: the Bamboo Road to Takemura ---------- */
-  sign(-84,-1,Math.PI/2,"Takemura","← The Bamboo Road");
-  { const N=1500, stalkG=new THREE.CylinderGeometry(.1,.13,10,6); stalkG.translate(0,5,0);
-    const stalks=new THREE.InstancedMesh(stalkG,toon("#6f9a4a"),N), leaves=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1,0),toon("#4f8a3c",{flatShading:true}),N*2); const d=new THREE.Object3D(); let n=0,k=0;
-    for(let tries=0;tries<20000&&n<N;tries++){ const x=rand(-215,-84), z=rand(-60,60); const td=trailsDist(WEST_TRAILS,x,z); if(td<5||td>32||WFLATS.some(f=>Math.hypot(x-f.x,z-f.z)<f.r+2)) continue;
-      const y=H(x,z)-.2, h=rand(.8,1.3); d.position.set(x,y,z); d.rotation.set(rand(-.06,.06),0,rand(-.06,.06)); d.scale.set(1,h,1); d.updateMatrix(); stalks.setMatrixAt(n,d.matrix);
-      for(let j=0;j<2;j++){ d.position.set(x+rand(-.8,.8),y+10*h*rand(.7,1),z+rand(-.8,.8)); d.rotation.set(rand(0,1),rand(0,TAU),0); d.scale.set(rand(1,1.8),rand(.25,.4),rand(.8,1.4)); d.updateMatrix(); leaves.setMatrixAt(k++,d.matrix); }
-      if(td<12) circles.push({x,z,r:.25}); n++; }
-    stalks.count=n; leaves.count=k; stalks.castShadow=leaves.castShadow=true; stalks.computeBoundingSphere(); leaves.computeBoundingSphere(); stalks.userData.keep=leaves.userData.keep=true; scene.add(stalks,leaves); }
-  [[-104,-16],[-140,9],[-172,6]].forEach(([x,z])=>keep(lantern(x,z,false,1)));
-  { const v=WFLATS[0];
-    [[-12,-10,.3],[-15,4,Math.PI/2],[-8,15,Math.PI*.85],[10,-13,-.2],[15,8,-Math.PI/2],[6,16,-Math.PI*.8]].forEach(([dx,dz,r],i)=>house(v.x+dx,v.z+dz,r+Math.PI,6,5,{roof:T(i%2?"#3f5a3a":"#3a3f52"),noren:i===3?"#3f6a3a":null}));
-    // a five-storey pagoda
-    { const p=keep(new THREE.Group()); p.position.set(v.x+2,v.y,v.z-2); scene.add(p); let y=0;
-      for(let i=0;i<5;i++){ const w=4.2-i*.55; const body=new THREE.Mesh(new THREE.BoxGeometry(w,1.7,w),T("#c23a2a")); body.position.y=y+.85; p.add(body); const rf=new THREE.Mesh(new THREE.ConeGeometry(w*.95,1,4),T("#2e3550")); rf.rotation.y=Math.PI/4; rf.position.y=y+2.1; p.add(rf); y+=2.2; }
-      const sp=new THREE.Mesh(new THREE.CylinderGeometry(.08,.08,2.6,6),T("#e8c25a")); sp.position.y=y+1.2; p.add(sp); shadowy(p); addBox(v.x+2,v.z-2,2.3,2.3,0); }
-    // tea terraces on the slope behind town
-    for(let i=0;i<4;i++){ const tx=v.x-6+i*.0, tz=v.z+26+i*4; const ter=new THREE.Mesh(new THREE.BoxGeometry(26-i*3,1.2,3.4),T("#5f8a44")); ter.position.set(v.x,H(v.x,tz)+.3,tz); keep(ter); scene.add(ter);
-      for(let j=0;j<10-i;j++){ const bush=new THREE.Mesh(new THREE.SphereGeometry(.7,7,5),T("#3f7a34")); bush.scale.y=.6; bush.position.set(v.x-11+i*1.5+j*2.4,ter.position.y+.8,tz); keep(bush); scene.add(bush); } }
-    keep(miniTorii(v.x+24,v.z+2,Math.PI/2,1.2,T("#c23a2a")));
-    sign(v.x+20,v.z-4,-Math.PI/2+.3,"Takemura","Bamboo town"); }
-  AREAS.unshift({id:"takemura",k:"",n:"Takemura",test:(x,z)=>Math.hypot(x+200,z-4)<26});
-  AREAS.unshift({id:"bambooroad",k:"",n:"The Bamboo Road",test:(x,z)=>x<-84&&x>-176&&trailsDist(WEST_TRAILS,x,z)<14});
-  travel([{id:"takemura",n:"Takemura",x:-180,z:1}],WEST_TRAILS);
+  /* --- the old tower, fallen in --- */
+  { const f=fy("ruin"); const t=far(new THREE.Group()); t.position.set(f.x,f.y,f.z); scene.add(t);
+    const a=new THREE.Mesh(new THREE.CylinderGeometry(6,7,16,8),STONE); a.position.y=8; t.add(a);
+    const b=new THREE.Mesh(new THREE.CylinderGeometry(5,6,9,8,1,true),STONED); b.position.set(1.4,19.5,.6); b.rotation.z=.28; b.material.side=THREE.DoubleSide; t.add(b);
+    snowCap(10,10,16.2,t).geometry=new THREE.CylinderGeometry(6.1,6.1,.4,8);
+    for(let i=0;i<14;i++){ const k=new THREE.Mesh(new THREE.BoxGeometry(1.5+srand()*2,1+srand()*1.4,1.5+srand()*2),i%2?STONE:STONED); const an=srand()*TAU, r=8+srand()*7; k.position.set(Math.cos(an)*r,.4,Math.sin(an)*r); k.rotation.set(srand(),srand()*3,srand()); t.add(k); }
+    const door=new THREE.Mesh(new THREE.BoxGeometry(2.2,3.6,.4),new THREE.MeshBasicMaterial({color:"#141218"})); door.position.set(0,1.8,-6.6); t.add(door);
+    shadowy(t); addCircle(f.x,f.z,7.2);
+    addInteract({keep:true,x:f.x,z:f.z-8.2,r:3,k:"",label:"Look inside",fn:()=>whisper("Stairs, going down into the dark. The bottom is blocked with fallen stone. Someone scratched a small paw print into the wall.",7000)}); }
 
-  /* ---------- the cave mouth, and Hotaru-machi underground ---------- */
-  const CAVE_IN={x:CAVE.x+52,z:CAVE.z}, CAVE_OUT={x:-211,z:-28};
-  { const f=WFLATS[1]; const cm=keep(new THREE.Group()); cm.position.set(-216,f.y,-37); cm.rotation.y=.55; scene.add(cm);
-    const arch=new THREE.Mesh(new THREE.TorusGeometry(3.6,1.4,8,14,Math.PI),T("#5a5560")); cm.add(arch);
-    const dark=new THREE.Mesh(new THREE.CircleGeometry(3.4,18,0,Math.PI),new THREE.MeshBasicMaterial({color:"#0a0a10"})); dark.position.z=-.6; cm.add(dark);
-    for(let i=0;i<6;i++){ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(1.2+srand(),0),T("#6a6470")); r.position.set(-5+i*2,-.4+srand()*.6,.6); cm.add(r); }
-    shadowy(cm); sign(-209,-28,.4,"Hotaru Caves","Mind your head");
-    addInteract({keep:true,x:-214,z:-33,r:3.2,k:"",label:"Enter the caves",fn:()=>{ showLoading({n:"Hotaru-machi"},()=>{ player.position.set(CAVE_IN.x,H(CAVE_IN.x,CAVE_IN.z),CAVE_IN.z); player.rotation.y=-Math.PI/2; PASSL.x=CAVE_IN.x; PASSL.z=CAVE_IN.z; try{ snapCam(); }catch(e){} }); }}); }
-  { const C=CAVE; const ceil=new THREE.Mesh(new THREE.SphereGeometry(C.r+16,32,16,0,TAU,0,Math.PI/2),new THREE.MeshToonMaterial({color:"#2a2630",gradientMap:gm,side:THREE.BackSide})); ceil.scale.y=.62; ceil.position.set(C.x,-4,C.z); ceil.castShadow=true; ceil.userData.keep=true; scene.add(ceil); WORLDFX.ceil=ceil;
-    const cg=keep(new THREE.Group()); scene.add(cg);
-    for(let i=0;i<90;i++){ const t=srand()*TAU, r=srand()*(C.r+6); const st=new THREE.Mesh(new THREE.ConeGeometry(.6+srand()*1.4,3+srand()*7,6),T("#3a3540")); st.rotation.x=Math.PI; const yy=-4+(C.r+16)*.62*Math.sqrt(Math.max(0,1-(r/(C.r+16))**2)); st.position.set(C.x+Math.cos(t)*r,yy-2,C.z+Math.sin(t)*r); cg.add(st); }
-    const CRY=[0x6fe6ff,0xb07aff,0x7affc0];
-    for(let i=0;i<26;i++){ const t=srand()*TAU, r=18+srand()*(C.r-26); const x=C.x+Math.cos(t)*r, z=C.z+Math.sin(t)*r, y=H(x,z); const col=CRY[i%3]; const cl=new THREE.Group(); cl.position.set(x,y,z); cg.add(cl);
-      for(let j=0;j<5;j++){ const c=new THREE.Mesh(new THREE.OctahedronGeometry(.4+srand()*.6,0),new THREE.MeshToonMaterial({color:col,emissive:new THREE.Color(col),emissiveIntensity:.9,gradientMap:gm})); c.scale.y=2.2; c.position.set(srand()-.5,.6,srand()-.5); c.rotation.set(srand()*.6,srand()*3,srand()*.6); cl.add(c); }
-      circles.push({x,z,r:.9}); WORLDFX.crystals.push(cl); }
-    for(let i=0;i<4;i++){ const t=i/4*TAU+.4; const pl=new THREE.PointLight(CRY[i%3],2.2,46,1.6); pl.position.set(C.x+Math.cos(t)*30,7,C.z+Math.sin(t)*30); cg.add(pl); }
-    for(let i=0;i<14;i++){ const t=srand()*TAU, r=12+srand()*(C.r-22); const x=C.x+Math.cos(t)*r, z=C.z+Math.sin(t)*r, y=H(x,z), s=1+srand()*1.6; const m=new THREE.Group(); m.position.set(x,y,z); cg.add(m);
-      const stem=new THREE.Mesh(new THREE.CylinderGeometry(.25*s,.35*s,3*s,8),T("#e6dcc8")); stem.position.y=1.5*s; m.add(stem);
-      const capM=new THREE.Mesh(new THREE.SphereGeometry(1.5*s,12,8,0,TAU,0,Math.PI/2),new THREE.MeshToonMaterial({color:i%2?"#5ad0c0":"#c07ad8",emissive:new THREE.Color(i%2?"#2a8a80":"#7a3a9a"),emissiveIntensity:.8,gradientMap:gm})); capM.position.y=3*s; m.add(capM); circles.push({x,z,r:.4*s}); }
-    const lake=new THREE.Mesh(new THREE.CircleGeometry(11,32),new THREE.MeshToonMaterial({color:"#123a4a",emissive:new THREE.Color("#0a4a5a"),emissiveIntensity:.6,gradientMap:gm})); lake.rotation.x=-Math.PI/2; lake.position.set(C.x+14,-1.2,C.z+22); cg.add(lake); circles.push({x:C.x+14,z:C.z+22,r:10});
-    // the town: lantern-lit houses around a square
-    [[-10,-16,.2],[6,-18,-.2],[-20,-2,Math.PI/2],[-14,12,Math.PI*.8],[22,-6,-Math.PI/2]].forEach(([dx,dz,r])=>house(C.x+dx,C.z+dz,r+Math.PI,5,4,{roof:T("#2a2a3a"),wall:T("#d8ccb4")}));
-    for(let i=0;i<3;i++){ const pts=[new THREE.Vector3(C.x-18+i*8,H(C.x,C.z)+6.5,C.z-14),new THREE.Vector3(C.x-10+i*8,H(C.x,C.z)+5.2,C.z+6)]; for(let j=0;j<7;j++){ const u=j/6, p=pts[0].clone().lerp(pts[1],u); p.y-=Math.sin(u*Math.PI)*1.2; const lm=new THREE.Mesh(new THREE.SphereGeometry(.25,8,6),new THREE.MeshBasicMaterial({color:j%2?"#ff8a4a":"#ffd27a"})); lm.position.copy(p); cg.add(lm); } }
-    shadowy(cg); cg.traverse(o=>{ if(o.isMesh) o.castShadow=false; });
-    const ex=keep(new THREE.Group()); ex.position.set(CAVE_IN.x+6,H(CAVE_IN.x+6,CAVE_IN.z),CAVE_IN.z); ex.rotation.y=Math.PI/2; scene.add(ex); const ea=new THREE.Mesh(new THREE.TorusGeometry(3.4,1.2,8,14,Math.PI),T("#4a4550")); ex.add(ea); const el=new THREE.Mesh(new THREE.CircleGeometry(3.2,18,0,Math.PI),new THREE.MeshBasicMaterial({color:"#fff6dc"})); el.position.z=-.5; ex.add(el);
-    addInteract({keep:true,x:CAVE_IN.x+4,z:CAVE_IN.z,r:3.2,k:"",label:"Back to daylight",fn:()=>{ showLoading({n:"Takemura"},()=>{ player.position.set(CAVE_OUT.x,H(CAVE_OUT.x,CAVE_OUT.z),CAVE_OUT.z); player.rotation.y=-.6; PASSL.x=CAVE_OUT.x; PASSL.z=CAVE_OUT.z; try{ snapCam(); }catch(e){} }); }});
-    AREAS.unshift({id:"hotaru",k:"",n:"Hotaru-machi",test:(x,z)=>x<-540}); }
-  AREAS.unshift({id:"cavemouth",k:"",n:"Hotaru Caves",test:(x,z)=>Math.hypot(x+214,z+33)<9});
+  /* --- the frozen tree --- */
+  { const f=fy("tree"); const t=far(new THREE.Group()); t.position.set(f.x,f.y,f.z); scene.add(t);
+    const bark=T("#4a3f44"); const tr=new THREE.Mesh(new THREE.CylinderGeometry(2.6,5,40,10),bark); tr.position.y=20; t.add(tr);
+    for(let i=0;i<9;i++){ const a=i/9*TAU+srand()*.4; const br=new THREE.Mesh(new THREE.CylinderGeometry(.5,1.2,16,6),bark); br.position.set(Math.cos(a)*5,30+srand()*8,Math.sin(a)*5); br.rotation.set(Math.sin(a)*.9,0,-Math.cos(a)*.9); t.add(br); }
+    const ice=new THREE.MeshToonMaterial({color:"#d8f0ff",emissive:new THREE.Color("#6ab0d8"),emissiveIntensity:.3,gradientMap:gm,flatShading:true});
+    for(let i=0;i<16;i++){ const a=srand()*TAU, r=3+srand()*11; const cl=new THREE.Mesh(new THREE.IcosahedronGeometry(5+srand()*5,0),ice); cl.position.set(Math.cos(a)*r,36+srand()*12,Math.sin(a)*r); cl.scale.y=.7; t.add(cl); }
+    for(let i=0;i<20;i++){ const a=srand()*TAU, r=6+srand()*12; const ic=new THREE.Mesh(new THREE.ConeGeometry(.35,2+srand()*3,5),ice); ic.rotation.x=Math.PI; ic.position.set(Math.cos(a)*r,31+srand()*4,Math.sin(a)*r); t.add(ic); }
+    shadowy(t); addCircle(f.x,f.z,5.2);
+    addInteract({keep:true,x:f.x+6.5,z:f.z,r:3,k:"",label:"Listen",fn:()=>whisper("The ice creaks like something breathing in its sleep. This tree was alive once, and green, and very warm.",7000)}); }
+
+  /* --- the temple sealed in ice --- */
+  { const f=fy("temple"); const t=far(new THREE.Group()); t.position.set(f.x,f.y,f.z); t.rotation.y=Math.PI*.15; scene.add(t);
+    const base=new THREE.Mesh(new THREE.BoxGeometry(26,2,20),STONE); base.position.y=1; t.add(base);
+    for(let i=0;i<5;i++){ const st=new THREE.Mesh(new THREE.BoxGeometry(8,.4,1),STONED); st.position.set(0,.2+i*.4,-10.5-((4-i)*.9)); t.add(st); }
+    const hall=new THREE.Mesh(new THREE.BoxGeometry(16,7,11),T("#7a2a22")); hall.position.y=5.5; t.add(hall);
+    const r1=gableRoof(21,15,4,ROOF); r1.position.y=9; t.add(r1); const r2=gableRoof(13,9,3,ROOF); r2.position.y=13.4; t.add(r2); const mid=new THREE.Mesh(new THREE.BoxGeometry(10,2.6,7),T("#7a2a22")); mid.position.y=12; t.add(mid);
+    for(let i=-3;i<=3;i++){ const p=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,7,8),T("#5a1e18")); p.position.set(i*2.3,5.5,-5.8); t.add(p); }
+    [-7,7].forEach(x=>{ const l=new THREE.Group(); l.position.set(x,2,-14); t.add(l); const s=new THREE.Mesh(new THREE.BoxGeometry(.8,2.4,.8),STONE); s.position.y=1.2; l.add(s); const h=new THREE.Mesh(new THREE.BoxGeometry(1.4,1,1.4),STONE); h.position.y=2.9; l.add(h); const rr=new THREE.Mesh(new THREE.ConeGeometry(1.2,.8,4),STONE); rr.rotation.y=Math.PI/4; rr.position.y=3.8; l.add(rr); });
+    const tor=new THREE.Group(); tor.position.set(0,0,-22); t.add(tor); [-4,4].forEach(x=>{ const p=new THREE.Mesh(new THREE.CylinderGeometry(.5,.6,9,10),RED); p.position.set(x,4.5,0); tor.add(p); }); const kb=new THREE.Mesh(new THREE.BoxGeometry(11,.8,1),T("#2b2420")); kb.position.y=9.2; tor.add(kb); const nk=new THREE.Mesh(new THREE.BoxGeometry(9.4,.5,.6),RED); nk.position.y=7.6; tor.add(nk); snowCap(11,1.2,9.8,tor);
+    // the ice: a craggy glassy shell over everything, with drifts piled against it and icicles hanging off
+    const ig=new THREE.IcosahedronGeometry(1,2); const ip=ig.attributes.position; for(let i=0;i<ip.count;i++){ const v=new THREE.Vector3().fromBufferAttribute(ip,i); v.multiplyScalar(1+(fbm(v.x*2+9,v.z*2+v.y)-.5)*.35); ip.setXYZ(i,v.x,v.y,v.z); } ig.computeVertexNormals();
+    const iceM=new THREE.MeshToonMaterial({color:"#cfeeff",emissive:new THREE.Color("#4a90c0"),emissiveIntensity:.22,gradientMap:gm,transparent:true,opacity:.58,depthWrite:false,flatShading:true});
+    const shell=new THREE.Mesh(ig,iceM); shell.scale.set(18,16,15); shell.position.y=3; shell.renderOrder=3; t.add(shell);
+    for(let i=0;i<22;i++){ const a=srand()*TAU; const dr=new THREE.Mesh(new THREE.SphereGeometry(3+srand()*4,8,6),SNOWM); dr.scale.y=.45; dr.position.set(Math.cos(a)*17,.6,Math.sin(a)*14.5); t.add(dr); }
+    for(let i=0;i<30;i++){ const a=srand()*TAU; const ic=new THREE.Mesh(new THREE.ConeGeometry(.3+srand()*.3,1.6+srand()*2.6,5),iceM); ic.rotation.x=Math.PI; ic.position.set(Math.cos(a)*15,7+srand()*4,Math.sin(a)*12.5); t.add(ic); }
+    shadowy(t); shell.castShadow=false; addCircle(f.x,f.z,17.5);
+    AREAS.unshift({id:"hyoden",k:"",n:"Hyōden, the Frozen Temple",test:(x,z)=>Math.hypot(x-f.x,z-f.z)<34});
+    const fx=f.x+Math.sin(t.rotation.y)*-20, fz=f.z+Math.cos(t.rotation.y)*-20;
+    addInteract({keep:true,x:fx,z:fz,r:4,k:"",label:"Touch the ice",fn:()=>whisper("It is not normal ice. It hums, very low, under your hand. Snow could not do this. You would need fire. Real fire.",8000)});
+    travel([{id:"hyoden",n:"Hyōden",x:886,z:-270}],ALL_TR); }
+
+  /* --- the Gate, at the end of the canyon. It needs a key. --- */
+  { const f=fy("gate"); const gx=1352, gy=H(gx-4,140); const g=far(new THREE.Group()); g.position.set(gx,gy,140); g.rotation.y=-Math.PI/2; scene.add(g);
+    [-16,16].forEach(x=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(7,54,7),STONED); p.position.set(x,27,0); g.add(p); const cap=new THREE.Mesh(new THREE.BoxGeometry(8.4,2,8.4),STONE); cap.position.set(x,54.5,0); g.add(cap); });
+    const kas=new THREE.Mesh(new THREE.BoxGeometry(56,4.4,9),STONED); kas.position.y=58; g.add(kas); const nuki=new THREE.Mesh(new THREE.BoxGeometry(46,2.6,6),STONE); nuki.position.y=50; g.add(nuki); snowCap(56,9,60.4,g);
+    const doorM=T("#3e4450"); [-6.3,6.3].forEach(x=>{ const d=new THREE.Mesh(new THREE.BoxGeometry(12.4,46,2),doorM); d.position.set(x,23,0); g.add(d);
+      for(let r=0;r<6;r++) for(let k=0;k<3;k++){ const st=new THREE.Mesh(new THREE.SphereGeometry(.4,6,4),STONE); st.position.set(x-4+k*4,5+r*7.5,1.1); g.add(st); } });
+    const sealM=new THREE.MeshToonMaterial({color:"#9fd8ff",emissive:new THREE.Color("#3a8ad0"),emissiveIntensity:.6,gradientMap:gm}); SFX.seal=sealM;
+    const seal=new THREE.Mesh(new THREE.CylinderGeometry(5,5,.8,32),sealM); seal.rotation.x=Math.PI/2; seal.position.set(0,24,1.3); g.add(seal);
+    const ring=new THREE.Mesh(new THREE.TorusGeometry(6.2,.5,6,40),STONE); ring.position.set(0,24,1.5); g.add(ring);
+    const hole=new THREE.Mesh(new THREE.BoxGeometry(.7,1.8,.2),new THREE.MeshBasicMaterial({color:"#08080c"})); hole.position.set(0,24,1.8); g.add(hole);
+    shadowy(g); addBox(gx,140,4.5,22,0);
+    addInteract({keep:true,x:gx-8,z:140,r:5,k:"",label:"Examine the Gate",fn:()=>whisper("A gate taller than any castle. In the middle, a seal with a small keyhole, no bigger than your thumb. Wherever the key is, it is not here.",8000)});
+    AREAS.unshift({id:"greatgate",k:"",n:"The Sealed Gate",test:(x,z)=>x>1250&&Math.abs(z-140)<40}); }
+
+  /* --- the warm hollow, where the snow never settles --- */
+  { const H0x=SF_HOLLOW.x, H0z=SF_HOLLOW.z, y0=H(H0x,H0z); const s=keep(new THREE.Group()); s.position.set(H0x+6,y0,H0z+4); s.rotation.y=SF_HOLLOW.gap+Math.PI; scene.add(s);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(2.4,.6,2),STONE); b.position.y=.3; s.add(b); const h=new THREE.Mesh(new THREE.BoxGeometry(1.6,1.4,1.3),T("#6a2a20")); h.position.y=1.3; s.add(h); const r=gableRoof(2.2,1.9,.8,ROOF); r.position.y=2; s.add(r);
+    const bowl=new THREE.Mesh(new THREE.CylinderGeometry(.3,.2,.2,10),T("#c8a060")); bowl.position.set(0,.7,1.1); s.add(bowl);
+    shadowy(s); addCircle(H0x+6,H0z+4,1.6);
+    for(let i=0;i<9;i++){ const a=i/9*TAU+.3, rr=14+srand()*8; plant("CommonTree_Autumn_"+r15(),H0x+Math.cos(a)*rr,H0z+Math.sin(a)*rr,rand(.9,1.3),{tint:i%2?"#c8402a":"#e0702a"}); circles.push({x:H0x+Math.cos(a)*rr,z:H0z+Math.sin(a)*rr,r:.6}); }
+    // embers drifting up out of the ground
+    { const N=120, geo=new THREE.BufferGeometry(), p=new Float32Array(N*3); for(let i=0;i<N;i++){ const a=srand()*TAU, rr=srand()*24; p[i*3]=H0x+Math.cos(a)*rr; p[i*3+1]=y0+srand()*9; p[i*3+2]=H0z+Math.sin(a)*rr; } geo.setAttribute("position",new THREE.BufferAttribute(p,3));
+      const em=new THREE.Points(geo,new THREE.PointsMaterial({color:0xff7a30,size:.22,transparent:true,opacity:.85,depthWrite:false,blending:THREE.AdditiveBlending})); em.userData.keep=true; scene.add(em); SFX.embers={pts:em,y0}; }
+    // small warm paw prints in the snow, leading to the way in
+    const pm=new THREE.MeshBasicMaterial({color:"#9aa4b4",transparent:true,opacity:.7,depthWrite:false});
+    for(let i=0;i<40;i++){ const u=i/39; const x=lerp(640,H0x+Math.cos(SF_HOLLOW.gap)*34,u)+Math.sin(u*9)*6, z=lerp(250,H0z+Math.sin(SF_HOLLOW.gap)*34,u)+Math.cos(u*7)*4;
+      const pr=new THREE.Mesh(new THREE.CircleGeometry(.22,8),pm); pr.rotation.x=-Math.PI/2; pr.position.set(x+(i%2?.4:-.4),H(x,z)+.04,z); pr.userData.keep=true; scene.add(pr); }
+    addInteract({keep:true,x:H0x+3.6,z:H0z+1.6,r:3,k:"",label:"Look at the little shrine",fn:()=>{ const hr=nowHour(); if(hr>=17&&hr<19.5) whisper("Two small eyes glint at you from behind the shrine, red as coals. You blink, and there is only the warm ground and a few paw prints.",8500); else whisper("The snow never settles here. The stones are warm, like something slept on them a moment ago. The offering bowl is empty. Come back at sunset.",8000); }});
+    AREAS.unshift({id:"hollow",k:"",n:"The Warm Hollow",test:(x,z)=>Math.hypot(x-H0x,z-H0z)<30}); }
+
+  /* --- old stone markers out in the snow (nobody knows who carved them) --- */
+  { const LINES=["An old marker. The carving is worn away, except an arrow, pointing east.","A stone with a key carved on it, and a mountain, and a fire.","A marker half buried in snow. It says, very faintly: 'Do not follow the red stranger.'","Someone left a single bead of red glass on this stone.","The carving shows a small round animal sleeping on a big gate.","A marker. Its letters are the same as the ones on the Gate's seal.","Three lines carved deep: a tree, a temple, a gate.","This stone is warm on one side. Only one side.","A marker that just says: 'Too late. It was always too late.'"];
+    const SPOTS=[[612,40],[700,-300],[840,-120],[980,200],[1160,-200],[1220,40],[880,420],[620,300],[1040,-360]];
+    SPOTS.forEach(([x,z],i)=>{ const m=keep(new THREE.Group()); m.position.set(x,H(x,z),z); m.rotation.y=srand()*TAU; scene.add(m); const st=new THREE.Mesh(new THREE.BoxGeometry(1,1.8,.5),STONE); st.position.y=.8; st.rotation.z=(srand()-.5)*.2; m.add(st); snowCap(1.05,.55,1.75,m); shadowy(m); addCircle(x,z,.7);
+      addInteract({keep:true,x,z,r:2.4,k:"",label:"Read the old marker",fn:()=>whisper(LINES[i],7000)}); }); }
+
+  /* --- forests, dead birches, rocks and logs, spread so the field has groves and open ground --- */
+  { const busy=(x,z)=>sfEntryD(x,z)<9||sfRoadD(x,z)<6||SF_FLATS.some(f=>Math.hypot(x-f.x,z-f.z)<f.r+6)||Math.hypot(x-SF_HOLLOW.x,z-SF_HOLLOW.z)<40||Math.hypot(x-1352,z-140)<30||(x>1240&&Math.abs(z-140)<26);
+    let n=0; for(let t=0;t<40000&&n<1100;t++){ const x=rand(476,1385), z=rand(-505,485); if(sfRim(x,z)>.5||busy(x,z)) continue; const grove=fbm(x*.011+20,z*.011-4); if(grove<.53&&srand()>.06) continue;
+      const sl=Math.abs(H(x+1,z)-H(x-1,z))+Math.abs(H(x,z+1)-H(x,z-1)); if(sl>3.4) continue; const sc=rand(.9,1.8); plant("PineTree_Snow_"+r15(),x,z,sc,{y:H(x,z)}); circles.push({x,z,r:.45*sc}); n++; }
+    for(let k=0;k<130;k++){ const x=rand(476,1385), z=rand(-505,485); if(sfRim(x,z)>.45||busy(x,z)) continue; plant("BirchTree_Dead_Snow_"+r15(),x,z,rand(.9,1.4)); circles.push({x,z,r:.4}); }
+    for(let k=0;k<200;k++){ const x=rand(476,1385), z=rand(-505,485); if(sfRim(x,z)>.6||busy(x,z)) continue; const rs=rand(.5,1.6); plant("Rock_Snow_"+(1+Math.floor(srand()*7)),x,z,rs,{y:H(x,z)-.2}); circles.push({x,z,r:1.2*rs}); }
+    for(let k=0;k<60;k++){ const x=rand(476,1385), z=rand(-505,485); if(sfRim(x,z)>.45||busy(x,z)) continue; plant(srand()<.5?"WoodLog_Snow":"TreeStump_Snow",x,z,rand(.9,1.3)); circles.push({x,z,r:.7}); } }
+
+  AREAS.unshift({id:"shirotae",k:"",n:"Shirotae Fields",test:(x,z)=>x>470&&!(x>1250&&Math.abs(z-140)<40)});
+  AREAS.unshift({id:"watchtower",k:"",n:"The Watchtower",test:(x,z)=>Math.hypot(x-590,z+150)<16});
+  AREAS.unshift({id:"oldtower",k:"",n:"The Fallen Tower",test:(x,z)=>Math.hypot(x-720,z-140)<20});
+  AREAS.unshift({id:"frozentree",k:"",n:"The Frozen Tree",test:(x,z)=>Math.hypot(x-1080,z+40)<22});
+  // AREAS are checked first-to-last, so put the general field name after the named places
+  { const i=AREAS.findIndex(a=>a.id==="shirotae"); const a=AREAS.splice(i,1)[0]; const j=AREAS.findIndex(a=>!["hollow","greatgate","hyoden","watchtower","oldtower","frozentree"].includes(a.id)); AREAS.splice(j,0,a); }
 }
-const _wc=new THREE.Color("#1a1824");
-function worldFrame(dt){ const px=player.position.x, pz=player.position.z;
-  for(const b of WORLDFX.boats){ b.b.position.y=b.y+Math.sin(clock*1.3+b.ph)*.12; b.b.rotation.z=Math.sin(clock*1.1+b.ph)*.05; }
-  if(WORLDFX.light) WORLDFX.light.rotation.y=clock*.6;
-  for(const t of WORLDFX.tiles) t.visible=t.name==="Cave terrain"?px<-500:px>t.userData.tile.x0-420&&px<t.userData.tile.x1+420&&pz>t.userData.tile.z0-420&&pz<t.userData.tile.z1+420;
-  WORLDFX.sea.visible=px>-540;
-  // underground: the sky goes dark, crystals do the lighting
-  const a=px<-540?1:0; WORLDFX.cave+=(a-WORLDFX.cave)*Math.min(1,dt*3); const k=WORLDFX.cave;
-  if(!WORLDFX.lastS||Math.abs(sun.intensity-WORLDFX.lastS)>1e-4) WORLDFX.baseS=sun.intensity; if(!WORLDFX.lastH||Math.abs(hemi.intensity-WORLDFX.lastH)>1e-4) WORLDFX.baseH=hemi.intensity;
-  sun.intensity=WORLDFX.baseS*(1-.9*k); hemi.intensity=WORLDFX.baseH*(1-.72*k); WORLDFX.lastS=sun.intensity; WORLDFX.lastH=hemi.intensity;
-  if(k>.01&&scene.fog){ scene.fog.color.lerp(_wc,k*.9); PASSFX.last=scene.fog.color.clone(); }
-  const under=k>.5; sky.visible=stars.visible=!under; if(WORLDFX.ceil) WORLDFX.ceil.visible=px<-500;
-  for(const c of WORLDFX.crystals){ if(k>.01) c.rotation.y+=dt*.1; } }
+function worldFrame(dt){ const px=player.position.x, pz=player.position.z, inSF=px>440;
+  for(const t of SFX.tiles){ const b=t.userData.box; t.visible=px>300&&px>b.x0-700&&px<b.x1+700&&pz>b.z0-700&&pz<b.z1+700; }
+  // weather: long clear spells, then a blizzard rolls through
+  const w=clamp((Math.sin(clock*.011)+Math.sin(clock*.0047+1.3)*.6-.7)*1.6,0,1); SFX.storm+=(w-SFX.storm)*Math.min(1,dt*.3);
+  if(scene.fog&&zone!=="hall"){ if(inSF){ if(!SFX.fogSaved) SFX.fogSaved=[scene.fog.near,scene.fog.far]; scene.fog.near=lerp(70,8,SFX.storm); scene.fog.far=lerp(720,110,SFX.storm); }
+    else if(SFX.fogSaved){ scene.fog.near=SFX.fogSaved[0]; scene.fog.far=SFX.fogSaved[1]; SFX.fogSaved=null; } }
+  if(PASSFX.snow&&inSF){ const p=PASSFX.snow.geometry.attributes.position.array; const wind=SFX.storm*dt*9; for(let i=0;i<p.length;i+=3){ p[i]+=wind; p[i+1]-=dt*SFX.storm*3; if(p[i]>30) p[i]-=60; } PASSFX.snow.material.size=.13+SFX.storm*.07; }
+  if(SFX.seal) SFX.seal.emissiveIntensity=.45+Math.sin(clock*.9)*.25;
+  if(SFX.braz){ SFX.braz.scale.set(1+Math.sin(clock*9)*.15,1+Math.sin(clock*7)*.25,1); SFX.brazier.intensity=(1.6+Math.sin(clock*11)*.3)*(.4+night); }
+  if(SFX.embers&&Math.hypot(px-SF_HOLLOW.x,pz-SF_HOLLOW.z)<160){ const p=SFX.embers.pts.geometry.attributes.position.array; for(let i=0;i<p.length;i+=3){ p[i+1]+=dt*(.6+(i%5)*.15); p[i]+=Math.sin(clock+i)*dt*.3; if(p[i+1]>SFX.embers.y0+10) p[i+1]=SFX.embers.y0; } SFX.embers.pts.geometry.attributes.position.needsUpdate=true; }
+}
+
+/* ===================== the hand lantern (your only light at night) ===================== */
+const HANDL=(()=>{ const g=new THREE.Group(); g.userData.keep=true;
+  const paper=new THREE.MeshToonMaterial({color:"#f4e6c8",emissive:new THREE.Color("#ffa848"),emissiveIntensity:0,gradientMap:gm});
+  const body=new THREE.Mesh(new THREE.SphereGeometry(.17,12,10),paper); body.scale.y=1.35; body.position.y=-.34; g.add(body);
+  const capM=toon("#2b2420"); [-.12,-.56].forEach(y=>{ const c=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.06,10),capM); c.position.y=y; g.add(c); });
+  for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(.172,.008,4,16),toon("#8a3a2a")); r.rotation.x=Math.PI/2; r.position.y=-.34+(i-1)*.1; r.scale.set(1-Math.abs(i-1)*.12,1-Math.abs(i-1)*.12,1); g.add(r); }
+  const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.34,5),toon("#5a3a28")); pole.position.y=-.02; g.add(pole);
+  const light=new THREE.PointLight(0xffa850,0,9,2); light.position.y=-.34; g.add(light);
+  scene.add(g); return {g,paper,light,sw:0}; })();
+const _hlR=new THREE.Vector3();
+function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"&&zone!=="sky"&&!(typeof ROLL!=="undefined"&&ROLL.t>=0);
+  L.g.visible=show; if(!show){ L.light.intensity=0; return; }
+  let side=1; if(PAPER&&typeof PAPERX!=="undefined") side=PAPERX.face<0?-1:1;
+  _hlR.setFromMatrixColumn(camera.matrixWorld,0); _hlR.y=0; _hlR.normalize();
+  const moving=PAPER&&typeof PAPERX!=="undefined"?PAPERX.mag>.08:false; L.sw+=dt*(moving?9:2);
+  L.g.position.set(player.position.x+_hlR.x*side*.62,player.position.y+1.08+(moving?Math.abs(Math.sin(L.sw))*.04:0),player.position.z+_hlR.z*side*.62);
+  L.g.rotation.z=Math.sin(L.sw)*(moving?.18:.05);
+  const dark=clamp(night*1.15+(player.position.x>440?SFX.storm*.25:0),0,1);
+  L.paper.emissiveIntensity=.1+dark*.55; L.light.intensity=dark*2.3; }
+function paperTintFrame(){ if(!PAPER) return; const k=1-night*.62;
+  for(const m of PAPER_MESHES){ const c=m.material.color; c.setRGB(k,k,k);
+    if(HANDL.light.intensity>0){ const d=m.position.distanceTo(HANDL.g.position), w=HANDL.light.intensity/2.3*(1-smooth(1,9,d)); c.r=Math.min(1,c.r+w*.55); c.g=Math.min(1,c.g+w*.36); c.b=Math.min(1,c.b+w*.12); } } }
 
 /* ===================== boot ===================== */
 
@@ -3231,7 +3247,7 @@ const CUT_ZONES=[
   {id:"taiko", test:(x,z)=>Math.hypot(x-9.5,z-28)<3},
   {id:"drygarden", test:(x,z)=>Math.hypot(x-31,z-2)<10.5},
   {id:"cloudstair", test:(x,z)=>Math.hypot(x-(SHR.x-7.5),z-(SHR.z+3))<7.5},
-  {id:"trail", test:(x,z)=>(x>70&&x<200&&passTrailDist(x,z)<4.8)||(z>78&&z<140&&trailsDist(SOUTH_TRAILS,x,z)<4.8)||(x<-66&&x>-140&&trailsDist(WEST_TRAILS,x,z)<4.8)},
+  {id:"trail", test:(x,z)=>x>70&&x<200&&passTrailDist(x,z)<4.8},
 ];
 const inCut=(x,z)=>CUT_ZONES.some(c=>c.test(x,z));
 const inCutPlants=(x,z)=>CUT_ZONES.some(c=>/^(maze|orchard|trail)$/.test(c.id)&&c.test(x,z));
