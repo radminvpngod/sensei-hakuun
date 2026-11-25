@@ -279,7 +279,7 @@ body.photo #gbar,body.photo #hud,body.photo #mini,body.photo #hint,body.photo #w
   </div>
   <div class="ver">CHAPTER I · THE GARDEN</div>
 </div>
-<script>try{ if(localStorage.getItem("sh_style")==="paper"||/[?&]paper/.test(location.search)){ var _t=document.getElementById("title"); _t.querySelector("h1").textContent="Paper Samurai"; _t.querySelector(".sub").textContent="紙の侍 · EXPERIMENTAL · WORK IN PROGRESS"; _t.querySelector(".kanji").textContent="紙"; document.title="Paper Samurai (WIP)"; } }catch(e){}</script>
+<script>try{ if(localStorage.getItem("sh_style")!=="3d"&&!/[?&]3d/.test(location.search)){ var _t=document.getElementById("title"); _t.querySelector("h1").textContent="Paper Samurai"; _t.querySelector(".sub").textContent="紙の侍 · EXPERIMENTAL · WORK IN PROGRESS"; _t.querySelector(".kanji").textContent="紙"; document.title="Paper Samurai (WIP)"; } }catch(e){}</script>
 <div id="uw"></div>
 <div id="loadScr"><div class="lk">灯</div><div class="ln" id="loadName"></div><div class="lb"><i id="loadBar"></i></div><div class="lt" id="loadTip"></div></div>
 <div id="prologue"><div class="roll"><div class="kanji" id="proK"></div><div class="pg"><div class="ch" id="proCh"></div><div class="tx" id="proTx"></div></div><div class="seal" id="proSeal">白<br>雲</div></div><div class="nav" id="proNav">click · space · E to continue &nbsp;·&nbsp; Esc to skip</div></div>
@@ -429,7 +429,7 @@ const smooth = (a,b,x) => { const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); 
 const lerp = (a,b,t) => a+(b-a)*t;
 const C = h => new THREE.Color(h);
 const isTouch = matchMedia("(pointer:coarse)").matches||/[?&]touch/.test(location.search);
-const PAPER = /[?&]paper/.test(location.search) || (()=>{ try{ return localStorage.getItem("sh_style")==="paper"; }catch(e){ return false; } })();
+const PAPER = /[?&]paper/.test(location.search) || (!/[?&]3d/.test(location.search) && (()=>{ try{ return localStorage.getItem("sh_style")!=="3d"; }catch(e){ return true; } })());
 
 /* ===================== time & season ===================== */
 let previewHour=null, previewIdx=-1, entered=false;

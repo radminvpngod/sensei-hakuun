@@ -1,7 +1,7 @@
 {
- "version": 50,
+ "version": 51,
  "shellApi": 2,
- "notes": "The Scroll: a new ink-wash world map (M or the Map button). Regions stay blank until you release a paper crane from a high place there (Yukidake peak, the Watchtower, the ridge above the Withered Wood). The crane's ink draws the land as Sensei remembers it, and visiting places corrects it. Also hanko seal stamps, rumours, quest marks, lantern travel from the map, and colour that floods in as spirits are sealed.",
+ "notes": "Paper Samurai (2D paper style) is now the default look. 3D is still in Settings.",
  "files": [
   "brain-client.js",
   "core.js",
