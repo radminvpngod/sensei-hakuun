@@ -85,3 +85,10 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 - Transport for the base game: horses, maybe. Ideas: a folded paper horse you summon, sleds in the snow, later boats and planes (steampunk era).
 - First weapon idea: something with paint or ink, "inking" enemies (a calligraphy brush blade, sealing by drawing a glyph). No combat yet.
 - Finder (v52): a retro popup compass with a fighter-jet-style screen showing a live diorama of the target.
+
+## Nov 26 playtest
+- Horse summon: scribble it in with ink, not whistle. Proper mount/dismount animations. Cool player animations.
+- Quick swapper for tools (lantern, brush, horse, etc.), not a plain hotbar; game-themed.
+- Controller support (needed for Steam Deck).
+- Better terrain in general. Withered Wood colour is boring. Big terrains need "filler": shrines, villages, small discoveries.
+- Gabriel: don't be a BotW rip; it's its own game.
