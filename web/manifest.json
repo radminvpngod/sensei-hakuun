@@ -1,7 +1,7 @@
 {
- "version": 60,
+ "version": 61,
  "shellApi": 2,
- "notes": "Shirotae gets lived in: Shirotae-machi, a snow town on the road with a Clothier, Tea House, Smithy and Goods shop (each gives a welcome gift: warm tea, a tuned brush, a scarf, rumours), townsfolk to talk to, a great shimenawa tree, a steaming foot bath and a travel lantern. A river now runs from a warm spring on the ridge down to K\u014dri Lake, with red bridges where the roads cross. Also: a sacred Cedar Grove, the Snow Arch, and a wild hot spring by the lake. The Withered Wood is now umber and violet, with fields of red spider lilies.",
+ "notes": "A real 3D UI: lacquered wood plaques with gold edges that lift and tilt when you hover and press down when clicked (with a wooden tok sound), a 3D floating title, the journal as a lacquered book that swings open and tilts with your mouse, coin-style tool badge and ens\u014d tokens, pill prompts and choices. Skis and a snowboard (in the ens\u014d): first person, Steep-style physics: gravity, carving, tuck and brake, real airtime off ridges, spins and tricks, wipeouts, a speed gauge and a speed vignette. First person on the horse (V toggles): A/D turn, W go, mouse to look around. No more Player 2: whichever controller you touch is you. The camera sits closer, over your shoulder.",
  "files": [
   "brain-client.js",
   "core.js",

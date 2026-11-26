@@ -612,7 +612,7 @@ scene.fog=new THREE.Fog(0xcccccc,70,360);
 const camera=new THREE.PerspectiveCamera(50,1,.1,2000);
 const controls=new OrbitControls(camera,canvas);
 controls.enableDamping=true; controls.dampingFactor=.08; controls.enablePan=false; controls.rotateSpeed=.55;
-controls.minDistance=3.2; controls.maxDistance=15; controls.zoomSpeed=.7; controls.enableDamping=true; controls.dampingFactor=.12; controls.minPolarAngle=.35; controls.maxPolarAngle=1.78;
+controls.minDistance=2.4; controls.maxDistance=11; controls.zoomSpeed=.7; controls.enableDamping=true; controls.dampingFactor=.12; controls.minPolarAngle=.35; controls.maxPolarAngle=1.78;
 controls.autoRotate=true; controls.autoRotateSpeed=.4;
 camera.position.set(0,9,26); controls.target.set(0,2.5,0);
 const composer=new EffectComposer(renderer); composer.setPixelRatio(PR);
@@ -2250,7 +2250,7 @@ function paperTick(dt){
     p.position.set(player.position.x-_poff.x, player.position.y+c-_poff.y+.12*Math.sin(Math.PI*u), player.position.z-_poff.z);
   } else { p.quaternion.copy(_pqy); p.position.copy(player.position); p.position.y+=bob; p.position.add(spriteNudge(p.position)); }
   const psc=player.scale.y; if(Math.abs(psc-1)>.001){ p.scale.multiplyScalar(psc); p.rotation.z+=0; }
-  p.visible=!(typeof POSE!=="undefined"&&POSE.kind==="soak");
+  p.visible=!(typeof POSE!=="undefined"&&POSE.kind==="soak")&&!(typeof RIDE!=="undefined"&&(RIDE.mode==="ski"||RIDE.mode==="board"))&&!(typeof horseFP==="function"&&horseFP());
   if((PAPERX.hide=(PAPERX.hide||0)+dt)>1.5){ PAPERX.hide=0; hideFromCamera(sRig); hideFromCamera(pRig); }
   // sensei faces the way he drifts, relative to the camera
   const s=PAPERSP.s; sensei.getWorldPosition(_pv); s.position.copy(_pv); s.quaternion.copy(_pqy);
@@ -2865,19 +2865,21 @@ if(window.sensei&&window.sensei.on){ window.sensei.on("p1",d=>{ if(d.b==="a"&&pm
 const padDZ=v=>Math.abs(v)<.18?0:(v-Math.sign(v)*.18)/.82;
 function padCursor(i,show){ const el=$(i?"#p2cur":"#p1cur"); if(!el) return; if(!show){ if(i===0) el.classList.remove("show"); return; } const c=PADS.cur[i]; el.style.transform=`translate(${c.x*innerWidth}px,${c.y*innerHeight}px)`; el.classList.add("show"); }
 function padPoll(dt){ if(!navigator.getGamepads) return; const gps=[...navigator.getGamepads()].filter(g=>g&&g.connected); if(!gps.length){ padCursor(0,false); return; }
-  gps.slice(0,2).forEach((gp,i)=>{ const pr=PADS.prev[i], b=k=>!!(gp.buttons[k]&&gp.buttons[k].pressed), edge=k=>b(k)&&!pr[k], rel=k=>!b(k)&&pr[k];
+  PADS.usedBy=PADS.usedBy||{}; gps.forEach(g=>{ if(g.buttons.some(x=>x.pressed)||g.axes.some(a=>Math.abs(a)>.35)) PADS.usedBy[g.index]=performance.now(); });
+  const me=gps.slice().sort((a,b)=>(PADS.usedBy[b.index]||0)-(PADS.usedBy[a.index]||0))[0];
+  [me].forEach((gp)=>{ const i=0; const pr=PADS.prevBy?(PADS.prevBy[gp.index]||(PADS.prevBy[gp.index]=[])):(PADS.prevBy={})[gp.index]=[], b=k=>!!(gp.buttons[k]&&gp.buttons[k].pressed), edge=k=>b(k)&&!pr[k], rel=k=>!b(k)&&pr[k];
     const ax=padDZ(gp.axes[0]||0), ay=padDZ(gp.axes[1]||0), rx=padDZ(gp.axes[2]||0), ry=padDZ(gp.axes[3]||0);
     const dpx=(b(15)?1:0)-(b(14)?1:0), dpy=(b(13)?1:0)-(b(12)?1:0); const mx=clamp(ax+dpx,-1,1), my=clamp(ay+dpy,-1,1);
     const active=Math.abs(mx)+Math.abs(my)+Math.abs(rx)+Math.abs(ry)>0||gp.buttons.some(x=>x.pressed); if(active) PADS.used[i]=performance.now();
-    if(i===1&&active&&!P2.on&&entered) p2Set(true);
-    if(!entered){ if(edge(0)||edge(9)) enterGame(); PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; }
-    if(pmode==="golf"&&!MG){ if(edge(9)){ golfEnd(); PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; } padCursor(0,false);
+
+    if(!entered){ if(edge(0)||edge(9)) enterGame(); PADS.prevBy[gp.index]=gp.buttons.map(x=>x.pressed); return; }
+    if(pmode==="golf"&&!MG){ if(edge(9)){ golfEnd(); PADS.prevBy[gp.index]=gp.buttons.map(x=>x.pressed); return; } padCursor(0,false);
       golf.padXs=golf.padXs||[0,0]; golf.padAs=golf.padAs||[0,0]; golf.padXs[i]=clamp(ax+rx,-1,1)+dpx*.35; golf.padAs[i]=b(0)||b(7); if(edge(1)) golf.cancel=true;
-      golf.padX=golf.padXs[0]+golf.padXs[1]; golf.padA=golf.padAs[0]||golf.padAs[1]; PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; }
+      golf.padX=golf.padXs[0]+golf.padXs[1]; golf.padA=golf.padAs[0]||golf.padAs[1]; PADS.prevBy[gp.index]=gp.buttons.map(x=>x.pressed); return; }
     const pointerMode=!!MG||shodoOpen;
     if(i===0){
-      if(document.getElementById("journal").classList.contains("show")){ if(edge(1)||edge(8)) closeJournal(); const tabs=[...document.querySelectorAll("#journal .tab")].map(t=>t.dataset.t), ci=tabs.indexOf(JTAB); if(edge(13)||edge(5)) journalTab(tabs[(ci+1)%tabs.length]); if(edge(12)||edge(4)) journalTab(tabs[(ci-1+tabs.length)%tabs.length]); PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; }
-      if(SCROLL.open){ if(edge(1)||edge(6)) closeScroll(); const s=scrollScale(); SCROLL.cx+=(ax+rx)*dt*420/s; SCROLL.cz+=(ay+ry)*dt*420/s; if(b(7)) SCROLL.zoom=Math.min(4,SCROLL.zoom*(1+dt*1.5)); if(b(5)) SCROLL.zoom=Math.max(.25,SCROLL.zoom/(1+dt*1.5)); if(edge(0)&&SCROLL.travel){ const t=TRAVEL.filter(t=>isLit(t.id)).sort((a,b)=>Math.hypot(a.x-SCROLL.cx,a.z-SCROLL.cz)-Math.hypot(b.x-SCROLL.cx,b.z-SCROLL.cz))[0]; if(t&&Math.hypot(t.x-SCROLL.cx,t.z-SCROLL.cz)<60){ closeScroll(); travelTo(t); } } PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; }
+      if(document.getElementById("journal").classList.contains("show")){ if(edge(1)||edge(8)) closeJournal(); const tabs=[...document.querySelectorAll("#journal .tab")].map(t=>t.dataset.t), ci=tabs.indexOf(JTAB); if(edge(13)||edge(5)) journalTab(tabs[(ci+1)%tabs.length]); if(edge(12)||edge(4)) journalTab(tabs[(ci-1+tabs.length)%tabs.length]); PADS.prevBy[gp.index]=gp.buttons.map(x=>x.pressed); return; }
+      if(SCROLL.open){ if(edge(1)||edge(6)) closeScroll(); const s=scrollScale(); SCROLL.cx+=(ax+rx)*dt*420/s; SCROLL.cz+=(ay+ry)*dt*420/s; if(b(7)) SCROLL.zoom=Math.min(4,SCROLL.zoom*(1+dt*1.5)); if(b(5)) SCROLL.zoom=Math.max(.25,SCROLL.zoom/(1+dt*1.5)); if(edge(0)&&SCROLL.travel){ const t=TRAVEL.filter(t=>isLit(t.id)).sort((a,b)=>Math.hypot(a.x-SCROLL.cx,a.z-SCROLL.cz)-Math.hypot(b.x-SCROLL.cx,b.z-SCROLL.cz))[0]; if(t&&Math.hypot(t.x-SCROLL.cx,t.z-SCROLL.cz)<60){ closeScroll(); travelTo(t); } } PADS.prevBy[gp.index]=gp.buttons.map(x=>x.pressed); return; }
       if(edge(9)){ if(MG) mgClose(); else if(pmode==="golf") golfEnd(); else if(chatOpen) closeChat(); else if(menuOpen) hideMenu(); else showMenu&&showMenu(); }
       if(pointerMode){ const c=PADS.cur[0]; const sp=(b(5)?1.4:.75)*dt; if(mx||my||rx||ry){ c.x=clamp(c.x+(mx+rx)*sp,0,1); c.y=clamp(c.y+(my+ry)*sp,0,1); } padCursor(0,true);
         if(MG===TAIKO){ if(edge(0)||edge(2)) TAIKO.drum("don",0); if(edge(1)||edge(3)) TAIKO.drum("ka",0); }
@@ -2893,7 +2895,7 @@ function padPoll(dt){ if(!navigator.getGamepads) return; const gps=[...navigator
         else { if(edge(0)){ if(!p2Button(true)) p2Input("a",true); } if(rel(0)){ if(!p2Button(false)) p2Input("a",false); } if(edge(14)||rel(14)) p2Input("left",b(14)); if(edge(15)||rel(15)) p2Input("right",b(15)); } }
       else { P2.jx=mx; P2.jy=my; if(edge(0)) p2Act(); }
     }
-    PADS.prev[i]=gp.buttons.map(x=>x.pressed); });
+    PADS.prevBy[gp.index]=gp.buttons.map(x=>x.pressed); });
 }
 const PAD1={x:0,y:0,run:false};
 addEventListener("gamepadconnected",e=>{ toast(`Controller ${e.gamepad.index+1} connected${e.gamepad.index===1?" — Player 2":""}. Left stick moves, A acts, X feeds the koi, Y talks, LB opens the map, Start for the menu.`); });
@@ -2922,7 +2924,7 @@ function frame(now){
     let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y+P1J.y+PAD1.y;
     const mag=Math.min(1,Math.hypot(ix,iz));
     if(PAPER) paperInput(ix,iz,mag);
-    if(RIDE.mode==="sled"&&ROLL.t<0){ dogSledMove(dt,ix,iz); } else if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
+    if((RIDE.mode==="ski"||RIDE.mode==="board")){ skiMove(dt,clamp(ix,-1,1),clamp(iz,-1,1)); } else if(horseFP()){ horseFPMove(dt,clamp(ix,-1,1),clamp(iz,-1,1)); } else if(RIDE.mode==="sled"&&ROLL.t<0){ dogSledMove(dt,ix,iz); } else if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
       if(POSE.kind) poseEnd();
       const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
       let mx=(rx*ix - fwd.x*iz), mz=(rz*ix - fwd.z*iz); const ml=Math.hypot(mx,mz); mx/=ml; mz/=ml;
@@ -2932,7 +2934,7 @@ function frame(now){
       walkPh+=dt*speedNow*2.2;
     } else { speedNow=lerp(speedNow,0,dt*10); }
   }
-  const gy=groundY(player.position.x,player.position.z); const py0=player.position.y; if(!advMode){ const gy2=gy+RIDE.lift; player.position.y=lerp(player.position.y,gy2,Math.min(1,dt*18)); if(player.position.y<gy2-.05) player.position.y=gy2-.05; }
+  const gy=groundY(player.position.x,player.position.z); const py0=player.position.y; if(!advMode&&RIDE.mode!=="ski"&&RIDE.mode!=="board"){ const gy2=gy+RIDE.lift; player.position.y=lerp(player.position.y,gy2,Math.min(1,dt*18)); if(player.position.y<gy2-.05) player.position.y=gy2-.05; }
   const inBoat=pmode==="boat"; legs.forEach(l=>l.visible=!inBoat);
   if(inBoat){ boat.position.set(player.position.x,-.2+Math.sin(clock*1.4)*.04,player.position.z); boat.rotation.y=player.rotation.y; boat.rotation.z=Math.sin(clock*1.1)*.03; boat.userData.oars.rotation.x=speedNow>.3?Math.sin(clock*4)*.5:0; if(speedNow>.5&&srand()<dt*3) addRipple({x:player.position.x-Math.sin(player.rotation.y)*1.8,z:player.position.z-Math.cos(player.rotation.y)*1.8},-.24); }
   const moving=speedNow>.3&&!inBoat; legs[0].rotation.x=moving?Math.sin(walkPh)*.7:0; legs[1].rotation.x=moving?-Math.sin(walkPh)*.7:0;
@@ -2944,14 +2946,15 @@ function frame(now){
   try{ camSettle(dt,advMode); }catch(e){}
   if(entered&&pmode!=="golf"&&!advMode) applyMouseLook(); else { PL.ax=PL.ay=0; }
   if(entered&&pmode!=="golf"){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); if(P2.on&&pmode==="walk"){ tgt.add(P2.g.position).multiplyScalar(.5); tgt.y+=.85; const sep=P2.g.position.distanceTo(player.position); const want=clamp(9+sep*.9,9,26); const off=camera.position.clone().sub(controls.target); const L=off.length(); if(L<want-.3) camera.position.copy(controls.target).addScaledVector(off.normalize(),lerp(L,want,.05)); } const delta=tgt.clone().sub(controls.target); if(delta.length()<6) delta.multiplyScalar(Math.min(1,dt*11)); if(typeof RIDE!=="undefined"&&RIDE.mode==="horse") delta.y+=0; controls.target.add(delta); camera.position.add(delta); }
-  if(pmode!=="golf"&&pmode!=="koi"&&pmode!=="climb"&&pmode!=="fall") controls.update();
+  if(pmode!=="golf"&&pmode!=="koi"&&pmode!=="climb"&&pmode!=="fall"&&RIDE.mode!=="ski"&&RIDE.mode!=="board"&&!horseFP()) controls.update();
   advCam(dt); koiCam(dt);
   if(entered&&pmode!=="golf"&&!advMode&&(zone==="world")){ CAMFIX.free=camera.position.clone(); const tg=controls.target, dir=tmpV.subVectors(camera.position,tg); const dist=dir.length(); if(dist>1){ dir.divideScalar(dist); const rc=CAMFIX.ray; rc.set(tg,dir); rc.far=dist; rc.near=.3; const objs=CAMBLOCK.filter(o=>o.visible); const h=rc.intersectObjects(objs,false)[0];
-      if(h){ const want=Math.max(2.8,h.distance-.35); CAMFIX.d=lerp(CAMFIX.d||dist,want,.5); } else CAMFIX.d=lerp(CAMFIX.d||dist,dist,.15); if(CAMFIX.d<dist-.05) camera.position.copy(tg).addScaledVector(dir,CAMFIX.d);
+      if(h){ const want=Math.max(2.2,h.distance-.35); CAMFIX.d=lerp(CAMFIX.d||dist,want,.5); } else CAMFIX.d=lerp(CAMFIX.d||dist,dist,.15); if(CAMFIX.d<dist-.05) camera.position.copy(tg).addScaledVector(dir,CAMFIX.d);
       /* terrain between you and the camera: lift the camera over it instead of pulling it in */ { let need=0; const cp=camera.position; for(let i=1;i<=10;i++){ const t=i/10, x=tg.x+(cp.x-tg.x)*t, z=tg.z+(cp.z-tg.z)*t, y=tg.y+(cp.y-tg.y)*t, gh=H(x,z)+.7; if(y<gh) need=Math.max(need,(gh-y)/t); } CAMFIX.lift=lerp(CAMFIX.lift||0,Math.min(need,14),need>(CAMFIX.lift||0)?.6:.1); if(CAMFIX.lift>.01) cp.y+=CAMFIX.lift; } } } else CAMFIX.free=null;
   if(zone==="hall"){ camera.position.x=clamp(camera.position.x,HALL.x-HALL.w/2+.5,HALL.x+HALL.w/2-.5); camera.position.z=clamp(camera.position.z,HALL.z-HALL.d/2+.5,HALL.z+HALL.d/2-.5); camera.position.y=clamp(camera.position.y,HALL.y+.6,HALL.y+6.4); }
   else { const cg=(zone==="sky"?SKY.y-6:zone==="balcony"?Math.max(BALC.y,H(camera.position.x,camera.position.z)):Math.max(H(camera.position.x,camera.position.z),lakeE(camera.position.x,camera.position.z)<1?-.25:-99))+.4; if(camera.position.y<cg) camera.position.y=cg;
     }
+  try{ skiCam(dt); horseCam(dt); }catch(e){}
   sky.position.copy(camera.position); stars.position.copy(camera.position);
   // shadow camera follows
   const focus=entered?player.position:controls.target; sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(lightDir,80);
@@ -3604,7 +3607,7 @@ const HANDL=(()=>{ const g=new THREE.Group(); g.userData.keep=true;
   const light=new THREE.PointLight(0xffa850,0,12,.9); scene.add(light);
   scene.add(g); return {g,paper,light,sw:0}; })();
 const _hlR=new THREE.Vector3();
-function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"&&zone!=="sky"&&!(typeof ROLL!=="undefined"&&ROLL.t>=0);
+function handLanternFrame(dt){ const L=HANDL, show=RIDE.mode!=="ski"&&RIDE.mode!=="board"&&pmode!=="koi"&&pmode!=="boat"&&zone!=="sky"&&!(typeof ROLL!=="undefined"&&ROLL.t>=0);
   L.g.visible=show; if(!show){ L.light.intensity=0; return; }
   let side=1; if(PAPER&&typeof PAPERX!=="undefined") side=PAPERX.face<0?-1:1;
   _hlR.setFromMatrixColumn(camera.matrixWorld,0); _hlR.y=0; _hlR.normalize();
@@ -4022,7 +4025,7 @@ function toggleSled(){ if(RIDE.mode==="sled"){ rideEnd(); return; } const it=sto
   if(player.position.x<90){ toast("A sled needs snow."); return; } if(zone!=="world"||pmode!=="walk") return; if(RIDE.mode) rideEnd();
   if(!RIDE.sled){ const s=new THREE.Group(); const d=new THREE.Mesh(new THREE.BoxGeometry(.9,.1,2),toon("#8a6242")); d.position.y=.3; s.add(d); [-.38,.38].forEach(x=>{ const r=new THREE.Mesh(new THREE.BoxGeometry(.07,.22,2.2),toon("#8a2a20")); r.position.set(x,.12,0); s.add(r); const c=new THREE.Mesh(new THREE.TorusGeometry(.18,.035,5,10,Math.PI/2),toon("#8a2a20")); c.rotation.y=Math.PI/2; c.position.set(x,.3,1.1); s.add(c); }); s.userData.keep=true; scene.add(s); RIDE.sled=s; }
   RIDE.mode="sled"; RIDE.v.set(0,0); RIDE.sled.visible=true; DOGS.yaw=player.rotation.y; DOGS.vx=DOGS.vz=0; dogTeamShow(true); try{ chime(); }catch(e){} toast("Mush! W to run, A and D to steer, hold Shift while turning to drift."); }
-function rideEnd(){ if(RIDE.mode==="horse"&&RIDE.horse&&RIDE.horse.visible){ SCRIB.bt=0; try{ chime(); }catch(e){} } else if(RIDE.horse) RIDE.horse.visible=false; if(RIDE.sled) RIDE.sled.visible=false; try{ dogTeamShow(false); }catch(e){} RIDE.mode=null; }
+function rideEnd(){ if(RIDE.mode==="ski"||RIDE.mode==="board"){ skiEnd(); return; } if(RIDE.mode==="horse"&&HFP.on){ const p=player.position, a=player.rotation.y; controls.target.set(p.x,p.y+1.6,p.z); camera.position.set(p.x-Math.sin(a)*5.5,p.y+2.6,p.z-Math.cos(a)*5.5); camera.up.set(0,1,0); camera.fov=baseFov(); camera.updateProjectionMatrix(); if(PAPERSP.p) PAPERSP.p.visible=true; } if(RIDE.mode==="horse"&&RIDE.horse&&RIDE.horse.visible){ SCRIB.bt=0; try{ chime(); }catch(e){} } else if(RIDE.horse) RIDE.horse.visible=false; if(RIDE.sled) RIDE.sled.visible=false; try{ dogTeamShow(false); }catch(e){} RIDE.mode=null; }
 function sledMove(dt,ix,iz){ const p=player.position, e=1.2; const gx=(H(p.x+e,p.z)-H(p.x-e,p.z))/(2*e), gz=(H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e);
   const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
   RIDE.v.x+=(-gx*16+(rx*ix-fwd.x*iz)*3.2)*dt; RIDE.v.y+=(-gz*16+(rz*ix-fwd.z*iz)*3.2)*dt; RIDE.v.multiplyScalar(Math.pow(.62,dt)); const sp=RIDE.v.length(); if(sp>24) RIDE.v.multiplyScalar(24/sp);
@@ -4189,6 +4192,8 @@ const TOOLS=[
   {id:"brush",k:"筆",n:"Ink brush",d:"Splash ink. Its true use comes later.",use:()=>inkSwing()},
   {id:"horse",k:"馬",n:"Paper horse",d:"Scribble it into the world, and ride.",use:()=>toggleHorse()},
   {id:"sled",k:"橇",n:"Dog sled",d:"On snow only. Hold run to drift.",use:()=>toggleSled(),need:()=>(store.items||{}).sled},
+  {id:"ski",k:"滑",n:"Skis",d:"First person. Tuck, carve, fly.",use:()=>toggleSki("ski")},
+  {id:"board",k:"板",n:"Snowboard",d:"First person. Carve, ollie, spin.",use:()=>toggleSki("board")},
   {id:"lantern",k:"灯",n:"Lantern",d:"Hold it high: a wider, warmer light.",use:()=>raiseLantern()},
   {id:"finder",k:"探",n:"Finder",d:"Lock onto rumours, seals and unvisited places.",use:()=>finderNext()},
   {id:"scroll",k:"地",n:"The Scroll",d:"Your ink map.",use:()=>openScroll()}];
@@ -4307,6 +4312,147 @@ function townFrame(dt){ if(SFX.riverTex) SFX.riverTex.offset.y-=dt*.35; BUFF.tea
   if(SFX.steam) for(const s of SFX.steam){ if(Math.hypot(player.position.x-s.pts.geometry.attributes.position.array[0],player.position.z-s.pts.geometry.attributes.position.array[2])>140) continue; const p=s.pts.geometry.attributes.position.array; for(let i=0;i<p.length;i+=3){ p[i+1]+=dt*(.6+(i%7)*.1); if(p[i+1]>s.y0+6) p[i+1]=s.y0; } s.pts.geometry.attributes.position.needsUpdate=true; }
   if(SFX.townLights) SFX.townLights.forEach(l=>l.intensity=night*2.6);
   if(SFX.lilies){ const v=player.position.z<-480&&player.position.x>440; SFX.lilies.forEach(m=>m.visible=v); } }
+
+
+/* ===================== v61: a real 3D UI, first-person skiing + snowboarding, and a closer camera ===================== */
+// ---------- UI sounds: a soft wooden "tok" on hover and click ----------
+let _uiAC=null; function uiTok(f=520,v=.06){ try{ _uiAC=_uiAC||new (window.AudioContext||window.webkitAudioContext)(); const a=_uiAC, o=a.createOscillator(), g=a.createGain(); o.type="triangle"; o.frequency.setValueAtTime(f,a.currentTime); o.frequency.exponentialRampToValueAtTime(f*.55,a.currentTime+.08); g.gain.setValueAtTime(v,a.currentTime); g.gain.exponentialRampToValueAtTime(.0001,a.currentTime+.12); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime+.13); }catch(e){} }
+(function(){ const st=document.createElement("style"); st.textContent=`
+/* ---- 3D UI: lacquered wood, thick paper, gold edges, real depth ---- */
+:root{--lac:#2a1712;--lac2:#4a2a1e;--gold:#d8b25a;--gold2:#8a6a2a;--paper:#f4ecd8;--ink:#1d1a22;--seal:#b8302a}
+#title{perspective:900px}
+#title h1{font-family:"Shippori Mincho",serif!important;font-weight:800!important;color:#f6eedd!important;letter-spacing:.06em;text-shadow:0 1px 0 #d8c8a8,0 2px 0 #c8b898,0 3px 0 #b8a888,0 4px 0 #a89878,0 5px 0 #988868,0 6px 0 #887858,0 8px 14px rgba(0,0,0,.6),0 0 40px rgba(255,200,120,.25)!important;transform:rotateX(14deg);animation:t3dFloat 6s ease-in-out infinite}
+@keyframes t3dFloat{50%{transform:rotateX(10deg) translateY(-6px)}}
+#title .kanji{text-shadow:0 2px 0 #7a1a14,0 4px 0 #5a120e,0 8px 18px rgba(0,0,0,.5)!important}
+#title .menu{gap:12px!important;perspective:700px}
+#title .mi,.panel .pbtn,#journal .btn,#shopPanel .b,#scrollMap .b{position:relative;background:linear-gradient(180deg,#5a3424 0%,#3a2016 45%,#2a1712 100%)!important;color:#f6eedd!important;border:2px solid var(--gold)!important;border-radius:10px!important;
+  box-shadow:inset 0 2px 0 rgba(255,230,180,.35),inset 0 -3px 0 rgba(0,0,0,.35),0 6px 0 #170b07,0 10px 22px rgba(0,0,0,.45)!important;text-shadow:0 2px 0 rgba(0,0,0,.6);transform:translateZ(0);transition:transform .12s cubic-bezier(.3,1.6,.5,1),box-shadow .12s,filter .12s!important;cursor:pointer}
+#title .mi{padding:13px 26px 13px 18px!important;font:700 18px "Shippori Mincho",serif!important;min-width:300px}
+#title .mi .k,.panel .pbtn b{display:inline-grid;place-items:center;width:34px;height:34px;margin-right:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#e8604a,#b8302a 55%,#7a1a14)!important;color:#fff4e4!important;box-shadow:inset 0 2px 2px rgba(255,255,255,.35),inset 0 -2px 3px rgba(0,0,0,.4),0 2px 0 #4a0e0a;font-weight:800}
+#title .mi:hover,.panel .pbtn:hover,#journal .btn:hover,#shopPanel .b:hover,#scrollMap .b:hover,#title .mi.focus{transform:translateY(-3px) rotateX(8deg) scale(1.03)!important;filter:brightness(1.12);box-shadow:inset 0 2px 0 rgba(255,230,180,.45),inset 0 -3px 0 rgba(0,0,0,.35),0 9px 0 #170b07,0 16px 28px rgba(0,0,0,.5)!important}
+#title .mi:active,.panel .pbtn:active,#journal .btn:active,#shopPanel .b:active,#scrollMap .b:active{transform:translateY(4px)!important;box-shadow:inset 0 2px 0 rgba(255,230,180,.25),0 2px 0 #170b07,0 4px 10px rgba(0,0,0,.4)!important}
+.panel.show{animation:panel3d .38s cubic-bezier(.2,1.3,.4,1)}
+@keyframes panel3d{from{opacity:0;transform:translate(-50%,-46%) perspective(800px) rotateX(-22deg) scale(.92)}to{opacity:1}}
+.panel:not(#journal):not(#scrollMap):not(#shopPanel){background:linear-gradient(180deg,#f8f1de,#ece2c8)!important;color:var(--ink)!important;border:3px solid var(--lac)!important;border-radius:14px!important;box-shadow:0 8px 0 #b8a07a,0 9px 0 var(--lac),0 22px 50px rgba(0,0,0,.55)!important}
+.panel h2{font-family:"Shippori Mincho",serif!important;font-weight:800!important}
+.panel .pbtn{display:flex!important;align-items:center;justify-content:space-between;margin:10px 0!important;padding:10px 14px!important;font:700 16px "Shippori Mincho",serif!important}
+.panel .pbtn b{width:auto;min-width:54px;padding:0 10px;border-radius:999px;margin:0 0 0 12px}
+/* journal as a lacquered book with paper pages */
+#journal .book{background:linear-gradient(90deg,#efe5cc,#f8f1de 8%,#f8f1de 92%,#e8dcc0)!important;border:none!important;border-radius:8px!important;box-shadow:0 0 0 10px #3a1e14,0 0 0 12px var(--gold),0 14px 0 12px #1e0f09,0 34px 70px rgba(0,0,0,.6)!important;transform-style:preserve-3d;animation:book3d .45s cubic-bezier(.2,1.2,.4,1)}
+@keyframes book3d{from{transform:translate(-50%,-50%) perspective(1000px) rotateY(-28deg) rotateX(12deg) scale(.86);opacity:0}to{transform:translate(-50%,-50%);opacity:1}}
+#journal .tabs{background:linear-gradient(90deg,#3a1e14,#4a2a1e)!important;border-right:3px solid var(--gold)!important;padding:16px 0 16px 8px!important}
+#journal .tab{color:#f0e4c8;border-left:none!important;margin-right:-14px;border-radius:8px 0 0 8px;padding:12px 16px!important;transition:transform .15s,background .15s}
+#journal .tab b{color:var(--gold)!important}
+#journal .tab.on{background:linear-gradient(90deg,#f8f1de,#efe5cc)!important;color:var(--ink);box-shadow:-4px 4px 0 rgba(0,0,0,.25);transform:translateX(4px)}
+#journal .tab.on b{color:var(--seal)!important}
+#journal .tab:hover:not(.on){transform:translateX(4px);background:rgba(255,255,255,.08)}
+#journal .slot{border:2px solid rgba(42,36,32,.55)!important;border-radius:10px!important;background:linear-gradient(180deg,#fffaf0,#f2e8d2)!important;box-shadow:0 4px 0 #c8b898,0 8px 16px rgba(0,0,0,.12);transition:transform .15s}
+#journal .slot:not(.lock):hover{transform:translateY(-3px) rotateX(6deg)}
+#journal .x,#shopPanel .x{color:#f6eedd}
+/* ink bar → a lacquered plaque */
+#inkbar canvas{filter:drop-shadow(0 5px 0 rgba(30,15,8,.75)) drop-shadow(0 10px 14px rgba(0,0,0,.35))}
+#inkbar .find,#inkbar .jrn{background:radial-gradient(circle at 35% 30%,#fffaf0,#e8dcc0)!important;border:2px solid var(--lac)!important;border-radius:50%!important;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15),0 4px 0 var(--lac),0 8px 14px rgba(0,0,0,.35)!important;transition:transform .12s}
+#inkbar .find:hover,#inkbar .jrn:hover{transform:translateY(-2px) scale(1.08)}
+#inkbar .find.on{background:radial-gradient(circle at 35% 30%,#e8604a,#b8302a 60%,#7a1a14)!important}
+/* tool badge → a thick coin */
+#toolBadge .ic{background:radial-gradient(circle at 35% 30%,#fffaf0,#e4d6b8)!important;border:3px solid var(--gold)!important;box-shadow:inset 0 -4px 0 rgba(0,0,0,.12),0 5px 0 #8a6a2a,0 6px 0 var(--lac),0 12px 20px rgba(0,0,0,.4)!important;animation:coin .5s cubic-bezier(.3,1.5,.5,1)}
+@keyframes coin{from{transform:rotateY(180deg) scale(.6)}}
+#toolBadge .nm{background:linear-gradient(180deg,#5a3424,#2a1712)!important;color:#f6eedd!important;border:1.5px solid var(--gold);border-radius:8px!important;box-shadow:0 3px 0 #170b07}
+/* ensō tokens → lacquered coins */
+#enso .t{border-radius:50%!important;background:radial-gradient(circle at 35% 30%,#fffaf0,#e4d6b8)!important;border:3px solid var(--gold)!important;box-shadow:inset 0 -4px 0 rgba(0,0,0,.12),0 6px 0 #8a6a2a,0 7px 0 var(--lac),0 14px 24px rgba(0,0,0,.45)!important}
+#enso .t.on{background:radial-gradient(circle at 35% 30%,#e8604a,#b8302a 60%,#7a1a14)!important;color:#fff4e4!important}
+/* prompts, toasts, speech */
+#act .t{background:linear-gradient(180deg,#5a3424,#2a1712)!important;color:#f6eedd!important;border:2px solid var(--gold)!important;border-radius:999px!important;padding:8px 22px 8px 44px!important;box-shadow:0 4px 0 #170b07,0 10px 18px rgba(0,0,0,.4)!important;animation:pop .25s cubic-bezier(.3,1.6,.5,1)}
+#act .t:before{border-radius:50%!important;left:8px!important;box-shadow:0 2px 0 #4a0e0a!important}
+@keyframes pop{from{transform:scale(.7) translateY(8px);opacity:0}}
+#toast{background:linear-gradient(180deg,#f8f1de,#ece2c8)!important;border:2px solid var(--lac)!important;border-left:6px solid var(--seal)!important;border-radius:10px!important;box-shadow:0 5px 0 #b8a07a,0 12px 24px rgba(0,0,0,.35)!important;color:var(--ink)!important}
+#dlg.bub .card{border-radius:14px!important;box-shadow:0 6px 0 #b8a07a,0 7px 0 #2a2420,0 18px 34px rgba(0,0,0,.4)!important;animation:pop .28s cubic-bezier(.3,1.6,.5,1)}
+#dlg.bub .ch button{border-radius:999px!important;background:linear-gradient(180deg,#5a3424,#2a1712)!important;color:#f6eedd!important;border:2px solid var(--gold)!important;box-shadow:0 4px 0 #170b07,0 10px 18px rgba(0,0,0,.35)!important;transition:transform .12s}
+#dlg.bub .ch button:hover,#dlg.bub .ch button.on{transform:translateY(-2px) scale(1.03);background:linear-gradient(180deg,#e8604a,#b8302a)!important}
+#disc .n{text-shadow:0 2px 0 rgba(0,0,0,.4),0 4px 0 rgba(0,0,0,.25)!important}
+/* skiing HUD */
+#skiHud{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 26px);transform:translateX(-50%);z-index:7;display:none;gap:14px;align-items:flex-end;font-family:"Shippori Mincho",serif;pointer-events:none}
+#skiHud.show{display:flex}
+#skiHud .spd{min-width:120px;text-align:center;padding:8px 16px;background:linear-gradient(180deg,#5a3424,#2a1712);color:#f6eedd;border:2px solid var(--gold);border-radius:14px;box-shadow:0 5px 0 #170b07,0 12px 20px rgba(0,0,0,.4)}
+#skiHud .spd b{display:block;font-size:30px;line-height:1}#skiHud .spd span{font-size:11px;letter-spacing:.12em;opacity:.8}
+#skiHud .trick{font-size:30px;font-weight:800;color:#fff4e4;text-shadow:0 3px 0 #b8302a,0 6px 12px rgba(0,0,0,.5);opacity:0;transition:opacity .2s,transform .2s;transform:translateY(10px)}
+#skiHud .trick.on{opacity:1;transform:none}
+#speedVig{position:fixed;inset:0;pointer-events:none;z-index:6;opacity:0;background:radial-gradient(ellipse at center,rgba(0,0,0,0) 45%,rgba(240,248,255,.0) 60%,rgba(220,235,250,.55) 100%)}`; document.head.appendChild(st);
+  // sounds on every 3D button
+  document.addEventListener("pointerover",e=>{ const t=e.target.closest&&e.target.closest("#title .mi,.panel .pbtn,#journal .btn,#journal .tab,#shopPanel .b,#scrollMap .b,#dlg .ch button,#inkbar .find,#inkbar .jrn"); if(t&&t!==uiTok.last){ uiTok.last=t; uiTok(620,.035); } });
+  document.addEventListener("pointerdown",e=>{ const t=e.target.closest&&e.target.closest("#title .mi,.panel .pbtn,#journal .btn,#journal .tab,#shopPanel .b,#scrollMap .b,#dlg .ch button,#journal [data-wear]"); if(t) uiTok(360,.07); });
+  // panels tilt toward the mouse a little, like a held card
+  document.addEventListener("mousemove",e=>{ const b=document.querySelector("#journal.show .book"); if(b){ const rx=(e.clientY/innerHeight-.5)*-4, ry=(e.clientX/innerWidth-.5)*5; b.style.transform=`translate(-50%,-50%) perspective(1200px) rotateX(${rx}deg) rotateY(${ry}deg)`; } });
+  const h=document.createElement("div"); h.id="skiHud"; h.innerHTML=`<div class="spd"><b>0</b><span>KM/H</span></div><div class="trick"></div>`; document.body.appendChild(h);
+  const v=document.createElement("div"); v.id="speedVig"; document.body.appendChild(v);
+})();
+
+// ---------- first-person skiing and snowboarding (Steep-style: gravity, carving, airtime, spins) ----------
+const SKI={yaw:0,vx:0,vz:0,vy:0,air:false,spin:0,airT:0,gear:null,kind:"ski",trickT:0,roll:0,crouch:0,fov:70,prevGround:0};
+function skiGear(kind){ if(SKI.gear) scene.remove(SKI.gear); const g=new THREE.Group(); g.userData.keep=true; const lac=new THREE.MeshToonMaterial({color:kind==="ski"?"#b8302a":"#2c3f6e",gradientMap:gm}), edge=toon("#1d1a22"), gold=toon("#e8c25a");
+  const tip=(w,len,x)=>{ const sh=new THREE.Shape(); sh.moveTo(-w/2,0); sh.lineTo(w/2,0); sh.lineTo(w/2,len*.85); sh.quadraticCurveTo(w/2,len,0,len); sh.quadraticCurveTo(-w/2,len,-w/2,len*.85); sh.closePath(); const geo=new THREE.ExtrudeGeometry(sh,{depth:.04,bevelEnabled:false}); geo.rotateX(-Math.PI/2); geo.translate(x,0,-len/2); const m=new THREE.Mesh(geo,lac); m.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,20),new THREE.LineBasicMaterial({color:"#1d1a22"}))); return m; };
+  if(kind==="ski"){ [-.16,.16].forEach(x=>{ const s=tip(.11,1.9,x); g.add(s); const b=new THREE.Mesh(new THREE.BoxGeometry(.13,.12,.3),edge); b.position.set(x,.08,.05); g.add(b); const st=new THREE.Mesh(new THREE.BoxGeometry(.02,.02,1.5),gold); st.position.set(x,.045,0); g.add(st); }); }
+  else { const s=tip(.32,1.6,0); g.add(s); [-.3,.3].forEach(z=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(.26,.1,.14),edge); b.position.set(0,.07,z); g.add(b); }); const m=new THREE.Mesh(new THREE.CircleGeometry(.12,16),gold); m.rotation.x=-Math.PI/2; m.position.set(0,.05,-.62); g.add(m); }
+  scene.add(g); SKI.gear=g; }
+function toggleSki(kind){ if(RIDE.mode===kind){ skiEnd(); return; } if(player.position.x<90||zone!=="world"||pmode!=="walk"){ toast("Skis need snow."); return; } if(RIDE.mode) rideEnd();
+  RIDE.mode=kind; SKI.kind=kind; SKI.yaw=player.rotation.y; SKI.vx=SKI.vz=SKI.vy=0; SKI.air=false; SKI.spin=0; SKI.fov=camera.fov; skiGear(kind); SKI.prevGround=player.position.y;
+  if(PAPERSP.p) PAPERSP.p.visible=false; document.getElementById("skiHud").classList.add("show"); try{ chime(); }catch(e){} toast(kind==="ski"?"Skis on. W tuck, S brake, A/D carve, Space jump, spin in the air.":"Board on. A/D carve, Space ollie, spin in the air for tricks."); }
+function skiEnd(){ const p=player.position; RIDE.mode=null; if(SKI.gear){ scene.remove(SKI.gear); SKI.gear=null; } if(PAPERSP.p) PAPERSP.p.visible=true; document.getElementById("skiHud").classList.remove("show"); document.getElementById("speedVig").style.opacity=0;
+  camera.fov=baseFov(); camera.updateProjectionMatrix(); camera.up.set(0,1,0); controls.target.set(p.x,p.y+1.6,p.z); camera.position.set(p.x-Math.sin(SKI.yaw)*5.5,p.y+2.6,p.z-Math.cos(SKI.yaw)*5.5); }
+let _skiJumpPrev=false;
+function skiMove(dt,ix,iz){ const p=player.position, board=SKI.kind==="board", e=1.1;
+  const gx=(H(p.x+e,p.z)-H(p.x-e,p.z))/(2*e), gz=(H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e), ground=groundY(p.x,p.z);
+  const hx=Math.sin(SKI.yaw), hz=Math.cos(SKI.yaw);
+  const jump=!!(keys.Space||(navigator.getGamepads&&[...navigator.getGamepads()].some(g=>g&&g.buttons[0]&&g.buttons[0].pressed))), jumpEdge=jump&&!_skiJumpPrev; _skiJumpPrev=jump;
+  if(!SKI.air){
+    SKI.yaw-=ix*dt*(board?2.1:1.8)*(1+Math.min(1,Math.hypot(SKI.vx,SKI.vz)/20)*.4);
+    let ax=-gx*24, az=-gz*24; const tuck=iz<-.3, brake=iz>.3; SKI.crouch=lerp(SKI.crouch,tuck?1:brake?.4:.2,dt*5);
+    SKI.vx+=ax*dt; SKI.vz+=az*dt;
+    const along=SKI.vx*hx+SKI.vz*hz, side=SKI.vx*hz-SKI.vz*hx; const grip=(board?5.5:7)*(brake?.6:1); const side2=side*Math.exp(-grip*dt);
+    let along2=along*Math.exp(-(brake?1.6:tuck?.04:.12)*dt); along2-=Math.sign(along2)*along2*along2*(tuck?.0006:.0012)*dt*60;
+    if(Math.abs(side-side2)>1.5&&srand()<dt*60) addInkPuff(p.x+hz*.4*Math.sign(side),p.y+.15,p.z-hx*.4*Math.sign(side),"#ffffff");
+    SKI.vx=hx*along2+hz*side2; SKI.vz=hz*along2-hx*side2;
+    if(jumpEdge){ SKI.vy=board?6.5:5.5; SKI.air=true; SKI.spin=0; SKI.airT=0; }
+  } else { SKI.spin+=ix*dt*7; SKI.yaw-=ix*dt*7; SKI.vy-=22*dt; SKI.airT+=dt; }
+  const sp=Math.hypot(SKI.vx,SKI.vz); if(sp>42){ SKI.vx*=42/sp; SKI.vz*=42/sp; }
+  const np={x:p.x+SKI.vx*dt,z:p.z+SKI.vz*dt}; const ox=np.x, oz=np.z; collide(np); if(Math.hypot(np.x-ox,np.z-oz)>.02){ SKI.vx*=.25; SKI.vz*=.25; PAN.crumple=.7; }
+  p.x=np.x; p.z=np.z; const g2=groundY(p.x,p.z);
+  if(!SKI.air){ const vyGround=(g2-SKI.prevGround)/Math.max(dt,1e-3); // the ground fell away under you: you're flying
+    if(vyGround<SKI.vy-4&&sp>8){ SKI.air=true; SKI.airT=0; SKI.spin=0; SKI.vy=Math.max(SKI.vy,0); p.y+=SKI.vy*dt; } else { SKI.vy=vyGround; p.y=g2; } }
+  else { p.y+=SKI.vy*dt; if(p.y<=g2){ p.y=g2; SKI.air=false; const spins=Math.round(Math.abs(SKI.spin)/Math.PI)*180, vel=Math.atan2(SKI.vx,SKI.vz), off=Math.abs(((SKI.yaw-vel+Math.PI*3)%TAU)-Math.PI);
+      if(off>1.3&&sp>6){ SKI.vx*=.2; SKI.vz*=.2; PAN.crumple=.7; skiTrick("Wipeout!"); } else if(spins>=180) skiTrick(spins+"°"+(SKI.airT>1.2?"  big air":"")); else if(SKI.airT>1.1) skiTrick("Big air!");
+      SKI.vy=0; } }
+  SKI.prevGround=g2; player.rotation.y=SKI.yaw; speedNow=Math.min(9,sp); RIDE.v.set(SKI.vx,SKI.vz);
+  if(p.x<90){ skiEnd(); toast("Out of snow. Skis off."); } }
+function skiTrick(t){ const el=document.querySelector("#skiHud .trick"); el.textContent=t; el.classList.add("on"); SKI.trickT=1.6; try{ chime(); }catch(e){} }
+function skiCam(dt){ if(RIDE.mode!=="ski"&&RIDE.mode!=="board") return; const p=player.position, hx=Math.sin(SKI.yaw), hz=Math.cos(SKI.yaw), sp=Math.hypot(SKI.vx,SKI.vz);
+  const eye=new THREE.Vector3(p.x,p.y+lerp(1.62,1.22,SKI.crouch),p.z); camera.position.copy(eye);
+  const ahead=H(p.x+hx*8,p.z+hz*8)-H(p.x,p.z); const look=eye.clone().add(new THREE.Vector3(hx*10,ahead*.8-1.6,hz*10));
+  const turn=-(keys.KeyD||keys.ArrowRight?1:0)+(keys.KeyA||keys.ArrowLeft?1:0)-PAD1.x; SKI.roll=lerp(SKI.roll,turn*.12*Math.min(1,sp/12)+(SKI.air?Math.sin(clock*3)*.02:0),dt*4);
+  camera.up.set(Math.sin(SKI.roll)*Math.cos(SKI.yaw),Math.cos(SKI.roll),-Math.sin(SKI.roll)*Math.sin(SKI.yaw)); camera.lookAt(look);
+  if(sp>24){ camera.position.x+=(srand()-.5)*.015*(sp-24)/18; camera.position.y+=(srand()-.5)*.015*(sp-24)/18; }
+  SKI.fov=lerp(SKI.fov,72+Math.min(26,sp*.7),dt*3); if(Math.abs(camera.fov-SKI.fov)>.05){ camera.fov=SKI.fov; camera.updateProjectionMatrix(); }
+  controls.target.copy(look);
+  if(SKI.gear){ SKI.gear.position.set(p.x,p.y,p.z); SKI.gear.rotation.order="YXZ"; SKI.gear.rotation.y=SKI.yaw; SKI.gear.rotation.x=SKI.air?-.15:-Math.atan(ahead/8)*.5; SKI.gear.rotation.z=-SKI.roll*.8; }
+  const hud=document.getElementById("skiHud"); hud.querySelector(".spd b").textContent=Math.round(sp*3.6); SKI.trickT-=dt; if(SKI.trickT<=0) hud.querySelector(".trick").classList.remove("on");
+  document.getElementById("speedVig").style.opacity=clamp((sp-14)/22,0,.9); }
+
+
+/* ---- first person on horseback (V toggles back to third person) ---- */
+const HFP={on:true,ly:0,lp:0};
+addEventListener("keydown",e=>{ if(e.code==="KeyV"&&RIDE.mode==="horse"&&!e.repeat){ HFP.on=!HFP.on; if(!HFP.on){ const p=player.position, a=player.rotation.y; controls.target.set(p.x,p.y+1.2,p.z); camera.position.set(p.x-Math.sin(a)*6,p.y+2.4,p.z-Math.cos(a)*6); camera.up.set(0,1,0); if(PAPERSP.p) PAPERSP.p.visible=true; camera.fov=baseFov(); camera.updateProjectionMatrix(); } toast(HFP.on?"First person.":"Third person."); } });
+addEventListener("mousemove",e=>{ if(RIDE.mode==="horse"&&HFP.on&&(PL.locked||document.pointerLockElement)){ HFP.ly=clamp(HFP.ly-(e.movementX||0)*.0025,-1.4,1.4); HFP.lp=clamp(HFP.lp-(e.movementY||0)*.002,-.6,.5); } });
+const horseFP=()=>RIDE.mode==="horse"&&HFP.on&&RIDE.fold>.6;
+function horseFPMove(dt,ix,iz){ const p=player.position, run=keys.ShiftLeft||keys.ShiftRight||PAD1.run;
+  player.rotation.y-=ix*dt*(speedNow>9?1.6:2.2); const want=-iz>.2?(run?21:13):-iz<-.2?-4:0; speedNow=lerp(speedNow,want,dt*(want>speedNow?2.2:4)); if(Math.abs(speedNow)<.05) return;
+  const a=player.rotation.y, np={x:p.x+Math.sin(a)*speedNow*dt,z:p.z+Math.cos(a)*speedNow*dt}; collide(np); p.x=np.x; p.z=np.z; walkPh+=dt*Math.abs(speedNow)*1.2;
+  HFP.ly*=Math.exp(-dt*.8); }
+function horseCam(dt){ if(!horseFP()) return; const p=player.position, a=player.rotation.y+HFP.ly, gal=speedNow>9;
+  const bob=speedNow>.5?Math.abs(Math.sin(clock*(gal?9:6)))*(gal?.16:.07):Math.sin(clock*1.5)*.01;
+  const eye=new THREE.Vector3(p.x-Math.sin(player.rotation.y)*.35,p.y+1.9+bob,p.z-Math.cos(player.rotation.y)*.35); camera.position.copy(eye); camera.up.set(0,1,0);
+  camera.lookAt(eye.x+Math.sin(a)*10,eye.y-1.5+HFP.lp*10,eye.z+Math.cos(a)*10); controls.target.set(eye.x+Math.sin(a)*4,eye.y-.4,eye.z+Math.cos(a)*4);
+  const f=70+Math.max(0,speedNow-9)*.9; if(Math.abs(camera.fov-f)>.1){ camera.fov=lerp(camera.fov,f,dt*3); camera.updateProjectionMatrix(); }
+  if(PAPERSP.p) PAPERSP.p.visible=false; HANDL.g.visible=false; HANDL.light.intensity=0; }
 
 /* ===================== boot ===================== */
 
@@ -4618,7 +4764,7 @@ const gradePass=new ShaderPass({uniforms:{tDiffuse:{value:null},uSat:{value:1.14
   vertexShader:`varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
   fragmentShader:`uniform sampler2D tDiffuse; uniform float uSat,uVig,uWarm; varying vec2 vUv;
     void main(){ vec4 t=texture2D(tDiffuse,vUv); vec3 c=t.rgb; float l=dot(c,vec3(.299,.587,.114));
-      c=mix(vec3(l),c,uSat); c+=vec3(-.012,.004,.03)*(1.-smoothstep(0.,.45,l)); c*=mix(vec3(1.),vec3(1.05,1.01,.94),smoothstep(.35,1.,l)*uWarm);
+      c=mix(vec3(l),c,uSat); c=mix(c,c*c*(3.-2.*c),.22); c+=vec3(-.012,.004,.03)*(1.-smoothstep(0.,.45,l)); c*=mix(vec3(1.),vec3(1.05,1.01,.94),smoothstep(.35,1.,l)*uWarm);
       float d=distance(vUv,vec2(.5)); c*=1.-uVig*smoothstep(.38,.9,d); gl_FragColor=vec4(c,t.a); }`});
 { const passes=composer.passes; const out=passes[passes.length-1]; composer.removePass(out); composer.addPass(gradePass); composer.addPass(out); }
 scene.fog.near=40; scene.fog.far=380;
@@ -5525,7 +5671,7 @@ async function enterGame(){
   setTimeout(function tryBank(){ if(busy||chatOpen||MG){ setTimeout(tryBank,60000); return; } refreshBank(); },150000);
   hideMenu(); controls.autoRotate=false; if(!window.sensei){ try{ const el=document.documentElement; if(!document.fullscreenElement&&el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }catch(e){} }
   if(firstEnter){ firstEnter=false; if(musicPref) startSound();
-    controls.target.set(player.position.x,player.position.y+1.7,player.position.z); camera.position.set(player.position.x,player.position.y+5,player.position.z+9.5);
+    controls.target.set(player.position.x,player.position.y+1.7,player.position.z); camera.position.set(player.position.x,player.position.y+2.7,player.position.z+5.4);
     controls.update(); entered=true;
     await memReady; store.visits=(store.visits||0)+1; store.found=store.found||[]; renderHistory();
     const g=greeting(); const fresh=!store.lastGreetAt||Date.now()-store.lastGreetAt>3*3600e3; if(fresh){ addMsg("s",g); store.history.push({r:"s",c:g}); store.lastGreetAt=Date.now(); } store.prevVisit=store.lastVisit||null; store.lastVisit=Date.now(); save(); lastReply=g; hostPush();
@@ -5738,7 +5884,7 @@ function camSettle(dt,adv){ const special=!entered||TRAVELING||adv||pmode==="gol
   const dist=camera.position.distanceTo(controls.target);
   if(special){ CAMSET.was=true; CAMSET.t=0; return; }
   if(CAMSET.was){ CAMSET.was=false; CAMSET.t=1.3; CAMSET.from=dist; }
-  if(CAMSET.t>0){ CAMSET.t=Math.max(0,CAMSET.t-dt); const u=1-CAMSET.t/1.3, e=u*u*(3-2*u); const to=clamp(CAMSET.last,4,16);
+  if(CAMSET.t>0){ CAMSET.t=Math.max(0,CAMSET.t-dt); const u=1-CAMSET.t/1.3, e=u*u*(3-2*u); const to=clamp(CAMSET.last,3,8);
     const d=lerp(CAMSET.from,to,e); camera.position.sub(controls.target).setLength(d).add(controls.target);
     const f=baseFov(); if(Math.abs(camera.fov-f)>.01||camera.near!==.1){ camera.fov=lerp(camera.fov,f,Math.min(1,dt*6)); if(CAMSET.t===0) camera.fov=f; camera.near=.1; camera.updateProjectionMatrix(); } }
   else CAMSET.last=dist; }
