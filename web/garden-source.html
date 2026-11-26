@@ -4205,7 +4205,7 @@ function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,
 /* ===================== v65: 3D toon samurai as the player ===================== */
 const TSAM={U:{uSpd:{value:0},uDirt:{value:0},uSnow:{value:0},uWet:{value:0},uTime:{value:0},uWind:{value:0}},on:false,ready:false,m:null,mixer:null,A:{},bones:{},yaw:Math.PI,spd:0,last:new THREE.Vector3(),air:0,fallY:0,move:null,mw:0,lsw:{ax:0,az:0,vx:0,vz:0},ph:null,us:1};
 function tsamWanted(){ try{ return store.toonSam!==false; }catch(e){ return true; } }
-const TSAM_TEX={Kimono:["kimono",1.5,"#ffffff",0],Hakama:["hakama",1.7,"#ffffff",0],Red_accent:["red",2.6,"#ffffff",0],Scarf:["scarf",1.6,"#ffffff",0],Wrap:["wrap",2.6,"#ffffff",0],Tekko:["wrap",2.6,"#4a3e58",0],Hat:["straw",1,"#ffffff",1],Sandal:["wood",4,"#ffffff",0]};
+const TSAM_TEX={Kimono:["kimono",2.2,"#ffffff",0],Hakama:["hakama",1.7,"#ffffff",0],Red_accent:["red",2.6,"#ffffff",0],Scarf:["scarf",1.6,"#ffffff",0],Wrap:["wrap",2.6,"#ffffff",0],Tekko:["wrap",2.6,"#4a3e58",0],Hat:["straw",1,"#ffffff",1],Sandal:["wood",4,"#ffffff",0]};
 const TSAM_TL=new THREE.TextureLoader(), TSAM_TC={};
 function tsamTex(n){ if(TSAM_TC[n]) return TSAM_TC[n]; const t=TSAM_TL.load("assets/sam_"+n+".jpg"); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; TSAM_TC[n]=t; return t; }
 function tsamMat(src,us){ const n=src.name||""; const skin=/Skin/.test(n), em=/emis/i.test(n), face=/Face/.test(n)||!!src.map;
@@ -4244,7 +4244,7 @@ async function tsamInit(){ if(TSAM.loading||TSAM.ready) return; TSAM.loading=tru
     TSAM.us=us;
     m.traverse(o=>{ if(o.isBone) TSAM.bones[o.name.replace("mixamorig","").replace(":","")]=o;
       if(!o.isMesh) return; o.material=tsamMat(o.material,us); o.castShadow=true; o.receiveShadow=false; o.frustumCulled=false;
-      if(o.isSkinnedMesh&&!/Eye|Blush|Brow|Crest/.test(o.material.name)){ const om=new THREE.MeshToonMaterial({color:"#1a1420",side:THREE.BackSide}); const th=.0065*us;
+      if(o.isSkinnedMesh&&!/Eye|Blush|Brow|Crest/.test(o.material.name)){ const om=new THREE.MeshToonMaterial({color:"#1a1420",side:THREE.BackSide}); const th=.5*us;   // skinned verts are in skeleton units (~100x), so this is ~5mm on screen
         om.onBeforeCompile=sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <project_vertex>","transformed+=normalize(objectNormal)*"+th.toFixed(5)+";\n#include <project_vertex>"); };
         const ol=new THREE.SkinnedMesh(o.geometry,om); ol.bind(o.skeleton,o.bindMatrix); ol.frustumCulled=false; ol.userData.isOutline=true; o.parent.add(ol); } });
     m.scale.setScalar(1.13); m.userData.keep=true; m.userData.air=true; scene.add(m); TSAM.m=m;

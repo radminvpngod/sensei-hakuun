@@ -1,5 +1,5 @@
 {
- "version": 70,
+ "version": 71,
  "shellApi": 2,
  "notes": "Fix: the freezes every few steps. The old paper-sprite system was still rebuilding sprite lighting maps behind the 3D samurai (spikes up to 0.8 s); it now stays idle while the 3D samurai is on. Shaders are warmed once at load. Clouds now sit high in the sky above wherever you are (no more clipping/flickering into mountain tops), and the soft clouds are back.",
  "files": [
