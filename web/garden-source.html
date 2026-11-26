@@ -4205,23 +4205,25 @@ function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,
 /* ===================== v65: 3D toon samurai as the player ===================== */
 const TSAM={on:false,ready:false,m:null,mixer:null,A:{},bones:{},yaw:Math.PI,spd:0,last:new THREE.Vector3(),air:0,fallY:0,move:null,mw:0,lsw:{ax:0,az:0,vx:0,vz:0},ph:null,us:1};
 function tsamWanted(){ try{ return store.toonSam!==false; }catch(e){ return true; } }
-const TSAM_PAT={Kimono:1,Hakama:2,Red_accent:3,Hat:4};
-function tsamMat(src,us){ const n=src.name||""; const skin=/Skin/.test(n), em=/emis/i.test(n);
-  const m=new THREE.MeshToonMaterial({color:src.color.clone(),gradientMap:gm});
+const TSAM_TEX={Kimono:["kimono",3.2,"#ffffff",0],Hakama:["hakama",2.6,"#ffffff",0],Red_accent:["red",4.5,"#ffffff",0],Wrap:["wrap",6,"#ffffff",0],Tekko:["wrap",6,"#5a4c66",0],Hat:["straw",1,"#ffffff",1],Sandal:["wood",7,"#ffffff",0]};
+const TSAM_TL=new THREE.TextureLoader(), TSAM_TC={};
+function tsamTex(n){ if(TSAM_TC[n]) return TSAM_TC[n]; const t=TSAM_TL.load("assets/sam_"+n+".png"); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; t.anisotropy=4; TSAM_TC[n]=t; return t; }
+function tsamMat(src,us){ const n=src.name||""; const skin=/Skin/.test(n), em=/emis/i.test(n), face=/Face/.test(n)||!!src.map;
+  const m=new THREE.MeshToonMaterial({color:face?new THREE.Color(1,1,1):src.color.clone(),gradientMap:gm});
+  if(face&&src.map){ m.map=src.map; m.map.colorSpace=THREE.SRGBColorSpace; m.emissive=new THREE.Color(1,1,1); m.emissiveMap=src.map; m.emissiveIntensity=.34; }
   if(em){ m.emissive=src.color.clone(); m.emissiveIntensity=.9; }
-  if(skin){ m.emissive=src.color.clone(); m.emissiveIntensity=.32; }        // faces stay bright: no hard grey band
-  const pat=TSAM_PAT[n]||0;
-  m.userData.rim={value:new THREE.Color("#ffe6c8")};
-  m.onBeforeCompile=sh=>{ sh.uniforms.uPat={value:pat}; sh.uniforms.uUs={value:us}; sh.uniforms.uRim=m.userData.rim;
-    sh.vertexShader="varying vec3 vRestP;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\nvRestP=position;");
-    sh.fragmentShader="varying vec3 vRestP; uniform float uPat; uniform float uUs; uniform vec3 uRim;\n"+sh.fragmentShader
+  if(skin){ m.emissive=src.color.clone(); m.emissiveIntensity=.34; }
+  const T=TSAM_TEX[n]; m.userData.rim={value:new THREE.Color("#ffe6c8")};
+  m.onBeforeCompile=sh=>{ sh.uniforms.uUs={value:us}; sh.uniforms.uRim=m.userData.rim; sh.uniforms.uTexOn={value:T?1:0}; sh.uniforms.uTex={value:T?tsamTex(T[0]):null};
+    sh.uniforms.uTS={value:T?T[1]:1}; sh.uniforms.uTint={value:new THREE.Color(T?T[2]:"#ffffff")}; sh.uniforms.uMode={value:T?T[3]:0};
+    sh.vertexShader="varying vec3 vRestP; varying vec3 vRestN;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\nvRestP=position; vRestN=normal;");
+    sh.fragmentShader="varying vec3 vRestP; varying vec3 vRestN; uniform float uUs; uniform vec3 uRim; uniform float uTexOn; uniform sampler2D uTex; uniform float uTS; uniform vec3 uTint; uniform float uMode;\n"+sh.fragmentShader
       .replace("#include <color_fragment>",`#include <color_fragment>
- { vec3 p=vRestP/uUs; vec2 q=vec2(p.x+p.z*.7,p.y);
-   if(uPat==1.){ vec2 g=fract(q*15.); float c=step(abs(g.x-.5),.05)*step(abs(g.y-.5),.2)+step(abs(g.y-.5),.05)*step(abs(g.x-.5),.2); diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*1.8+.07,clamp(c,0.,1.)*.6); }
-   if(uPat==2.){ vec2 s=q*vec2(7.,7.); float row=floor(s.y); vec2 cell=fract(vec2(s.x+mod(row,2.)*.5,s.y)); float d=length(cell-vec2(.5,0.)); float r=fract(d*3.2); float l=step(.8,r)*step(d,.95); diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*1.7+.06,l*.7); }
-   if(uPat==3.){ vec2 s=q*13.; float l=step(.88,max(fract(s.x+s.y*.5),fract(s.y))); diffuseColor.rgb*=1.-l*.3; }
-   if(uPat==4.){ float a=atan(p.x,p.z); float l=step(.7,fract(a*9.55)); float rr=step(.85,fract(length(p.xz)*22.)); diffuseColor.rgb*=1.-(l*.18+rr*.14); } }`)
-      .replace("#include <opaque_fragment>",`{ vec3 vd=normalize(vViewPosition); float rim=pow(1.-max(dot(normalize(normal),vd),0.),3.); outgoingLight+=uRim*step(.42,rim)*.32; }
+ if(uTexOn>.5){ vec3 p=vRestP/uUs*uTS; vec3 t;
+   if(uMode>.5){ float a=atan(p.x,p.z)/6.2832; t=texture2D(uTex,vec2(a*10.,length(p.xz)*1.4)).rgb; }
+   else { vec3 w=pow(abs(normalize(vRestN)),vec3(4.)); w/=(w.x+w.y+w.z); t=texture2D(uTex,p.zy).rgb*w.x+texture2D(uTex,p.xz).rgb*w.y+texture2D(uTex,p.xy).rgb*w.z; }
+   diffuseColor.rgb=t*uTint; }`)
+      .replace("#include <opaque_fragment>",`{ vec3 vd=normalize(vViewPosition); float rim=pow(1.-max(dot(normalize(normal),vd),0.),3.); outgoingLight+=uRim*step(.42,rim)*.3; }
 #include <opaque_fragment>`); };
   return m; }
 async function tsamInit(){ if(TSAM.loading||TSAM.ready) return; TSAM.loading=true;

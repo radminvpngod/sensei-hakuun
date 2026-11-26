@@ -1,7 +1,7 @@
 {
- "version": 65,
+ "version": 66,
  "shellApi": 2,
- "notes": "New 3D toon samurai is now the player (Blender-modeled, real mocap idle/walk/run, jump/fall, hard landings, climbing, rolls, riding pose). His hat is tied on with chin cords, his face stays bright, the clothes have woven patterns and a soft rim light, and the lantern hangs from his hand and swings. New painted sky: big stepped-tone cumulus clouds that change colour through the day, dusk and indigo nights, plus a deeper star field. Journal > Settings lets you switch back to the paper cutout.",
+ "notes": "Samurai rework: a real painted anime face (big amber eyes with highlights, brows, blush), hair now covers the back of his head, and fabric textures everywhere: woven kimono with a cross print, wave-print hakama, hex-pattern silk obi and scarf, straw-weave hat, wood sandals. New costume pieces: hakama gathered into white leg wraps, dark forearm guards, a red inner collar, a gourd and a lacquered pouch on his belt, and a longer scarf.",
  "files": [
   "brain-client.js",
   "core.js",
@@ -33,7 +33,13 @@
   "visitor.js",
   "vendor/addons/controls/TransformControls.js",
   "assets/samurai.glb",
-  "assets/samurai_moves.json"
+  "assets/samurai_moves.json",
+  "assets/sam_kimono.png",
+  "assets/sam_hakama.png",
+  "assets/sam_red.png",
+  "assets/sam_wrap.png",
+  "assets/sam_straw.png",
+  "assets/sam_wood.png"
  ],
  "minShell": "0.2.0"
 }
