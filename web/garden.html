@@ -4203,7 +4203,7 @@ function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,
   if(zone==="world"&&pmode==="walk") climbFrame(dt,speedNow>.3); else { CLIMB.on=false; CLIMB.ring&&CLIMB.ring.classList.remove("show"); } }
 
 /* ===================== v65: 3D toon samurai as the player ===================== */
-const TSAM={U:{uDirt:{value:0},uSnow:{value:0},uWet:{value:0},uTime:{value:0},uWind:{value:0}},on:false,ready:false,m:null,mixer:null,A:{},bones:{},yaw:Math.PI,spd:0,last:new THREE.Vector3(),air:0,fallY:0,move:null,mw:0,lsw:{ax:0,az:0,vx:0,vz:0},ph:null,us:1};
+const TSAM={U:{uSpd:{value:0},uDirt:{value:0},uSnow:{value:0},uWet:{value:0},uTime:{value:0},uWind:{value:0}},on:false,ready:false,m:null,mixer:null,A:{},bones:{},yaw:Math.PI,spd:0,last:new THREE.Vector3(),air:0,fallY:0,move:null,mw:0,lsw:{ax:0,az:0,vx:0,vz:0},ph:null,us:1};
 function tsamWanted(){ try{ return store.toonSam!==false; }catch(e){ return true; } }
 const TSAM_TEX={Kimono:["kimono",1.5,"#ffffff",0],Hakama:["hakama",1.7,"#ffffff",0],Red_accent:["red",2.6,"#ffffff",0],Scarf:["scarf",1.6,"#ffffff",0],Wrap:["wrap",2.6,"#ffffff",0],Tekko:["wrap",2.6,"#4a3e58",0],Hat:["straw",1,"#ffffff",1],Sandal:["wood",4,"#ffffff",0]};
 const TSAM_TL=new THREE.TextureLoader(), TSAM_TC={};
@@ -4215,13 +4215,15 @@ function tsamMat(src,us){ const n=src.name||""; const skin=/Skin/.test(n), em=/e
   if(em){ m.emissive=src.color.clone(); m.emissiveIntensity=.9; }
   if(skin){ m.emissive=src.color.clone(); m.emissiveIntensity=.34; }
   const T=TSAM_TEX[n]; m.userData.rim={value:new THREE.Color("#ffe6c8")};
-  const kDirt=face?.18:(/Hat/.test(n)?.5:1), flut=/Scarf/.test(n)?1:0;
-  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,TSAM.U); sh.uniforms.uKD={value:kDirt}; sh.uniforms.uFlut={value:flut}; sh.uniforms.uUs={value:us}; sh.uniforms.uRim=m.userData.rim; sh.uniforms.uTexOn={value:T?1:0}; sh.uniforms.uTex={value:T?tsamTex(T[0]):null};
+  const kDirt=face?.18:(/Hat/.test(n)?.5:1), flut=/Scarf/.test(n)?1:0, slv=/Kimono/.test(n)?1:0;
+  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,TSAM.U); sh.uniforms.uKD={value:kDirt}; sh.uniforms.uFlut={value:flut}; sh.uniforms.uSlv={value:slv}; sh.uniforms.uUs={value:us}; sh.uniforms.uRim=m.userData.rim; sh.uniforms.uTexOn={value:T?1:0}; sh.uniforms.uTex={value:T?tsamTex(T[0]):null};
     sh.uniforms.uTS={value:T?T[1]:1}; sh.uniforms.uTint={value:new THREE.Color(T?T[2]:"#ffffff")}; sh.uniforms.uMode={value:T?T[3]:0};
-    sh.vertexShader="varying vec3 vRestP; varying vec3 vRestN; uniform float uTime; uniform float uWind; uniform float uFlut; uniform float uUs;\n"+sh.vertexShader.replace("#include <begin_vertex>",`#include <begin_vertex>
+    sh.vertexShader="varying vec3 vRestP; varying vec3 vRestN; uniform float uTime; uniform float uWind; uniform float uFlut; uniform float uSlv; uniform float uSpd; uniform float uUs;\n"+sh.vertexShader.replace("#include <begin_vertex>",`#include <begin_vertex>
 vRestP=position; vRestN=normal;
 if(uFlut>.5){ vec3 q=position/uUs; float far=clamp((abs(q.x)+q.z*.6-.08)*1.6,0.,1.); float w=(.012+uWind*.05)*far;
-  transformed+=vec3(sin(uTime*7.+q.x*18.)*.4, sin(uTime*9.+q.x*24.)*1., cos(uTime*6.+q.x*16.)*.7)*w*uUs; }`);
+  transformed+=vec3(sin(uTime*7.+q.x*18.)*.4, sin(uTime*9.+q.x*24.)*1., cos(uTime*6.+q.x*16.)*.7)*w*uUs; }
+if(uSlv>.5){ vec3 q=position/uUs; float m=smoothstep(.3,.46,abs(q.x))*smoothstep(1.39,1.12,q.y);
+  transformed.z+=(-min(uSpd,7.)*.022+sin(uTime*(3.+uSpd*.9)+q.x*5.)*(.008+uSpd*.005))*m*uUs; transformed.x+=sin(uTime*2.3+q.y*4.)*.006*m*uUs*sign(q.x); }`);
     sh.fragmentShader="varying vec3 vRestP; varying vec3 vRestN; uniform float uDirt; uniform float uSnow; uniform float uWet; uniform float uKD; float th(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); } float tn(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(mix(th(i),th(i+vec3(1,0,0)),f.x),mix(th(i+vec3(0,1,0)),th(i+vec3(1,1,0)),f.x),f.y),mix(mix(th(i+vec3(0,0,1)),th(i+vec3(1,0,1)),f.x),mix(th(i+vec3(0,1,1)),th(i+vec3(1,1,1)),f.x),f.y),f.z); } uniform float uUs; uniform vec3 uRim; uniform float uTexOn; uniform sampler2D uTex; uniform float uTS; uniform vec3 uTint; uniform float uMode;\n"+sh.fragmentShader
       .replace("#include <color_fragment>",`#include <color_fragment>
  if(uTexOn>.5){ vec3 p=vRestP/uUs*uTS; vec3 t;
@@ -4257,7 +4259,7 @@ async function tsamInit(){ if(TSAM.loading||TSAM.ready) return; TSAM.loading=tru
   }catch(e){ console.warn("[tsam] load failed, keeping the paper samurai",e); }
   TSAM.loading=false; }
 function tsamPlay(n,from=0,speed=1){ const A=TSAM.A; if(!A[n]) return; if(TSAM.move&&TSAM.move!==n&&A[TSAM.move]) A[TSAM.move].stop(); const a=A[n]; a.reset(); a.time=from; a.timeScale=speed; a.play(); TSAM.move=n; }
-const _tq=new THREE.Quaternion(),_tq2=new THREE.Quaternion(),_tv=new THREE.Vector3(),_tv2=new THREE.Vector3();
+const _tq=new THREE.Quaternion(),_tq2=new THREE.Quaternion(),_tv=new THREE.Vector3(),_tv2=new THREE.Vector3(),_tAxZ=new THREE.Vector3(0,0,1),_tAxY=new THREE.Vector3(0,1,0);
 function tsamAim(name,dir,amt){ const b=TSAM.bones[name]; if(!b||amt<=0) return; const d=dir.clone().normalize().applyAxisAngle(_pup,TSAM.yaw);
   b.updateWorldMatrix(true,false); b.getWorldQuaternion(_tq); const cur=_tv.set(0,1,0).applyQuaternion(_tq);
   const tgt=new THREE.Quaternion().setFromUnitVectors(cur,d).multiply(_tq.clone()); b.parent.getWorldQuaternion(_tq2); b.quaternion.slerp(_tq2.invert().multiply(tgt),amt); b.updateMatrixWorld(true); }
@@ -4280,7 +4282,7 @@ function tsamFrame(dt){
     U.uDirt.value=Math.max(0,U.uDirt.value-dt*(inWater?.4:.0025));
     if(inSnow) U.uSnow.value=Math.min(.95,U.uSnow.value+dt*(.006+storm*.04)); else if(U.uSnow.value>0){ const mlt=Math.min(U.uSnow.value,dt*.03); U.uSnow.value-=mlt; U.uWet.value=Math.min(1,U.uWet.value+mlt*1.4); }
     if(inWater) U.uWet.value=1; U.uWet.value=Math.max(0,U.uWet.value-dt*.008);
-    U.uTime.value=performance.now()/1000; U.uWind.value=Math.min(1.2,storm*1.1+TSAM.spd*.06); }
+    U.uSpd.value=TSAM.spd; U.uTime.value=performance.now()/1000; U.uWind.value=Math.min(1.2,storm*1.1+TSAM.spd*.06); }
   // air & landing
   let ground=pp.y; try{ ground=H(pp.x,pp.z); }catch(e){}
   const inAir=!riding&&!climbing&&pp.y-ground>.45&&dy*1>-99;
@@ -4297,6 +4299,10 @@ function tsamFrame(dt){
   A.walk.timeScale=Math.max(.6,s/1.9); A.run.timeScale=Math.max(.75,s/6.2);
   for(const n of ["rjump","hland","climbloop","vault","climbup","shimmy","hurt"]) if(A[n]) A[n].setEffectiveWeight(TSAM.move===n?TSAM.mw:0);
   TSAM.mixer.update(dt);
+  { const run=Math.min(1,Math.max(0,(TSAM.spd-2.6)/3)); const lantern=HANDL&&HANDL.g&&HANDL.g.visible;
+    const grip=(side,amt)=>{ const sg=side==="Left"?-1:1; for(const f of ["Index","Middle","Ring","Pinky"]) for(let k=1;k<=3;k++){ const b=TSAM.bones[side+"Hand"+f+k]; if(!b) continue; _tq.setFromAxisAngle(_tAxZ,sg*amt*(k===1?.85:1.05)); b.quaternion.multiply(_tq); }
+      const t=TSAM.bones[side+"HandThumb2"]; if(t){ _tq.setFromAxisAngle(_tAxY,-sg*amt*.45); t.quaternion.multiply(_tq); } };
+    if(!TSAM.noGrip){ grip("Right",lantern?1.25:.45+run*.7); grip("Left",.38+run*.8); } }
   m.position.copy(pp); m.rotation.set(0,TSAM.yaw,0); m.updateMatrixWorld(true);
   if(riding) for(const k in TSAM_SIT) tsamAim(k,TSAM_SIT[k],.85);
   if(rolling){ const u=Math.min(1,ROLL.t/ROLL_T); for(const k in TSAM_TUCK) tsamAim(k,TSAM_TUCK[k],Math.sin(u*Math.PI)); const ax=_tv2.set(Math.cos(TSAM.yaw),0,-Math.sin(TSAM.yaw)); m.position.y+=.55*Math.sin(u*Math.PI)*.6; m.quaternion.setFromAxisAngle(ax,u*Math.PI*2).multiply(_tq.setFromAxisAngle(_pup,TSAM.yaw)); }
