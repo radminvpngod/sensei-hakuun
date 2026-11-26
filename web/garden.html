@@ -2954,7 +2954,7 @@ function frame(now){
   if(zone==="hall"){ camera.position.x=clamp(camera.position.x,HALL.x-HALL.w/2+.5,HALL.x+HALL.w/2-.5); camera.position.z=clamp(camera.position.z,HALL.z-HALL.d/2+.5,HALL.z+HALL.d/2-.5); camera.position.y=clamp(camera.position.y,HALL.y+.6,HALL.y+6.4); }
   else { const cg=(zone==="sky"?SKY.y-6:zone==="balcony"?Math.max(BALC.y,H(camera.position.x,camera.position.z)):Math.max(H(camera.position.x,camera.position.z),lakeE(camera.position.x,camera.position.z)<1?-.25:-99))+.4; if(camera.position.y<cg) camera.position.y=cg;
     }
-  try{ skiCam(dt); horseCam(dt); }catch(e){}
+  try{ skiCam(dt); horseCam(dt); shopCam(dt); }catch(e){}
   sky.position.copy(camera.position); stars.position.copy(camera.position);
   // shadow camera follows
   const focus=entered?player.position:controls.target; sun.target.position.copy(focus); sun.position.copy(focus).addScaledVector(lightDir,80);
@@ -3522,7 +3522,7 @@ function bridgeY(x,z){ for(const b of BRIDGES){ const dx=x-b.x, dz=z-b.z, u=dx*b
     // the counter, and lamps that make the room glow
     box(room,3.6,1.05,.8,0,.6,-1.2,WOODL); box(room,3.8,.1,1,0,1.15,-1.2,DARK);
     [-1.8,1.8].forEach(lx=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.45,10),new THREE.MeshToonMaterial({color:"#f4e0b0",emissive:new THREE.Color("#ffb050"),emissiveIntensity:.9,gradientMap:gm})); l.position.set(lx,2.6,.4); room.add(l); });
-    const pl=new THREE.PointLight(0xffb868,1.8,11,1.4); pl.position.set(0,2.4,0); room.add(pl);
+    const pl=new THREE.PointLight(0xffb868,2.8,12,1.2); pl.position.set(0,2.5,.6); room.add(pl); const pl2=new THREE.PointLight(0xffd8a0,1.2,9,1.4); pl2.position.set(0,2.2,-2.4); room.add(pl2);
     // what each shop is full of
     const shelf=(lx,lz,rot)=>{ const g=new THREE.Group(); g.position.set(lx,0,lz); g.rotation.y=rot; room.add(g); for(let k=0;k<3;k++) box(g,2.6,.08,.55,0,.7+k*.75,0,DARK); [-1.28,1.28].forEach(sx=>box(g,.08,2.4,.55,sx,1.2,0,DARK)); return g; };
     const sA=shelf(-2.3,-d/2+.45,0), sB=shelf(2.3,-d/2+.45,0), sC=shelf(-w/2+.45,1.1,Math.PI/2);
@@ -4544,7 +4544,14 @@ function horseCam(dt){ if(!horseFP()) return; const p=player.position, a=player.
   g.traverse(o=>{ o.userData.keep=true; o.userData.far=true; }); scene.add(g); SFX.ranges=g; }
 
 const _rD=new THREE.Color("#a6b2c6"), _rN=new THREE.Color("#252b3c"), _sD=new THREE.Color("#f4f8fc"), _sN=new THREE.Color("#5a6478");
-function v62Frame(dt){ if(SFX.shops){ const px=player.position.x, pz=player.position.z; for(const sh of SFX.shops){ const dx=px-sh.x, dz=pz-sh.z, c=Math.cos(sh.ry), s=Math.sin(sh.ry); const lx=dx*c-dz*s, lz=dx*s+dz*c; const inside=Math.abs(lx)<sh.w/2+.2&&lz<sh.d/2+.6&&lz>-sh.d/2; if(sh.shell.visible===inside){ sh.shell.visible=!inside; } } if(SFX.forge) SFX.forge.intensity=1.4+Math.sin(clock*13)*.3; } if(SFX.rangeMats){ SFX.ranges.visible=player.position.x>300; const n=clamp(night,0,1); SFX.rangeMats[0].color.copy(_rD).lerp(_rN,n); SFX.rangeMats[1].color.copy(_sD).lerp(_sN,n); } if(SFX.kamaLights) SFX.kamaLights.forEach(l=>l.intensity=night*1.8); if(SFX.iceMats) SFX.iceMats.forEach(m=>m.emissiveIntensity=.2+night*1.4); if(SFX.banners&&Math.hypot(player.position.x-680,player.position.z)<160) SFX.banners.forEach((b,i)=>{ b.rotation.y=Math.sin(clock*2.2+i)*.25; b.rotation.z=Math.sin(clock*3.1+i)*.04; }); }
+const SHOPCAM={in:null,k:0,last:null};
+const _scV=new THREE.Vector3(), _scT=new THREE.Vector3();
+function shopCam(dt){ const sh=SHOPCAM.in||SHOPCAM.last; SHOPCAM.k=clamp(SHOPCAM.k+(SHOPCAM.in?dt:-dt)*2.6,0,1); if(SHOPCAM.in) SHOPCAM.last=SHOPCAM.in; if(!sh||SHOPCAM.k<=0) return; const e=SHOPCAM.k*SHOPCAM.k*(3-2*SHOPCAM.k);
+  const p=player.position; _scT.set(p.x,p.y+1.35,p.z); const off=_scV.subVectors(camera.position,_scT); const L=off.length(); if(L>3.1) off.multiplyScalar(3.1/L); off.y=clamp(off.y,.35,1.6);
+  const want=_scT.clone().add(off); const c=Math.cos(sh.ry), s=Math.sin(sh.ry), y0=sh.root.position.y; const dx=want.x-sh.x, dz=want.z-sh.z; let lx=dx*c-dz*s, lz=dx*s+dz*c; lx=clamp(lx,-sh.w/2+.45,sh.w/2-.45); lz=clamp(lz,-sh.d/2+.45,sh.d/2-.35); want.x=sh.x+lx*c+lz*s; want.z=sh.z-lx*s+lz*c; want.y=clamp(want.y,y0+.7,y0+3.0);
+  camera.position.lerp(want,e); const look=_scT.clone(); look.y-=.15; const curLook=controls.target.clone().lerp(look,e); camera.lookAt(curLook);
+  const f=lerp(baseFov(),baseFov()+8,e); if(Math.abs(camera.fov-f)>.05){ camera.fov=f; camera.updateProjectionMatrix(); } }
+function v62Frame(dt){ if(SFX.shops){ const px=player.position.x, pz=player.position.z; for(const sh of SFX.shops){ const dx=px-sh.x, dz=pz-sh.z, c=Math.cos(sh.ry), s=Math.sin(sh.ry); const lx=dx*c-dz*s, lz=dx*s+dz*c; const inside=Math.abs(lx)<sh.w/2-.1&&lz<sh.d/2+.1&&lz>-sh.d/2; if(inside) SHOPCAM.in=sh; else if(SHOPCAM.in===sh) SHOPCAM.in=null; } if(SFX.forge) SFX.forge.intensity=1.4+Math.sin(clock*13)*.3; } if(SFX.rangeMats){ SFX.ranges.visible=player.position.x>300; const n=clamp(night,0,1); SFX.rangeMats[0].color.copy(_rD).lerp(_rN,n); SFX.rangeMats[1].color.copy(_sD).lerp(_sN,n); } if(SFX.kamaLights) SFX.kamaLights.forEach(l=>l.intensity=night*1.8); if(SFX.iceMats) SFX.iceMats.forEach(m=>m.emissiveIntensity=.2+night*1.4); if(SFX.banners&&Math.hypot(player.position.x-680,player.position.z)<160) SFX.banners.forEach((b,i)=>{ b.rotation.y=Math.sin(clock*2.2+i)*.25; b.rotation.z=Math.sin(clock*3.1+i)*.04; }); }
 /* ===================== boot ===================== */
 
 /* ===================== STARTER TOWN CLEAN-UP (v42) ===================== */

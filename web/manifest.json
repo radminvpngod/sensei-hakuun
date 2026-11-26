@@ -1,7 +1,7 @@
 {
- "version": 63,
+ "version": 64,
  "shellApi": 2,
- "notes": "Walk-in shops: step through the noren of Shirotae-machi's four shops into real lit rooms. The clothier has stacks of folded cloth and a kimono rack, the tea house a hearth with a hanging kettle, the smithy a glowing forge and anvil, the goods shop barrels, rice sacks and paper rolls. The keeper stands behind the counter; talk to them across it. The roof and front wall lift away while you're inside so you can see.",
+ "notes": "Shops are proper interiors now: walls and roof stay on, and when you step through the noren the camera glides in close behind you (like walking into a store in GTA), stays inside the room, and pulls back out when you leave. Warmer lamps inside.",
  "files": [
   "brain-client.js",
   "core.js",
