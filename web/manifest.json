@@ -1,7 +1,7 @@
 {
- "version": 64,
+ "version": 65,
  "shellApi": 2,
- "notes": "Shops are proper interiors now: walls and roof stay on, and when you step through the noren the camera glides in close behind you (like walking into a store in GTA), stays inside the room, and pulls back out when you leave. Warmer lamps inside.",
+ "notes": "New 3D toon samurai is now the player (Blender-modeled, real mocap idle/walk/run, jump/fall, hard landings, climbing, rolls, riding pose). His hat is tied on with chin cords, his face stays bright, the clothes have woven patterns and a soft rim light, and the lantern hangs from his hand and swings. New painted sky: big stepped-tone cumulus clouds that change colour through the day, dusk and indigo nights, plus a deeper star field. Journal > Settings lets you switch back to the paper cutout.",
  "files": [
   "brain-client.js",
   "core.js",
@@ -31,7 +31,9 @@
   "vendor/addons/utils/BufferGeometryUtils.js",
   "assets/lowpoly.glb",
   "visitor.js",
-  "vendor/addons/controls/TransformControls.js"
+  "vendor/addons/controls/TransformControls.js",
+  "assets/samurai.glb",
+  "assets/samurai_moves.json"
  ],
  "minShell": "0.2.0"
 }

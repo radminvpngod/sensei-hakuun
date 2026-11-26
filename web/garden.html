@@ -4038,7 +4038,7 @@ const _fsz=new THREE.Vector2();
   const j=document.createElement("div"); j.id="journal"; j.className="panel"; j.innerHTML=`<div class="book"><div class="tabs">${[["地","Scroll","map"],["憶","Memories","mem"],["魂","Spirits","spirit"],["具","Items","items"],["衣","Wardrobe","wear"],["設","Settings","set"]].map(([k,n,id])=>`<div class="tab" data-t="${id}"><b>${k}</b>${n}</div>`).join("")}</div><div class="pg"></div><div class="x">×</div></div>`;
   document.body.appendChild(j);
   j.addEventListener("click",e=>{ const t=e.target.closest(".tab"); if(t) journalTab(t.dataset.t); if(e.target.classList.contains("x")||e.target===j) closeJournal(); const a=e.target.dataset.a;
-    if(a==="scroll"){ closeJournal(); openScroll(); } else if(a==="settings"){ closeJournal(); showMenu(); setTimeout(()=>{ try{ $("#miSettings").click(); }catch(e){} },60); } else if(a==="horse"){ closeJournal(); toggleHorse(); } else if(a==="sled"){ closeJournal(); toggleSled(); } });
+    if(a==="scroll"){ closeJournal(); openScroll(); } else if(a==="settings"){ closeJournal(); showMenu(); setTimeout(()=>{ try{ $("#miSettings").click(); }catch(e){} },60); } else if(a==="tsam"){ store.toonSam=store.toonSam===false?true:false; save(); toast(store.toonSam===false?"Paper cutout samurai":"3D samurai"); journalTab("set"); } else if(a==="horse"){ closeJournal(); toggleHorse(); } else if(a==="sled"){ closeJournal(); toggleSled(); } });
   const ib=document.getElementById("inkbar"); if(ib){ const b=document.createElement("div"); b.className="jrn"; b.title="Journal (J)"; b.textContent="帳"; ib.appendChild(b); b.addEventListener("click",()=>openJournal()); }
   addEventListener("keydown",e=>{ if(document.activeElement&&/INPUT|TEXTAREA/.test(document.activeElement.tagName)) return;
     const jo=document.getElementById("journal").classList.contains("show");
@@ -4064,7 +4064,7 @@ function journalTab(t){ JTAB=t; const j=document.getElementById("journal"); j.qu
     pg.innerHTML=`<h2>Items</h2><div class="sub">What you carry.</div>${row("H",true,"Paper horse","Fold it and it gallops. Press H to summon or dismiss it.","horse")}${row("T",!!it.sled,"Sled",it.sled?"For the snow. Press T on a snowy slope, and lean with A and D.":"There is one by the fishing hut at Kōri Lake.","sled")}${row("Q",true,"Ink brush","Press Q to swing. It splashes ink. (Its real use comes later.)")}${row("—",true,"Paper lantern","It lights itself when it gets dark.")}${row("F",true,"Finder","Locks onto rumours, seals and places you have not been.")}`; }
   else if(t==="wear"){ const w=accStore(); const own=store.owned; pg.innerHTML=`<h2>Wardrobe</h2><div class="sub">Things you've found. Tap to wear.</div>`+Object.entries({hat:"Head",scarf:"Scarf",charm:"Charm"}).map(([slot,lab])=>`<h2 style="font-size:18px;margin-top:16px">${lab}</h2><div class="grid">${ACC_DEF[slot].map(it=>{ const has=own.includes(it.id); return `<div class="slot ${has?"":"lock"}" data-wear="${slot}:${it.id}" style="cursor:${has?"pointer":"default"};${w[slot]===it.id?"border-color:#b8302a;box-shadow:inset 0 0 0 2px #b8302a":""}"><div class="t">${has?esc(it.n):"???"}</div><div class="d">${has?esc(it.d):(it.where?"Somewhere around "+esc(it.where)+".":"")}</div></div>`; }).join("")}</div>`).join("");
     pg.querySelectorAll("[data-wear]").forEach(el=>el.onclick=()=>{ const [slot,id]=el.dataset.wear.split(":"); if(!store.owned.includes(id)) return; accSet(slot,id); journalTab("wear"); }); }
-  else if(t==="set"){ pg.innerHTML=`<h2>Settings</h2><div class="sub">Art style, sound, graphics.</div><div class="btn" data-a="settings">Open game settings</div><h2 style="font-size:20px;margin-top:24px">Keys</h2>${[["WASD","Walk"],["Shift","Run"],["Space","Roll"],["E","Interact"],["M","Scroll (map)"],["J","Journal"],["F","Finder"],["H","Paper horse"],["T","Sled"],["Q","Ink brush"]].map(([k,n])=>`<div class="row"><div class="key" style="min-width:56px">${k}</div><div>${n}</div></div>`).join("")}`; } }
+  else if(t==="set"){ pg.innerHTML=`<h2>Settings</h2><div class="sub">Art style, sound, graphics.</div><div class="btn" data-a="settings">Open game settings</div><div class="btn" data-a="tsam">Character: ${(store.toonSam===false)?"Paper cutout":"3D samurai"} · switch</div><h2 style="font-size:20px;margin-top:24px">Keys</h2>${[["WASD","Walk"],["Shift","Run"],["Space","Roll"],["E","Interact"],["M","Scroll (map)"],["J","Journal"],["F","Finder"],["H","Paper horse"],["T","Sled"],["Q","Ink brush"]].map(([k,n])=>`<div class="row"><div class="key" style="min-width:56px">${k}</div><div>${n}</div></div>`).join("")}`; } }
 
 // ---------- speech bubbles, Tsushima style: the line floats over whoever is talking, replies sit at the bottom ----------
 let _bubInit=false; function bubInit(){ if(_bubInit) return; _bubInit=true; const st=document.createElement("style"); st.textContent=`
@@ -4202,7 +4202,134 @@ function climbFrame(dt,moving){ const p=player.position, e=1; const gr=Math.hypo
 function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,ACT.wave-dt);
   if(zone==="world"&&pmode==="walk") climbFrame(dt,speedNow>.3); else { CLIMB.on=false; CLIMB.ring&&CLIMB.ring.classList.remove("show"); } }
 
-const FRAME_SYS=[v62Frame,townFrame,horseFx,paperAnimFrame,dogFrame,handLanternFrame,paperTintFrame,craneFrame,memoryFrame,inkbarFrame,finderFrame,rideFrame,inkFrame,dlgBubbleFrame,cullFrame,footFrame,animFrame];
+/* ===================== v65: 3D toon samurai as the player ===================== */
+const TSAM={on:false,ready:false,m:null,mixer:null,A:{},bones:{},yaw:Math.PI,spd:0,last:new THREE.Vector3(),air:0,fallY:0,move:null,mw:0,lsw:{ax:0,az:0,vx:0,vz:0},ph:null,us:1};
+function tsamWanted(){ try{ return store.toonSam!==false; }catch(e){ return true; } }
+const TSAM_PAT={Kimono:1,Hakama:2,Red_accent:3,Hat:4};
+function tsamMat(src,us){ const n=src.name||""; const skin=/Skin/.test(n), em=/emis/i.test(n);
+  const m=new THREE.MeshToonMaterial({color:src.color.clone(),gradientMap:gm});
+  if(em){ m.emissive=src.color.clone(); m.emissiveIntensity=.9; }
+  if(skin){ m.emissive=src.color.clone(); m.emissiveIntensity=.32; }        // faces stay bright: no hard grey band
+  const pat=TSAM_PAT[n]||0;
+  m.userData.rim={value:new THREE.Color("#ffe6c8")};
+  m.onBeforeCompile=sh=>{ sh.uniforms.uPat={value:pat}; sh.uniforms.uUs={value:us}; sh.uniforms.uRim=m.userData.rim;
+    sh.vertexShader="varying vec3 vRestP;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\nvRestP=position;");
+    sh.fragmentShader="varying vec3 vRestP; uniform float uPat; uniform float uUs; uniform vec3 uRim;\n"+sh.fragmentShader
+      .replace("#include <color_fragment>",`#include <color_fragment>
+ { vec3 p=vRestP/uUs; vec2 q=vec2(p.x+p.z*.7,p.y);
+   if(uPat==1.){ vec2 g=fract(q*15.); float c=step(abs(g.x-.5),.05)*step(abs(g.y-.5),.2)+step(abs(g.y-.5),.05)*step(abs(g.x-.5),.2); diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*1.8+.07,clamp(c,0.,1.)*.6); }
+   if(uPat==2.){ vec2 s=q*vec2(7.,7.); float row=floor(s.y); vec2 cell=fract(vec2(s.x+mod(row,2.)*.5,s.y)); float d=length(cell-vec2(.5,0.)); float r=fract(d*3.2); float l=step(.8,r)*step(d,.95); diffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*1.7+.06,l*.7); }
+   if(uPat==3.){ vec2 s=q*13.; float l=step(.88,max(fract(s.x+s.y*.5),fract(s.y))); diffuseColor.rgb*=1.-l*.3; }
+   if(uPat==4.){ float a=atan(p.x,p.z); float l=step(.7,fract(a*9.55)); float rr=step(.85,fract(length(p.xz)*22.)); diffuseColor.rgb*=1.-(l*.18+rr*.14); } }`)
+      .replace("#include <opaque_fragment>",`{ vec3 vd=normalize(vViewPosition); float rim=pow(1.-max(dot(normalize(normal),vd),0.),3.); outgoingLight+=uRim*step(.42,rim)*.32; }
+#include <opaque_fragment>`); };
+  return m; }
+async function tsamInit(){ if(TSAM.loading||TSAM.ready) return; TSAM.loading=true;
+  try{ const {GLTFLoader}=await import("three/addons/loaders/GLTFLoader.js"); const gl=await new GLTFLoader().loadAsync("assets/samurai.glb");
+    let moves=[]; try{ moves=await (await fetch("assets/samurai_moves.json")).json(); }catch(e){}
+    const m=gl.scene; let us=1; m.traverse(o=>{ if(o.isSkinnedMesh&&o.geometry){ o.geometry.computeBoundingBox(); const bb=o.geometry.boundingBox; us=Math.max(us*0,(bb.max.y-bb.min.y)/1.95)||1; } });
+    TSAM.us=us;
+    m.traverse(o=>{ if(o.isBone) TSAM.bones[o.name.replace("mixamorig","").replace(":","")]=o;
+      if(!o.isMesh) return; o.material=tsamMat(o.material,us); o.castShadow=true; o.receiveShadow=false; o.frustumCulled=false;
+      if(o.isSkinnedMesh&&!/Eye|Blush|Brow/.test(o.material.name)){ const om=new THREE.MeshToonMaterial({color:"#1a1420",side:THREE.BackSide}); const th=.0065*us;
+        om.onBeforeCompile=sh=>{ sh.vertexShader=sh.vertexShader.replace("#include <project_vertex>","transformed+=normalize(objectNormal)*"+th.toFixed(5)+";\n#include <project_vertex>"); };
+        const ol=new THREE.SkinnedMesh(o.geometry,om); ol.bind(o.skeleton,o.bindMatrix); ol.frustumCulled=false; ol.userData.isOutline=true; o.parent.add(ol); } });
+    m.scale.setScalar(1.13); m.userData.keep=true; m.userData.air=true; scene.add(m); TSAM.m=m;
+    const mixer=new THREE.AnimationMixer(m); TSAM.mixer=mixer;
+    for(const c of gl.animations){ const cl=c.clone(); if(/walk|run/.test(cl.name)) cl.tracks.forEach(t=>{ if(/Hips\.position/.test(t.name)){ const v=t.values; for(let i=0;i<v.length;i+=3){ v[i]=0; v[i+2]=0; } } });
+      const a=mixer.clipAction(cl); a.play(); a.setEffectiveWeight(cl.name==="idle"?1:0); TSAM.A[cl.name]=a; }
+    for(const j of moves){ try{ const cl=THREE.AnimationClip.parse({name:j.name,duration:j.duration,tracks:j.tracks}); const a=mixer.clipAction(cl);
+      if(j.name==="climbloop"||j.name==="hurt"||j.name==="shimmy") a.setLoop(THREE.LoopRepeat); else { a.setLoop(THREE.LoopOnce); a.clampWhenFinished=true; }
+      a.setEffectiveWeight(0); TSAM.A[j.name]=a; }catch(e){ console.warn("tsam clip",j.name,e); } }
+    TSAM.last.copy(player.position); TSAM.yaw=player.rotation.y; TSAM.ready=true;
+    try{ HANDL.g.scale.setScalar(.62); }catch(e){}
+  }catch(e){ console.warn("[tsam] load failed, keeping the paper samurai",e); }
+  TSAM.loading=false; }
+function tsamPlay(n,from=0,speed=1){ const A=TSAM.A; if(!A[n]) return; if(TSAM.move&&TSAM.move!==n&&A[TSAM.move]) A[TSAM.move].stop(); const a=A[n]; a.reset(); a.time=from; a.timeScale=speed; a.play(); TSAM.move=n; }
+const _tq=new THREE.Quaternion(),_tq2=new THREE.Quaternion(),_tv=new THREE.Vector3(),_tv2=new THREE.Vector3();
+function tsamAim(name,dir,amt){ const b=TSAM.bones[name]; if(!b||amt<=0) return; const d=dir.clone().normalize().applyAxisAngle(_pup,TSAM.yaw);
+  b.updateWorldMatrix(true,false); b.getWorldQuaternion(_tq); const cur=_tv.set(0,1,0).applyQuaternion(_tq);
+  const tgt=new THREE.Quaternion().setFromUnitVectors(cur,d).multiply(_tq.clone()); b.parent.getWorldQuaternion(_tq2); b.quaternion.slerp(_tq2.invert().multiply(tgt),amt); b.updateMatrixWorld(true); }
+const TSAM_SIT={LeftUpLeg:new THREE.Vector3(.55,-.2,.85),RightUpLeg:new THREE.Vector3(-.55,-.2,.85),LeftLeg:new THREE.Vector3(.25,-1,.1),RightLeg:new THREE.Vector3(-.25,-1,.1),LeftArm:new THREE.Vector3(.3,-.6,.75),RightArm:new THREE.Vector3(-.3,-.6,.75),LeftForeArm:new THREE.Vector3(.05,-.2,1),RightForeArm:new THREE.Vector3(-.05,-.2,1)};
+const TSAM_TUCK={Spine:new THREE.Vector3(0,.6,.9),LeftUpLeg:new THREE.Vector3(.1,.3,1),RightUpLeg:new THREE.Vector3(-.1,.3,1),LeftLeg:new THREE.Vector3(0,-1,-.3),RightLeg:new THREE.Vector3(0,-1,-.3),LeftArm:new THREE.Vector3(.3,-.3,.9),RightArm:new THREE.Vector3(-.3,-.3,.9)};
+function tsamFrame(dt){
+  const want=tsamWanted(); if(want&&!TSAM.ready) tsamInit();
+  const on=want&&TSAM.ready; if(TSAM.on!==on){ TSAM.on=on; if(TSAM.m) TSAM.m.visible=on; if(!on){ try{ HANDL.g.scale.setScalar(1); }catch(e){} } else { try{ HANDL.g.scale.setScalar(.62); }catch(e){} } }
+  if(!on) return;
+  const m=TSAM.m, A=TSAM.A, show=PAPERSP.p?PAPERSP.p.visible:true; if(PAPERSP.p) PAPERSP.p.visible=false; pRig.visible=false;
+  m.visible=show&&!(typeof pmode!=="undefined"&&(pmode==="koi"||pmode==="boat"));
+  const pp=player.position; const dx=pp.x-TSAM.last.x, dz=pp.z-TSAM.last.z, dy=pp.y-TSAM.last.y; const hd=Math.hypot(dx,dz)/Math.max(dt,1e-3);
+  const tele=hd>40; TSAM.last.copy(pp); if(tele){ TSAM.spd=0; }
+  const riding=typeof RIDE!=="undefined"&&RIDE.mode==="horse"; const climbing=typeof CLIMB!=="undefined"&&CLIMB.on; const rolling=typeof ROLL!=="undefined"&&ROLL.t>=0;
+  TSAM.spd+=((tele||riding||climbing)?0:Math.min(9,hd)-TSAM.spd)*(1-Math.exp(-dt*9));
+  if(!tele&&hd>.4&&!climbing){ const ty=Math.atan2(dx,dz); let d=ty-TSAM.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); TSAM.yaw+=d*(1-Math.exp(-dt*12)); }
+  // air & landing
+  let ground=pp.y; try{ ground=H(pp.x,pp.z); }catch(e){}
+  const inAir=!riding&&!climbing&&pp.y-ground>.45&&dy*1>-99;
+  if(inAir){ if(TSAM.air===0) TSAM.fallY=pp.y; TSAM.air+=dt; TSAM.fallY=Math.max(TSAM.fallY,pp.y); }
+  else if(TSAM.air>0){ const drop=TSAM.fallY-pp.y; if(drop>2.6&&A.hland) tsamPlay("hland",.2,1.3); else if(TSAM.move==="rjump") TSAM.move=null; TSAM.air=0; }
+  if(inAir&&TSAM.air>.12&&A.rjump){ if(TSAM.move!=="rjump") tsamPlay("rjump",.25,1); if(A.rjump.time>.52) A.rjump.time=.52; }
+  if(climbing&&A.climbloop){ if(TSAM.move!=="climbloop") tsamPlay("climbloop",0,1); A.climbloop.timeScale=Math.min(1.4,Math.abs(dy)/Math.max(dt,1e-3)*.9); }
+  else if(TSAM.move==="climbloop") TSAM.move=null;
+  if(TSAM.move==="hland"&&!A.hland.isRunning()) TSAM.move=null;
+  // locomotion underneath, one-shot move layered on top
+  TSAM.mw+=((TSAM.move?1:0)-TSAM.mw)*(1-Math.exp(-dt*14)); const L=1-TSAM.mw, s=TSAM.spd;
+  const wI=Math.max(0,1-s/2.2), wR=Math.min(1,Math.max(0,(s-2.6)/3.4)), wW=Math.max(0,1-wI-wR);
+  A.idle.setEffectiveWeight(wI*L); A.walk.setEffectiveWeight(wW*L); A.run.setEffectiveWeight(wR*L);
+  A.walk.timeScale=Math.max(.6,s/1.9); A.run.timeScale=Math.max(.75,s/6.2);
+  for(const n of ["rjump","hland","climbloop","vault","climbup","shimmy","hurt"]) if(A[n]) A[n].setEffectiveWeight(TSAM.move===n?TSAM.mw:0);
+  TSAM.mixer.update(dt);
+  m.position.copy(pp); m.rotation.set(0,TSAM.yaw,0); m.updateMatrixWorld(true);
+  if(riding) for(const k in TSAM_SIT) tsamAim(k,TSAM_SIT[k],.85);
+  if(rolling){ const u=Math.min(1,ROLL.t/ROLL_T); for(const k in TSAM_TUCK) tsamAim(k,TSAM_TUCK[k],Math.sin(u*Math.PI)); const ax=_tv2.set(Math.cos(TSAM.yaw),0,-Math.sin(TSAM.yaw)); m.position.y+=.55*Math.sin(u*Math.PI)*.6; m.quaternion.setFromAxisAngle(ax,u*Math.PI*2).multiply(_tq.setFromAxisAngle(_pup,TSAM.yaw)); }
+  // the lantern hangs from his right hand and swings
+  try{ const h=TSAM.bones.RightHand; if(h&&HANDL.g.visible){ const hp=h.getWorldPosition(_tv2); if(!TSAM.ph) TSAM.ph=hp.clone(); const ax=(hp.x-TSAM.ph.x)/Math.max(dt,1e-3), az=(hp.z-TSAM.ph.z)/Math.max(dt,1e-3); TSAM.ph.copy(hp);
+      const S=TSAM.lsw; S.vx+=(-S.ax*38-S.vx*4.5)*dt-(ax-(S.lx||0))*.9; S.vz+=(-S.az*38-S.vz*4.5)*dt-(az-(S.lz||0))*.9; S.lx=ax; S.lz=az; S.ax=clamp(S.ax+S.vx*dt,-.7,.7); S.az=clamp(S.az+S.vz*dt,-.7,.7);
+      HANDL.g.position.copy(hp); HANDL.g.position.y-=.06+(LANT.raise>0?-.55:0); HANDL.g.rotation.set(S.az,0,-S.ax); HANDL.light.position.copy(HANDL.g.position); HANDL.light.position.y-=.1; } }catch(e){}
+}
+/* ===================== v65: painted sky: stepped-tone cumulus + deeper stars ===================== */
+const SKY2={clouds:[],ready:false};
+function sky2Init(){ if(SKY2.ready) return; SKY2.ready=true;
+  let merge=null; import("three/addons/utils/BufferGeometryUtils.js").then(U=>{ merge=U.mergeGeometries;
+  const mat=new THREE.ShaderMaterial({uniforms:{uSun:{value:new THREE.Vector3(0,1,0)},uLit:{value:new THREE.Color()},uMid:{value:new THREE.Color()},uShade:{value:new THREE.Color()},uRim:{value:new THREE.Color()}},
+    vertexShader:"varying vec3 vN; varying vec3 vW; void main(){ vN=normalize(mat3(modelMatrix)*normal); vec4 w=modelMatrix*vec4(position,1.); vW=w.xyz; gl_Position=projectionMatrix*viewMatrix*w; }",
+    fragmentShader:`uniform vec3 uSun; uniform vec3 uLit; uniform vec3 uMid; uniform vec3 uShade; uniform vec3 uRim; varying vec3 vN; varying vec3 vW;
+float h(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); }
+float n3(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z); }
+void main(){ vec3 n=normalize(vN); float l=dot(n,normalize(uSun))*.5+.5; l+=(n3(vW*.013)-.5)*.26; l+=n.y*.22;
+ float b= l>.76?1.: l>.56?.66: l>.36?.33: 0.;
+ vec3 c= b>.9?uLit: b>.5?mix(uMid,uLit,.35): b>.2?uMid: uShade;
+ vec3 vd=normalize(cameraPosition-vW); float rim=1.-max(dot(n,vd),0.); c=mix(c,uRim,step(.72,rim)*step(.45,l)*.55);
+ gl_FragColor=vec4(c,1.);
+#include <colorspace_fragment>
+}`,fog:false});
+  SKY2.mat=mat; const R=(a,b)=>a+Math.random()*(b-a);
+  for(let k=0;k<18;k++){ const parts=[]; const big=k<7, N=big?24:12; const W=big?R(120,190):R(55,95);
+    for(let i=0;i<N;i++){ const g=new THREE.IcosahedronGeometry(1,3); const u=i/N-.5; const r=W*R(.26,.44)*(1-Math.abs(u)*.7); const x=u*W*1.7+R(-W*.12,W*.12), y=Math.max(0,R(0,W*.75)*(1-Math.abs(u)*1.5)), z=R(-W*.22,W*.22);
+      const pos=g.attributes.position; for(let v=0;v<pos.count;v++){ let px=pos.getX(v),py=pos.getY(v),pz=pos.getZ(v); const wob=1+.07*Math.sin(px*3+i)*Math.sin(pz*3+k)+.05*Math.sin(py*4); px*=r*wob; py*=r*wob*.95; pz*=r*wob; py=Math.max(py,-r*.12); pos.setXYZ(v,px+x,py+y,pz+z); }
+      g.computeVertexNormals(); parts.push(g); }
+    const geo=merge(parts); geo.computeVertexNormals(); const c=new THREE.Mesh(geo,mat); c.userData.keep=true; c.userData.air=true; c.frustumCulled=false;
+    const a=R(0,TAU), d=R(420,680); c.userData.a=a; c.userData.d=d; c.userData.y=R(40,120); c.userData.sp=R(.004,.012)*(Math.random()<.5?-1:1); c.rotation.y=R(0,TAU); scene.add(c); SKY2.clouds.push(c); }
+  // a second, denser star field with varied sizes for clear nights
+  const sg=new THREE.BufferGeometry(), P=[]; for(let i=0;i<2600;i++){ const th=Math.random()*TAU, ph=Math.asin(Math.random()*.98+.02); P.push(Math.cos(th)*Math.cos(ph)*780,Math.sin(ph)*780,Math.sin(th)*Math.cos(ph)*780); }
+  sg.setAttribute("position",new THREE.Float32BufferAttribute(P,3)); SKY2.stars=new THREE.Points(sg,new THREE.PointsMaterial({color:0xdfe6ff,size:1.3,sizeAttenuation:false,transparent:true,opacity:0,fog:false,depthWrite:false})); SKY2.stars.userData.keep=true; SKY2.stars.userData.air=true; scene.add(SKY2.stars);
+  }).catch(e=>console.warn("[sky2]",e)); }
+const _sc1=new THREE.Color(),_sc2=new THREE.Color(),_sc3=new THREE.Color(),_sd=new THREE.Vector3();
+function sky2Frame(dt){ sky2Init(); if(!SKY2.mat) return; const U=SKY2.mat.uniforms, top=skyMat.uniforms.top.value, bot=skyMat.uniforms.bottom.value, nt=clamp(night,0,1);
+  // deepen nights toward indigo / violet like a painted night sky
+  if(!SKY2.wt||!top.equals(SKY2.wt)||!bot.equals(SKY2.wb)){ SKY2.bt=top.clone(); SKY2.bb=bot.clone(); }   // applyTime changed the sky: take it as the new base
+  top.copy(SKY2.bt).lerp(_sc1.set("#141236"),nt*.55); bot.copy(SKY2.bb).lerp(_sc2.set("#3a3468"),nt*.45); SKY2.wt=top.clone(); SKY2.wb=bot.clone();
+  _sd.copy(nt>.5?moonSpr.position:sunSpr.position).sub(camera.position).normalize(); U.uSun.value.copy(_sd);
+  const dusk=clamp(1-Math.abs(_sd.y)*4,0,1)*(1-nt);
+  U.uLit.value.set("#fffaf0").lerp(_sc1.set("#ffc8a0"),dusk*.7).lerp(_sc2.set("#7c7fc8"),nt);
+  U.uMid.value.copy(top).lerp(_sc1.set("#d8deea"),.55*(1-nt)).lerp(_sc2.set("#ff9a8a"),dusk*.35).lerp(_sc3.set("#4a4a8a"),nt*.8);
+  U.uShade.value.copy(top).lerp(bot,.3).multiplyScalar(.85).lerp(_sc1.set("#9aa6c8"),.4*(1-nt)).lerp(_sc2.set("#262552"),nt*.85);
+  U.uRim.value.set("#ffffff").lerp(_sc1.set("#ffd8b0"),dusk).lerp(_sc2.set("#b8c4ff"),nt);
+  const vis=zone==="world"; if(SKY2.clouds.length&&!SKY2.hidOld){ SKY2.hidOld=true; try{ cloudGroup.children.forEach(o=>{ if(o.position.y>40) o.visible=false; }); }catch(e){} try{ CLOUDS.forEach(c=>{ c.sp.material.opacity=0; }); }catch(e){} }
+  for(const c of SKY2.clouds){ c.userData.a+=c.userData.sp*dt; c.position.set(camera.position.x+Math.cos(c.userData.a)*c.userData.d,c.userData.y,camera.position.z+Math.sin(c.userData.a)*c.userData.d); c.visible=vis; }
+  if(SKY2.stars){ SKY2.stars.position.copy(camera.position); SKY2.stars.material.opacity=clamp((nt-.35)*1.6,0,1)*(.75+.25*Math.sin(performance.now()*.0013)); SKY2.stars.visible=vis; } }
+
+const FRAME_SYS=[v62Frame,townFrame,horseFx,paperAnimFrame,dogFrame,handLanternFrame,paperTintFrame,craneFrame,memoryFrame,inkbarFrame,finderFrame,rideFrame,inkFrame,dlgBubbleFrame,cullFrame,footFrame,animFrame,tsamFrame,sky2Frame];
 
 /* ===================== v57: accessories. Hats, scarves and charms you find in the world, worn from the journal's Wardrobe ===================== */
 const ACC_DEF={

@@ -92,3 +92,20 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 - Controller support (needed for Steam Deck).
 - Better terrain in general. Withered Wood colour is boring. Big terrains need "filler": shrines, villages, small discoveries.
 - Gabriel: don't be a BotW rip; it's its own game.
+
+## Colour restoration + spirit purging (approved 2026-11-26)
+- Home village is the only place in full colour; outside the gates the world is ink-wash. Purging possessed villages floods colour back (mockup: ink shader with colour pockets + red corruption veins).
+- Possessed villages: villagers as ink silhouettes on loops, black lanterns, red veins; purge -> colour burst, life returns.
+- Purge = enter the spirit's mind, play its PAST LIFE (memory in its own art style), find the moment it broke, fight its hate there; some can be forgiven (feeds endings).
+- Chapter/timeline bosses (Wukong-style): after the past-life section, a MICRO-SCALE fight inside the being itself - on its bamboo hat or sword at 1:100, inside its gut, between brain neuroconnectors, inside a single neuron at 1:10000. "Fighting the spirit itself."
+- Order of work agreed: movement -> combat -> storyline -> perfect one chapter at a time -> more map. Cliff-style layered depth (mist between depth layers) instead of flat BOTW map.
+
+## Audio / voice (future project)
+- Gabriel + friends will do voice acting in-house; process with filters/distortion/edits so each character sounds unique. Audio is its own future project.
+
+## Marketing (future)
+- Launch a social account; short-form clips showing off the game to drive traction to a demo page.
+
+## Combat feel: impact frames (requested 2026-11-26)
+- Hit-stop (freeze 2-6 frames on heavy hits), 1-2 frame ink-inversion impact frame (black/white silhouette flash, red accent), radial speed lines, camera punch/shake, brush-stroke slash trails. Bigger for finishers/boss phase breaks.
+- Rooftop running/parkour like old Mirror's Edge / Tsushima / Assassin's Creed: rooftop routes in Yukimura + towns.
