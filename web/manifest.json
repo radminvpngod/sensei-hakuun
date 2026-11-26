@@ -1,7 +1,7 @@
 {
- "version": 67,
+ "version": 68,
  "shellApi": 2,
- "notes": "Samurai pass 3: the waist now flows straight from chest into a wider hakama (no pinch), an older, sharper face (narrower determined eyes, heavier lids, angled brows, no cartoon blush), a longer jaw, and richer hand-made textures: worn indigo kimono with white sashiko stitching, pinstriped slate hakama, maroon brocade obi with gold lattice, sun-faded crimson scarf, travel-stained leg wraps. New: a family crest on the back of his kimono.",
+ "notes": "Samurai pass 4: sculpted jaw and chin with cheekbones; more costume detail (kimono front overlap, obi bow at the back, hakama ties knotted at the front, cuffs, red sandal straps, mended patches with stitching). His clothes now react: rolling and hard landings get him dirty (mud creeps up from the hem), the snowfields pile snow on his hat and shoulders (faster in storms), melting snow leaves him wet and darker until he dries, water washes him clean, and his scarf flutters with speed and wind.",
  "files": [
   "brain-client.js",
   "core.js",

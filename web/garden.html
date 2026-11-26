@@ -4203,7 +4203,7 @@ function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,
   if(zone==="world"&&pmode==="walk") climbFrame(dt,speedNow>.3); else { CLIMB.on=false; CLIMB.ring&&CLIMB.ring.classList.remove("show"); } }
 
 /* ===================== v65: 3D toon samurai as the player ===================== */
-const TSAM={on:false,ready:false,m:null,mixer:null,A:{},bones:{},yaw:Math.PI,spd:0,last:new THREE.Vector3(),air:0,fallY:0,move:null,mw:0,lsw:{ax:0,az:0,vx:0,vz:0},ph:null,us:1};
+const TSAM={U:{uDirt:{value:0},uSnow:{value:0},uWet:{value:0},uTime:{value:0},uWind:{value:0}},on:false,ready:false,m:null,mixer:null,A:{},bones:{},yaw:Math.PI,spd:0,last:new THREE.Vector3(),air:0,fallY:0,move:null,mw:0,lsw:{ax:0,az:0,vx:0,vz:0},ph:null,us:1};
 function tsamWanted(){ try{ return store.toonSam!==false; }catch(e){ return true; } }
 const TSAM_TEX={Kimono:["kimono",1.5,"#ffffff",0],Hakama:["hakama",1.7,"#ffffff",0],Red_accent:["red",2.6,"#ffffff",0],Scarf:["scarf",1.6,"#ffffff",0],Wrap:["wrap",2.6,"#ffffff",0],Tekko:["wrap",2.6,"#4a3e58",0],Hat:["straw",1,"#ffffff",1],Sandal:["wood",4,"#ffffff",0]};
 const TSAM_TL=new THREE.TextureLoader(), TSAM_TC={};
@@ -4215,16 +4215,24 @@ function tsamMat(src,us){ const n=src.name||""; const skin=/Skin/.test(n), em=/e
   if(em){ m.emissive=src.color.clone(); m.emissiveIntensity=.9; }
   if(skin){ m.emissive=src.color.clone(); m.emissiveIntensity=.34; }
   const T=TSAM_TEX[n]; m.userData.rim={value:new THREE.Color("#ffe6c8")};
-  m.onBeforeCompile=sh=>{ sh.uniforms.uUs={value:us}; sh.uniforms.uRim=m.userData.rim; sh.uniforms.uTexOn={value:T?1:0}; sh.uniforms.uTex={value:T?tsamTex(T[0]):null};
+  const kDirt=face?.18:(/Hat/.test(n)?.5:1), flut=/Scarf/.test(n)?1:0;
+  m.onBeforeCompile=sh=>{ Object.assign(sh.uniforms,TSAM.U); sh.uniforms.uKD={value:kDirt}; sh.uniforms.uFlut={value:flut}; sh.uniforms.uUs={value:us}; sh.uniforms.uRim=m.userData.rim; sh.uniforms.uTexOn={value:T?1:0}; sh.uniforms.uTex={value:T?tsamTex(T[0]):null};
     sh.uniforms.uTS={value:T?T[1]:1}; sh.uniforms.uTint={value:new THREE.Color(T?T[2]:"#ffffff")}; sh.uniforms.uMode={value:T?T[3]:0};
-    sh.vertexShader="varying vec3 vRestP; varying vec3 vRestN;\n"+sh.vertexShader.replace("#include <begin_vertex>","#include <begin_vertex>\nvRestP=position; vRestN=normal;");
-    sh.fragmentShader="varying vec3 vRestP; varying vec3 vRestN; uniform float uUs; uniform vec3 uRim; uniform float uTexOn; uniform sampler2D uTex; uniform float uTS; uniform vec3 uTint; uniform float uMode;\n"+sh.fragmentShader
+    sh.vertexShader="varying vec3 vRestP; varying vec3 vRestN; uniform float uTime; uniform float uWind; uniform float uFlut; uniform float uUs;\n"+sh.vertexShader.replace("#include <begin_vertex>",`#include <begin_vertex>
+vRestP=position; vRestN=normal;
+if(uFlut>.5){ vec3 q=position/uUs; float far=clamp((abs(q.x)+q.z*.6-.08)*1.6,0.,1.); float w=(.012+uWind*.05)*far;
+  transformed+=vec3(sin(uTime*7.+q.x*18.)*.4, sin(uTime*9.+q.x*24.)*1., cos(uTime*6.+q.x*16.)*.7)*w*uUs; }`);
+    sh.fragmentShader="varying vec3 vRestP; varying vec3 vRestN; uniform float uDirt; uniform float uSnow; uniform float uWet; uniform float uKD; float th(vec3 p){ return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453); } float tn(vec3 p){ vec3 i=floor(p),f=fract(p); f=f*f*(3.-2.*f); return mix(mix(mix(th(i),th(i+vec3(1,0,0)),f.x),mix(th(i+vec3(0,1,0)),th(i+vec3(1,1,0)),f.x),f.y),mix(mix(th(i+vec3(0,0,1)),th(i+vec3(1,0,1)),f.x),mix(th(i+vec3(0,1,1)),th(i+vec3(1,1,1)),f.x),f.y),f.z); } uniform float uUs; uniform vec3 uRim; uniform float uTexOn; uniform sampler2D uTex; uniform float uTS; uniform vec3 uTint; uniform float uMode;\n"+sh.fragmentShader
       .replace("#include <color_fragment>",`#include <color_fragment>
  if(uTexOn>.5){ vec3 p=vRestP/uUs*uTS; vec3 t;
    if(uMode>.5){ float a=atan(p.x,p.z)/6.2832; t=texture2D(uTex,vec2(a*10.,length(p.xz)*1.4)).rgb; }
    else { vec3 w=pow(abs(normalize(vRestN)),vec3(4.)); w/=(w.x+w.y+w.z); t=texture2D(uTex,p.zy).rgb*w.x+texture2D(uTex,p.xz).rgb*w.y+texture2D(uTex,p.xy).rgb*w.z; }
-   diffuseColor.rgb=t*uTint; }`)
-      .replace("#include <opaque_fragment>",`{ vec3 vd=normalize(vViewPosition); float rim=pow(1.-max(dot(normalize(normal),vd),0.),3.); outgoingLight+=uRim*step(.42,rim)*.3; }
+   diffuseColor.rgb=t*uTint; }
+ { vec3 q=vRestP/uUs; float a=tn(q*9.), b=tn(q*23.+7.); float low=clamp((1.-q.y)/1.,0.,1.);
+   float dm=smoothstep(.4,.66,a*.55+b*.45+low*.75-(1.-uDirt)*1.1)*uKD; diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.27,.2,.14)*(.7+b*.6),dm*.92);
+   float up=normalize(vRestN).y; float sm=smoothstep(.45,.75,up*.85+a*.35+b*.15-(1.-uSnow)*1.15); diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.93,.96,1.),sm);
+   diffuseColor.rgb*=1.-uWet*.32*(.65+a*.35)*(1.-sm); }`)
+      .replace("#include <opaque_fragment>",`{ vec3 vd=normalize(vViewPosition); float rim=pow(1.-max(dot(normalize(normal),vd),0.),3.); outgoingLight+=uRim*step(.42,rim)*(.3+uWet*.35); }
 #include <opaque_fragment>`); };
   return m; }
 async function tsamInit(){ if(TSAM.loading||TSAM.ready) return; TSAM.loading=true;
@@ -4266,11 +4274,18 @@ function tsamFrame(dt){
   const riding=typeof RIDE!=="undefined"&&RIDE.mode==="horse"; const climbing=typeof CLIMB!=="undefined"&&CLIMB.on; const rolling=typeof ROLL!=="undefined"&&ROLL.t>=0;
   TSAM.spd+=((tele||riding||climbing)?0:Math.min(9,hd)-TSAM.spd)*(1-Math.exp(-dt*9));
   if(!tele&&hd>.4&&!climbing){ const ty=Math.atan2(dx,dz); let d=ty-TSAM.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); TSAM.yaw+=d*(1-Math.exp(-dt*12)); }
+  // the clothes remember: dirt from rolls and hard landings, snow in the snowfields, wet when it melts
+  { const U=TSAM.U, inSnow=pp.x>440||(pp.x>185&&zone==="world"), storm=pp.x>440?SFX.storm||0:0, inWater=pmode==="koi"||pmode==="boat";
+    if(rolling) U.uDirt.value=Math.min(1,U.uDirt.value+dt*.9);
+    U.uDirt.value=Math.max(0,U.uDirt.value-dt*(inWater?.4:.0025));
+    if(inSnow) U.uSnow.value=Math.min(.95,U.uSnow.value+dt*(.006+storm*.04)); else if(U.uSnow.value>0){ const mlt=Math.min(U.uSnow.value,dt*.03); U.uSnow.value-=mlt; U.uWet.value=Math.min(1,U.uWet.value+mlt*1.4); }
+    if(inWater) U.uWet.value=1; U.uWet.value=Math.max(0,U.uWet.value-dt*.008);
+    U.uTime.value=performance.now()/1000; U.uWind.value=Math.min(1.2,storm*1.1+TSAM.spd*.06); }
   // air & landing
   let ground=pp.y; try{ ground=H(pp.x,pp.z); }catch(e){}
   const inAir=!riding&&!climbing&&pp.y-ground>.45&&dy*1>-99;
   if(inAir){ if(TSAM.air===0) TSAM.fallY=pp.y; TSAM.air+=dt; TSAM.fallY=Math.max(TSAM.fallY,pp.y); }
-  else if(TSAM.air>0){ const drop=TSAM.fallY-pp.y; if(drop>2.6&&A.hland) tsamPlay("hland",.2,1.3); else if(TSAM.move==="rjump") TSAM.move=null; TSAM.air=0; }
+  else if(TSAM.air>0){ const drop=TSAM.fallY-pp.y; if(drop>2.6){ TSAM.U.uDirt.value=Math.min(1,TSAM.U.uDirt.value+.18); if(A.hland) tsamPlay("hland",.2,1.3); } else if(TSAM.move==="rjump") TSAM.move=null; TSAM.air=0; }
   if(inAir&&TSAM.air>.12&&A.rjump){ if(TSAM.move!=="rjump") tsamPlay("rjump",.25,1); if(A.rjump.time>.52) A.rjump.time=.52; }
   if(climbing&&A.climbloop){ if(TSAM.move!=="climbloop") tsamPlay("climbloop",0,1); A.climbloop.timeScale=Math.min(1.4,Math.abs(dy)/Math.max(dt,1e-3)*.9); }
   else if(TSAM.move==="climbloop") TSAM.move=null;
