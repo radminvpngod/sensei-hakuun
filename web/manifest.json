@@ -1,7 +1,7 @@
 {
- "version": 61,
+ "version": 62,
  "shellApi": 2,
- "notes": "A real 3D UI: lacquered wood plaques with gold edges that lift and tilt when you hover and press down when clicked (with a wooden tok sound), a 3D floating title, the journal as a lacquered book that swings open and tilts with your mouse, coin-style tool badge and ens\u014d tokens, pill prompts and choices. Skis and a snowboard (in the ens\u014d): first person, Steep-style physics: gravity, carving, tuck and brake, real airtime off ridges, spins and tricks, wipeouts, a speed gauge and a speed vignette. First person on the horse (V toggles): A/D turn, W go, mouse to look around. No more Player 2: whichever controller you touch is you. The camera sits closer, over your shoulder.",
+ "notes": "Shirotae-machi becomes the Town of Ice Lanterns: hundreds of ice lanterns that glow at night, snow walls along the street, kamakura snow huts with candles inside, a giant Snow Koi sculpture at the gate (read its little sign), festival lanterns strung across the street, fluttering banners, chimney smoke, a roast-chestnut stall, snowmen, white storehouses, and houses of every size instead of a grid. Also: real mountain ranges ring the horizon, day and night, so the world never ends at a cut edge.",
  "files": [
   "brain-client.js",
   "core.js",
