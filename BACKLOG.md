@@ -109,3 +109,9 @@ Gabriel's ideas, parked until their phase comes up. Build order agreed on 2026-1
 ## Combat feel: impact frames (requested 2026-11-26)
 - Hit-stop (freeze 2-6 frames on heavy hits), 1-2 frame ink-inversion impact frame (black/white silhouette flash, red accent), radial speed lines, camera punch/shake, brush-stroke slash trails. Bigger for finishers/boss phase breaks.
 - Rooftop running/parkour like old Mirror's Edge / Tsushima / Assassin's Creed: rooftop routes in Yukimura + towns.
+
+## Spirit city: a parkour city to purge (Gabriel, 2026-11-26), map work, later
+- An ancient Japanese city taken over by evil spirits: tight, dense streets built for rooftop running (Assassin's Creed Unity / Tsushima feel).
+- Tiled roofs at varied heights, gaps you can leap, balconies and beams to hang from, temple walls with ledges, a pagoda to free-climb.
+- Purging it restores its colour district by district (ties into colour restoration above).
+- The v72 parkour system already works on any building collider (climb, hang, shimmy, mantle, vault, leap). The city just needs geometry laid out for it.

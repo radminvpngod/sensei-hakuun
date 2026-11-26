@@ -2405,7 +2405,7 @@ function showWhisper(msg,ms){ whisperBusy=true; whisperCur=msg; $("#whisperT").t
 $("#whisper").addEventListener("click",()=>{ $("#whisper").classList.remove("show"); openChat(); });
 let discT; function discover(d){ $("#discK").textContent=d.k; $("#discN").textContent=d.n; $("#disc").classList.add("show"); clearTimeout(discT); discT=setTimeout(()=>$("#disc").classList.remove("show"),3200);
   setTimeout(()=>{ whisper(d.line,9000); speak(d.line); },1800); chime(); }
-$("#hint").textContent = isTouch ? "Joystick to walk · 転 to roll · drag to look · 話 to talk to Sensei" : "Move the mouse to look · WASD walk · Shift run · Space roll · E interact";
+$("#hint").textContent = isTouch ? "Joystick to walk · 転 to roll · drag to look · 話 to talk to Sensei" : "Move the mouse to look · WASD walk · Shift run · Space roll (leap while running) · walk into walls to climb · E interact";
 
 /* ===================== audio: music + ambience ===================== */
 let actx=null, master=null, musicBus=null, soundOn=false, wfGain=null, crickGain=null, musicTimer=null, fluteTimer=null, crickTimer=null;
@@ -2720,7 +2720,7 @@ function poseFrame(dt,moving){ if(ROLL.t>=0){ rollPose(); return; } if(!POSE.kin
   else if(k==="offer"){ pUpper.rotation.x=.4*e; pRig.position.y=-.08*e; } }
 // ---- dodge roll: a basic Souls-style forward roll ----
 const ROLL={t:-1,dir:{x:0,z:1},cd:0}; const ROLL_T=.62;
-function startRoll(){ if(!entered||chatOpen||uiBlock()||pmode!=="walk"||zone==="sky"||ROLL.t>=0||ROLL.cd>0||TRAVELING||(typeof ADV!=="undefined"&&ADV.onTop)) return;
+function startRoll(){ if(entered&&!chatOpen&&!uiBlock()&&pkSpace()) return; if(PK.air||PK.mode) return; if(!entered||chatOpen||uiBlock()||pmode!=="walk"||zone==="sky"||ROLL.t>=0||ROLL.cd>0||TRAVELING||(typeof ADV!=="undefined"&&ADV.onTop)) return;
   let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+joy.x+PAD1.x, iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+PAD1.y;
   let dx=Math.sin(player.rotation.y), dz=Math.cos(player.rotation.y);
   if(Math.hypot(ix,iz)>.2){ const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x; dx=rx*ix-fwd.x*iz; dz=rz*ix-fwd.z*iz; const l=Math.hypot(dx,dz); dx/=l; dz/=l; }
@@ -2747,7 +2747,7 @@ function collide(p){
   for(const c of circles){ if(c.peak&&(ADV.onTop||pmode!=="walk")) continue; pushC(p,c); }
   blkCollide(p,player.position.y);
   for(const b of boxes){ const dx=p.x-b.x, dz=p.z-b.z; if(Math.abs(dx)>b.hw+b.hd+1||Math.abs(dz)>b.hw+b.hd+1) continue; let lx=dx*b.c-dz*b.s, lz=dx*b.s+dz*b.c; const hx=b.hw+PRAD, hz=b.hd+PRAD;
-    if(Math.abs(lx)<hx&&Math.abs(lz)<hz){ if(hx-Math.abs(lx)<hz-Math.abs(lz)) lx=Math.sign(lx||1)*hx; else lz=Math.sign(lz||1)*hz; p.x=b.x+lx*b.c+lz*b.s; p.z=b.z-lx*b.s+lz*b.c; } }
+    if(Math.abs(lx)<hx&&Math.abs(lz)<hz){ if(pkOnTop(b,lx,lz,player.position.y)) continue; if(hx-Math.abs(lx)<hz-Math.abs(lz)) lx=Math.sign(lx||1)*hx; else lz=Math.sign(lz||1)*hz; p.x=b.x+lx*b.c+lz*b.s; p.z=b.z-lx*b.s+lz*b.c; } }
   const ea=pondEllipse.a+PRAD, eb=pondEllipse.b+PRAD, e=Math.hypot(p.x/ea,p.z/eb); if(e<1&&e>1e-4){ p.x/=e; p.z/=e; }
   roamLimit(p);   /* v55: go anywhere the land lets you */
 }
@@ -2758,6 +2758,7 @@ function groundY(x,z){ if(zone==="sky"){ const y=skyWalk(x,z); return y===null?S
   let y=H(x,z); if(streamDist(x,z)<1.6) y=Math.max(y,H(x,z)); // shallow stream: walk through
   const dx=x-BR.x, dz=z-BR.z; const along=dx*BR.px+dz*BR.pz, across=dx*BR.ux+dz*BR.uz;
   if(Math.abs(along)<BR.len/2&&Math.abs(across)<1.15) y=Math.max(y,BR.y0+BR.arch*Math.cos(along/BR.len*Math.PI)+.1);
+  if(pkOn()&&Math.abs(x-player.position.x)<3&&Math.abs(z-player.position.z)<3){ const r=pkGround(x,z,player.position.y); if(r!==null&&r>y) y=r; }
   return y; }
 
 /* ===================== living dialogue: a fresh bank of lines every day ===================== */
@@ -2924,17 +2925,17 @@ function frame(now){
     let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y+P1J.y+PAD1.y;
     const mag=Math.min(1,Math.hypot(ix,iz));
     if(PAPER) paperInput(ix,iz,mag);
-    if((RIDE.mode==="ski"||RIDE.mode==="board")){ skiMove(dt,clamp(ix,-1,1),clamp(iz,-1,1)); } else if(horseFP()){ horseFPMove(dt,clamp(ix,-1,1),clamp(iz,-1,1)); } else if(RIDE.mode==="sled"&&ROLL.t<0){ dogSledMove(dt,ix,iz); } else if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
+    if(PK.mode&&pkOn()){ pkActive(dt,ix,iz); } else if(PK.air&&pkOn()){ pkAirMove(dt,ix,iz); } else if(PK.lock>0){ PK.lock-=dt; speedNow=0; } else if((RIDE.mode==="ski"||RIDE.mode==="board")){ skiMove(dt,clamp(ix,-1,1),clamp(iz,-1,1)); } else if(horseFP()){ horseFPMove(dt,clamp(ix,-1,1),clamp(iz,-1,1)); } else if(RIDE.mode==="sled"&&ROLL.t<0){ dogSledMove(dt,ix,iz); } else if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
       if(POSE.kind) poseEnd();
       const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
       let mx=(rx*ix - fwd.x*iz), mz=(rz*ix - fwd.z*iz); const ml=Math.hypot(mx,mz); mx/=ml; mz/=ml;
       const run=TOUCHRUN||keys.ShiftLeft||keys.ShiftRight||Math.hypot(joy.x,joy.y)>.92||Math.hypot(rjoy.x,rjoy.y)>.92||Math.hypot(P1J.x,P1J.y)>.92||PAD1.run; const sp=(pmode==="boat"?4.4:RIDE.mode==="horse"?(run?21:13):run?9:5)*mag; speedNow=lerp(speedNow,sp,dt*8);
       const old=player.position.clone(); const np={x:old.x+mx*speedNow*dt, z:old.z+mz*speedNow*dt}; collide(np);
       player.position.x=np.x; player.position.z=np.z; player.rotation.y=angLerp(player.rotation.y,Math.atan2(mx,mz),Math.min(1,dt*12));
-      walkPh+=dt*speedNow*2.2;
-    } else { speedNow=lerp(speedNow,0,dt*10); }
+      walkPh+=dt*speedNow*2.2; pkAuto(dt,mx,mz);
+    } else { speedNow=lerp(speedNow,0,dt*10); PK.push=0; }
   }
-  const gy=groundY(player.position.x,player.position.z); const py0=player.position.y; if(!advMode&&RIDE.mode!=="ski"&&RIDE.mode!=="board"){ const gy2=gy+RIDE.lift; player.position.y=lerp(player.position.y,gy2,Math.min(1,dt*18)); if(player.position.y<gy2-.05) player.position.y=gy2-.05; }
+  const gy=groundY(player.position.x,player.position.z); const py0=player.position.y; if(!advMode&&RIDE.mode!=="ski"&&RIDE.mode!=="board"&&!pkGravity(dt,gy,py0)){ const gy2=gy+RIDE.lift; player.position.y=lerp(player.position.y,gy2,Math.min(1,dt*18)); if(player.position.y<gy2-.05) player.position.y=gy2-.05; }
   const inBoat=pmode==="boat"; legs.forEach(l=>l.visible=!inBoat);
   if(inBoat){ boat.position.set(player.position.x,-.2+Math.sin(clock*1.4)*.04,player.position.z); boat.rotation.y=player.rotation.y; boat.rotation.z=Math.sin(clock*1.1)*.03; boat.userData.oars.rotation.x=speedNow>.3?Math.sin(clock*4)*.5:0; if(speedNow>.5&&srand()<dt*3) addRipple({x:player.position.x-Math.sin(player.rotation.y)*1.8,z:player.position.z-Math.cos(player.rotation.y)*1.8},-.24); }
   const moving=speedNow>.3&&!inBoat; legs[0].rotation.x=moving?Math.sin(walkPh)*.7:0; legs[1].rotation.x=moving?-Math.sin(walkPh)*.7:0;
@@ -3966,7 +3967,8 @@ function hudTargets(){ const m=mapStore(), out=[], px=player.position.x, pz=play
   return out.map(t=>({...t,d:Math.hypot(t.x-px,t.z-pz)})); }
 function inkbarFrame(){ const host=document.getElementById("inkbar"); if(!host) return; const show=entered&&!document.body.classList.contains("inmenu")&&!SCROLL.open; host.style.display=show?"":"none"; if(!show) return;
   if(!INK.cv){ INK.cv=host.querySelector("canvas"); INK.g=INK.cv.getContext("2d"); }
-  const r=host.getBoundingClientRect(), dpr=Math.min(2,devicePixelRatio||1); if(INK.w!==r.width||INK.h!==r.height){ INK.w=r.width; INK.h=r.height; INK.cv.width=r.width*dpr; INK.cv.height=r.height*dpr; }
+  INK.k=(INK.k||0)+1; if(INK.k%2) return;   // v72: half-rate redraw, layout read only every 30 frames (was forcing a layout every frame)
+  if(!INK.rc||INK.k%30===0) INK.rc=host.getBoundingClientRect(); const r=INK.rc, dpr=Math.min(2,devicePixelRatio||1); if(INK.w!==r.width||INK.h!==r.height){ INK.w=r.width; INK.h=r.height; INK.cv.width=r.width*dpr; INK.cv.height=r.height*dpr; }
   const g=INK.g, W=INK.w, Hh=INK.h; g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,Hh);
   // the paper strip, torn at the ends
   const top=4, bh=30; g.fillStyle="rgba(239,230,208,.93)"; g.beginPath(); g.moveTo(14,top); for(let x=14;x<=W-14;x+=W/24) g.lineTo(x,top+Math.sin(x*.7)*.8); g.lineTo(W-14,top); g.lineTo(W-4,top+bh/2); g.lineTo(W-14,top+bh); for(let x=W-14;x>=14;x-=W/24) g.lineTo(x,top+bh+Math.sin(x*.5)*.8); g.lineTo(4,top+bh/2); g.closePath(); g.fill();
@@ -4249,16 +4251,121 @@ async function tsamInit(){ if(TSAM.loading||TSAM.ready) return; TSAM.loading=tru
         const ol=new THREE.SkinnedMesh(o.geometry,om); ol.bind(o.skeleton,o.bindMatrix); ol.frustumCulled=false; ol.userData.isOutline=true; o.parent.add(ol); } });
     m.scale.setScalar(1.13); m.userData.keep=true; m.userData.air=true; scene.add(m); TSAM.m=m;
     const mixer=new THREE.AnimationMixer(m); TSAM.mixer=mixer;
-    for(const c of gl.animations){ const cl=c.clone(); if(/walk|run/.test(cl.name)) cl.tracks.forEach(t=>{ if(/Hips\.position/.test(t.name)){ const v=t.values; for(let i=0;i<v.length;i+=3){ v[i]=0; v[i+2]=0; } } });
+    for(const c of gl.animations){ const cl=c.clone();
+      if(cl.name==="walk") cl.tracks.forEach(t=>{ const k=/Hips\.quaternion/.test(t.name)?.6:/Spine\.quaternion/.test(t.name)?.35:0; if(!k) return; const v=t.values, n=v.length/4, mean=new THREE.Quaternion(0,0,0,0);   // v72: calm the hip sway
+        for(let i=0;i<n;i++){ mean.x+=v[i*4]; mean.y+=v[i*4+1]; mean.z+=v[i*4+2]; mean.w+=v[i*4+3]; } mean.normalize(); const q=new THREE.Quaternion(); for(let i=0;i<n;i++){ q.fromArray(v,i*4).slerp(mean,k).toArray(v,i*4); } });
+      if(/walk|run/.test(cl.name)) cl.tracks.forEach(t=>{ if(/Hips\.position/.test(t.name)){ const v=t.values; for(let i=0;i<v.length;i+=3){ v[i]=0; v[i+2]=0; } } });
       const a=mixer.clipAction(cl); a.play(); a.setEffectiveWeight(cl.name==="idle"?1:0); TSAM.A[cl.name]=a; }
-    for(const j of moves){ try{ const cl=THREE.AnimationClip.parse({name:j.name,duration:j.duration,tracks:j.tracks}); const a=mixer.clipAction(cl);
-      if(j.name==="climbloop"||j.name==="hurt"||j.name==="shimmy") a.setLoop(THREE.LoopRepeat); else { a.setLoop(THREE.LoopOnce); a.clampWhenFinished=true; }
+    for(const j of moves){ try{ const cl=THREE.AnimationClip.parse({name:j.name,duration:j.duration,tracks:j.tracks}); cl.uuid=THREE.MathUtils.generateUUID(); const a=mixer.clipAction(cl);   // v72: parsed clips had no uuid, so they all shared one action
+      if(j.name==="climbloop"||j.name==="hurt"||j.name==="shimmy"||j.name==="ladder") a.setLoop(THREE.LoopRepeat); else { a.setLoop(THREE.LoopOnce); a.clampWhenFinished=true; }
       a.setEffectiveWeight(0); TSAM.A[j.name]=a; }catch(e){ console.warn("tsam clip",j.name,e); } }
-    TSAM.last.copy(player.position); TSAM.yaw=player.rotation.y; TSAM.ready=true; try{ renderer.compile(scene,camera); }catch(e){}
+    TSAM.last.copy(player.position); TSAM.yaw=player.rotation.y; TSAM.ready=true; try{ pkCal(); }catch(e){ console.warn('pkCal',e); } try{ renderer.compile(scene,camera); }catch(e){}
     try{ HANDL.g.scale.setScalar(.62); }catch(e){}
   }catch(e){ console.warn("[tsam] load failed, keeping the paper samurai",e); }
   TSAM.loading=false; }
-function tsamPlay(n,from=0,speed=1){ const A=TSAM.A; if(!A[n]) return; if(TSAM.move&&TSAM.move!==n&&A[TSAM.move]) A[TSAM.move].stop(); const a=A[n]; a.reset(); a.time=from; a.timeScale=speed; a.play(); TSAM.move=n; }
+/* ===================== v72: parkour: walk on roofs, climb walls, hang & shimmy, mantle, vault, leap gaps ===================== */
+const PK={mode:null,air:false,vy:0,vx:0,vz:0,fallY:0,t:0,dur:1,clip:null,c0:0,cs:1,kind:null,ed:null,anchor:new THREE.Vector3(),from:new THREE.Vector3(),to:new THREE.Vector3(),y0:0,y1:0,push:0,cool:0,yaw:0,shimV:0,climbV:0,lock:0,
+  cache:new Map(),cands:new Map(),meshes:null,ray:new THREE.Raycaster(),id:0,cal:null};
+const _pkO=new THREE.Vector3(), _pkDn=new THREE.Vector3(0,-1,0);
+const pkL=(b,x,z)=>{ const dx=x-b.x, dz=z-b.z; return [dx*b.c-dz*b.s, dx*b.s+dz*b.c]; };
+const pkW=(b,lx,lz)=>[b.x+lx*b.c+lz*b.s, b.z-lx*b.s+lz*b.c];
+const pkD=(b,lx,lz)=>[lx*b.c+lz*b.s, -lx*b.s+lz*b.c];
+function pkOn(){ return zone==="world"&&pmode==="walk"&&!RIDE.mode&&!(typeof CLIMB!=="undefined"&&CLIMB.on); }
+function pkMeshes(){ if(PK.meshes) return PK.meshes; const out=[], bx=new THREE.Box3(); const skip=new Set([player,sensei,TSAM.m,HANDL&&HANDL.g].filter(Boolean));
+  for(const top of scene.children){ if(skip.has(top)||top.isLight||top.isSprite||top.isPoints||top.userData.air||top.userData.paper) continue;
+    top.traverse(o=>{ if(!o.isMesh||o.isSkinnedMesh||o.isInstancedMesh) return; const mt=o.material; if(!mt||Array.isArray(mt)||mt.transparent||mt.side===THREE.BackSide) return;
+      bx.setFromObject(o); if(bx.isEmpty()||bx.max.x-bx.min.x>60||bx.max.z-bx.min.z>60||bx.max.y-bx.min.y>45) return; out.push({o,min:bx.min.clone(),max:bx.max.clone()}); }); }
+  return PK.meshes=out; }
+function pkCands(b){ let c=PK.cands.get(b); if(c) return c; const ex=Math.abs(b.hw*b.c)+Math.abs(b.hd*b.s)+.4, ez=Math.abs(b.hw*b.s)+Math.abs(b.hd*b.c)+.4;
+  c=pkMeshes().filter(q=>q.max.x>b.x-ex&&q.min.x<b.x+ex&&q.max.z>b.z-ez&&q.min.z<b.z+ez).map(q=>q.o); PK.cands.set(b,c); return c; }
+// height of whatever is built on this footprint (roof, wall top, counter), sampled by ray once per 33cm cell
+function pkTop(b,x,z){ if(b._pk===undefined) b._pk=PK.id++; const [lx,lz]=pkL(b,x,z); const key=b._pk+":"+Math.round(lx*3)+":"+Math.round(lz*3);
+  let v=PK.cache.get(key); if(v!==undefined) return v; v=null; const c=pkCands(b);
+  if(c.length){ PK.ray.set(_pkO.set(x,140,z),_pkDn); PK.ray.far=180; const hs=PK.ray.intersectObjects(c,false); for(const h of hs){ if(h.point.y<60){ v=h.point.y; break; } } }
+  if(v!==null&&v<H(x,z)+.3) v=null; PK.cache.set(key,v); return v; }
+function pkOnTop(b,lx,lz,py){ if(!pkOn()) return false; const [wx,wz]=pkW(b,clamp(lx,-b.hw+.12,b.hw-.12),clamp(lz,-b.hd+.12,b.hd-.12)); const t=pkTop(b,wx,wz); return t!==null&&py>=t-.55; }
+function pkGround(x,z,py){ let best=null; for(const b of boxes){ if(Math.abs(x-b.x)>b.hw+b.hd||Math.abs(z-b.z)>b.hw+b.hd) continue; const [lx,lz]=pkL(b,x,z); if(Math.abs(lx)>b.hw||Math.abs(lz)>b.hd) continue;
+    const t=pkTop(b,x,z); if(t!==null&&py>=t-.75&&(best===null||t>best)) best=t; } return best; }
+// the edge in front of us: which box, where its face is, which way it faces, how high its top is
+function pkProbe(dx,dz,reach=.8){ const p=player.position; const fx=p.x+dx*reach, fz=p.z+dz*reach; let best=null;
+  for(const b of boxes){ if(Math.abs(fx-b.x)>b.hw+b.hd+.5||Math.abs(fz-b.z)>b.hw+b.hd+.5) continue; const [fl,fm]=pkL(b,fx,fz); if(Math.abs(fl)>b.hw||Math.abs(fm)>b.hd) continue;
+    const [pl,pm]=pkL(b,p.x,p.z); const ox=Math.abs(pl)-b.hw, oz=Math.abs(pm)-b.hd; if(ox<-.02&&oz<-.02) continue;
+    const nl=ox>oz?[Math.sign(pl)||1,0]:[0,Math.sign(pm)||1]; const along=nl[0]?clamp(pm,-b.hd,b.hd):clamp(pl,-b.hw,b.hw);
+    const ed=pkEdge({b,nl,along}); if(!ed||ed.top===null) continue; if(!best||ed.top>best.top) best=ed; } return best; }
+function pkEdge(e){ const {b,nl}=e; const half=nl[0]?b.hd:b.hw; const along=clamp(e.along,-half,half); const eL=nl[0]?[nl[0]*b.hw,along]:[along,nl[1]*b.hd];
+  const [ix,iz]=pkW(b,eL[0]-nl[0]*.3,eL[1]-nl[1]*.3); const top=pkTop(b,ix,iz); const [ex,ez]=pkW(b,eL[0],eL[1]); const [nx,nz]=pkD(b,nl[0],nl[1]); const [tx,tz]=pkD(b,nl[1]?1:0,nl[0]?1:0);
+  return {b,nl,along,half,ex,ez,nx,nz,tx,tz,top,depth:nl[0]?2*b.hw:2*b.hd}; }
+// calibrate the mocap once: where are his hands/hips relative to his feet in each key pose
+function pkCal(){ if(PK.cal||!TSAM.ready) return PK.cal; const A=TSAM.A, m=TSAM.m, B=TSAM.bones; if(!B.LeftHand||!B.Hips) return null; const sp=m.position.clone(), sr=m.rotation.clone(), W={};
+  for(const k in A) W[k]=A[k].getEffectiveWeight(); m.position.set(0,0,0); m.rotation.set(0,0,0);
+  const at=(n,t)=>{ for(const k in A) A[k].setEffectiveWeight(0); const a=A[n]; if(!a) return null; a.enabled=true; a.reset(); a.play(); a.setEffectiveWeight(1); a.time=t; TSAM.mixer.update(0); m.updateMatrixWorld(true);
+    const l=B.LeftHand.getWorldPosition(new THREE.Vector3()), r=B.RightHand.getWorldPosition(new THREE.Vector3()), h=B.Hips.getWorldPosition(new THREE.Vector3()); return {hy:(l.y+r.y)/2,hz:(l.z+r.z)/2,py:h.y,pz:h.z}; };
+  const C={hang:at("hang",1.18),shim:at("shimmy",0),h0:at("hclimb",.02),hE:at("hclimb",1.02),wall:at("climbloop",.5),stand:at("idle",0)};
+  for(const k in A){ A[k].setEffectiveWeight(W[k]); if(k!=="idle"&&k!=="walk"&&k!=="run") A[k].stop(); } A.idle.play(); A.walk.play(); A.run.play(); TSAM.move=null; TSAM.W={}; TSAM.pkTag=null;
+  m.position.copy(sp); m.rotation.copy(sr); m.updateMatrixWorld(true);
+  for(const k in C) if(!C[k]) return null; PK.cal=C; return C; }
+function pkFace(nx,nz){ PK.yaw=Math.atan2(-nx,-nz); player.rotation.y=PK.yaw; }
+function pkRoot(ed,cal){ return new THREE.Vector3(ed.ex+ed.nx*(cal.hz+.1),ed.top-cal.hy,ed.ez+ed.nz*cal.hz); }
+function pkStartMove(kind,clip,c0,cs,dur,to,anchorFn){ PK.mode="move"; PK.kind=kind; PK.clip=clip; PK.c0=c0; PK.cs=cs; PK.t=0; PK.dur=dur; PK.from.copy(player.position); PK.to.copy(to); PK.anchorFn=anchorFn; PK.anchor.copy(player.position); PK.air=false; speedNow=0; }
+function pkHang(ed){ const C=pkCal(); if(!C) return false; PK.mode="hang"; PK.ed=ed; PK.air=false; pkFace(ed.nx,ed.nz); player.position.copy(pkRoot(ed,C.shim)); speedNow=0; PK.cool=.25; return true; }
+function pkClimbUp(){ const C=pkCal(), ed=PK.ed; if(!C||!ed) return; const a=pkRoot(ed,C.h0); const f=Math.max(.45,C.hE.pz-C.h0.hz);
+  const end=new THREE.Vector3(ed.ex-ed.nx*f,ed.top,ed.ez-ed.nz*f); player.position.copy(a);
+  pkStartMove("climb","hclimb",.02,1,1.0,end,()=>a); }
+function pkMantle(ed){ const C=pkCal(); if(!C) return; pkFace(ed.nx,ed.nz); const a=pkRoot(ed,C.hang); PK.ed=ed;
+  pkStartMove("tohang","hang",.55,1.25,(1.18-.55)/1.25,a,()=>a); }
+function pkVault(ed,over){ const p=player.position, y0=p.y; pkFace(ed.nx,ed.nz); PK.ed=ed;
+  if(over){ const d=ed.depth+.7; const to=new THREE.Vector3(ed.ex-ed.nx*d,0,ed.ez-ed.nz*d); to.y=groundY(to.x,to.z);
+    pkStartMove("vault","vault",.38,2.3,(1.55-.38)/2.3,to,u=>_pkO.set(lerp(PK.from.x,PK.to.x,u),lerp(y0,PK.to.y,smooth(.6,1,u)),lerp(PK.from.z,PK.to.z,u))); }
+  else { const to=new THREE.Vector3(ed.ex-ed.nx*.55,ed.top,ed.ez-ed.nz*.55);
+    pkStartMove("step","vault",.4,2.2,(1.0-.4)/2.2,to,u=>_pkO.set(lerp(PK.from.x,PK.to.x,u),lerp(y0,ed.top-.42,smooth(0,1,u)),lerp(PK.from.z,PK.to.z,u))); } }
+function pkWall(ed){ const C=pkCal(); if(!C) return; PK.mode="wall"; PK.ed=ed; pkFace(ed.nx,ed.nz); const p=player.position; p.x=ed.ex+ed.nx*(C.wall.hz+.28); p.z=ed.ez+ed.nz*(C.wall.hz+.28); speedNow=0; PK.climbV=0; }
+function pkDrop(push=.35,vy=0){ const ed=PK.ed; PK.mode=null; PK.air=true; PK.vy=vy; PK.fallY=player.position.y; PK.vx=ed?ed.nx*push*3:0; PK.vz=ed?ed.nz*push*3:0; PK.cool=.45; }
+// Space: climb up when hanging, kick off a wall, leap when running; otherwise it's still the roll
+function pkSpace(){ if(!pkOn()) return false;
+  if(PK.mode==="hang"){ pkClimbUp(); return true; }
+  if(PK.mode==="wall"){ const ed=PK.ed; pkDrop(0,5.5); PK.vx=ed.nx*4.5; PK.vz=ed.nz*4.5; player.rotation.y=Math.atan2(ed.nx,ed.nz); return true; }
+  if(PK.mode) return true; if(PK.air) return true;
+  const running=(keys.ShiftLeft||keys.ShiftRight||TOUCHRUN||PAD1.run)&&speedNow>5;
+  if(running){ PK.air=true; PK.vy=7.4; PK.fallY=player.position.y; PK.vx=Math.sin(player.rotation.y)*speedNow; PK.vz=Math.cos(player.rotation.y)*speedNow; PK.jumpT=0; jumpSound(); return true; }
+  return false; }
+function jumpSound(){ try{ if(!actx||!soundOn) return; const t=actx.currentTime, o=actx.createOscillator(), g=actx.createGain(); o.type="triangle"; o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(110,t+.12); g.gain.setValueAtTime(.08,t); g.gain.exponentialRampToValueAtTime(.001,t+.15); o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+.16); }catch(e){} }
+// while walking: walk into something and he deals with it (no button needed, like AC)
+function pkAuto(dt,mx,mz){ if(!pkOn()||PK.mode||PK.air||PK.cool>0||ROLL.t>=0) { PK.push=0; return; } const ed=pkProbe(mx,mz,.75); if(!ed){ PK.push=0; return; }
+  const p=player.position, into=-(mx*ed.nx+mz*ed.nz), dist=Math.hypot(p.x-ed.ex,p.z-ed.ez); if(into<.55||dist>PRAD+.45){ PK.push=0; return; }
+  const h=ed.top-p.y; if(h<=.55){ PK.push=0; return; } PK.push+=dt;
+  if(h<=1.7){ if(PK.push>(speedNow>4?.0:.12)){ const far=ed.depth<1.6; pkVault(ed,far); } }
+  else if(h<=2.9){ if(PK.push>.12) pkMantle(ed); }
+  else if(PK.push>.22) pkWall(ed); }
+function pkAirMove(dt,ix,iz){ const p=player.position; if(Math.hypot(ix,iz)>.1){ const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x; let mx=rx*ix-fwd.x*iz, mz=rz*ix-fwd.z*iz; const l=Math.hypot(mx,mz); mx/=l; mz/=l;
+    const sp=Math.max(4,Math.hypot(PK.vx,PK.vz)); PK.vx+=(mx*sp-PK.vx)*Math.min(1,dt*1.6); PK.vz+=(mz*sp-PK.vz)*Math.min(1,dt*1.6); }
+  const np={x:p.x+PK.vx*dt,z:p.z+PK.vz*dt}; const bx=np.x, bz=np.z; collide(np); if(Math.abs(np.x-bx)+Math.abs(np.z-bz)>.001){ PK.vx*=.3; PK.vz*=.3; }
+  p.x=np.x; p.z=np.z; const v=Math.hypot(PK.vx,PK.vz); if(v>.5) player.rotation.y=angLerp(player.rotation.y,Math.atan2(PK.vx,PK.vz),Math.min(1,dt*8)); speedNow=v;
+  // catch a ledge on the way down
+  if(PK.vy<1&&PK.cool<=0){ const dx=Math.sin(player.rotation.y), dz=Math.cos(player.rotation.y); const ed=pkProbe(dx,dz,.7); if(ed){ const h=ed.top-p.y; if(h>1.15&&h<2.4&&Math.hypot(p.x-ed.ex,p.z-ed.ez)<.95) pkHang(ed); } } }
+// gravity: true if we handled the height this frame
+function pkGravity(dt,gy,py0){ PK.cool=Math.max(0,PK.cool-dt); if(!pkOn()){ PK.air=false; PK.mode=null; return false; } if(PK.mode) return true; const p=player.position;
+  if(!PK.air&&py0-gy>.7&&ROLL.t<0){ PK.air=true; PK.vy=0; PK.fallY=py0; PK.vx=Math.sin(player.rotation.y)*speedNow; PK.vz=Math.cos(player.rotation.y)*speedNow; p.y=py0; }
+  if(!PK.air) return false;
+  PK.vy-=24*dt; p.y+=PK.vy*dt; PK.fallY=Math.max(PK.fallY,p.y);
+  if(p.y<=gy&&PK.vy<=0){ p.y=gy; PK.air=false; const drop=PK.fallY-gy; PK.landDrop=drop; PK.landSpd=Math.hypot(PK.vx,PK.vz); if(drop>2.4&&PK.landSpd<4) PK.lock=.55; for(let i=0;i<(drop>2?6:2);i++) puff(p.x+rand(-.4,.4),p.z+rand(-.4,.4)); }
+  return true; }
+// hanging / wall / scripted moves
+function pkActive(dt,ix,iz){ const p=player.position, C=pkCal(); if(!C){ PK.mode=null; return; } speedNow=0;
+  if(PK.mode==="move"){ PK.t+=dt; const u=Math.min(1,PK.t/PK.dur), e=u*u*(3-2*u); if(PK.anchorFn) PK.anchor.copy(PK.anchorFn(u));
+    p.lerpVectors(PK.from,PK.to,e); if(PK.kind==="vault") p.y+=Math.sin(u*Math.PI)*.35;
+    if(u>=1){ const k=PK.kind; PK.mode=null; p.copy(PK.to); if(k==="tohang"){ pkHang(PK.ed); if(keys.KeyW||keys.ArrowUp||PAD1.y<-.5) pkClimbUp(); } else { PK.cool=.3; } } return; }
+  const ed=PK.ed; if(!ed){ PK.mode=null; return; }
+  const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x; const lat=(rx*ed.tx+rz*ed.tz)>=0?ix:-ix;   // A/D slide along the wall the way the camera sees it
+  if(PK.mode==="hang"){ PK.shimV=Math.abs(lat)>.2?Math.sign(lat):0; if(PK.shimV){ const na={...ed,along:ed.along+PK.shimV*1.1*dt}; const e2=pkEdge(na); if(e2.top!==null&&Math.abs(e2.top-ed.top)<.5&&Math.abs(na.along)<e2.half-.3) PK.ed=e2; else PK.shimV=0; }
+    p.copy(pkRoot(PK.ed,C.shim)); pkFace(PK.ed.nx,PK.ed.nz);
+    if(iz<-.5&&PK.cool<=0) pkClimbUp(); else if((iz>.5||keys.KeyC)&&PK.cool<=0) pkDrop(); return; }
+  if(PK.mode==="wall"){ PK.climbV=-iz; if(Math.abs(lat)>.2){ const na={...ed,along:ed.along+Math.sign(lat)*.9*dt}; const e2=pkEdge(na); if(e2.top!==null&&Math.abs(na.along)<e2.half-.35) PK.ed=e2; }
+    const ed2=PK.ed; p.x=ed2.ex+ed2.nx*(C.wall.hz+.28); p.z=ed2.ez+ed2.nz*(C.wall.hz+.28); p.y+=PK.climbV*(PK.climbV>0?1.5:2.2)*dt; pkFace(ed2.nx,ed2.nz);
+    const g=groundY(p.x+ed2.nx*.3,p.z+ed2.nz*.3); if(p.y<=g){ p.y=g; PK.mode=null; PK.cool=.6; return; }
+    if(ed2.top-p.y<=C.shim.hy+.05) pkHang(ed2); } }
+
+const TSAM_MOVES=["rjump","hland","climbloop","vault","climbup","shimmy","hurt","hang","hclimb","jover","hopup","hdrop","jdown","ladder","hopl","hopr"];
+function tsamPlay(n,from=0,speed=1){ const A=TSAM.A; if(!A[n]) return; const a=A[n]; a.reset(); a.time=from; a.timeScale=speed; a.play(); TSAM.move=n; }
 const _tq=new THREE.Quaternion(),_tq2=new THREE.Quaternion(),_tv=new THREE.Vector3(),_tv2=new THREE.Vector3(),_tAxZ=new THREE.Vector3(0,0,1),_tAxY=new THREE.Vector3(0,1,0);
 function tsamAim(name,dir,amt){ const b=TSAM.bones[name]; if(!b||amt<=0) return; const d=dir.clone().normalize().applyAxisAngle(_pup,TSAM.yaw);
   b.updateWorldMatrix(true,false); b.getWorldQuaternion(_tq); const cur=_tv.set(0,1,0).applyQuaternion(_tq);
@@ -4274,8 +4381,8 @@ function tsamFrame(dt){
   const pp=player.position; const dx=pp.x-TSAM.last.x, dz=pp.z-TSAM.last.z, dy=pp.y-TSAM.last.y; const hd=Math.hypot(dx,dz)/Math.max(dt,1e-3);
   const tele=hd>40; TSAM.last.copy(pp); if(tele){ TSAM.spd=0; }
   const riding=typeof RIDE!=="undefined"&&RIDE.mode==="horse"; const climbing=typeof CLIMB!=="undefined"&&CLIMB.on; const rolling=typeof ROLL!=="undefined"&&ROLL.t>=0;
-  TSAM.spd+=((tele||riding||climbing)?0:Math.min(9,hd)-TSAM.spd)*(1-Math.exp(-dt*9));
-  if(!tele&&hd>.4&&!climbing){ const ty=Math.atan2(dx,dz); let d=ty-TSAM.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); TSAM.yaw+=d*(1-Math.exp(-dt*12)); }
+  TSAM.spd+=((tele||riding||climbing||PK.mode)?0:Math.min(9,hd)-TSAM.spd)*(1-Math.exp(-dt*9));
+  if(PK.mode) TSAM.yaw=PK.yaw; else if(!tele&&hd>.4&&!climbing){ const ty=Math.atan2(dx,dz); let d=ty-TSAM.yaw; d=Math.atan2(Math.sin(d),Math.cos(d)); TSAM.yaw+=d*(1-Math.exp(-dt*12)); }
   // the clothes remember: dirt from rolls and hard landings, snow in the snowfields, wet when it melts
   { const U=TSAM.U, inSnow=pp.x>440||(pp.x>185&&zone==="world"), storm=pp.x>440?SFX.storm||0:0, inWater=pmode==="koi"||pmode==="boat";
     if(rolling) U.uDirt.value=Math.min(1,U.uDirt.value+dt*.9);
@@ -4285,27 +4392,34 @@ function tsamFrame(dt){
     U.uSpd.value=TSAM.spd; U.uTime.value=performance.now()/1000; U.uWind.value=Math.min(1.2,storm*1.1+TSAM.spd*.06); }
   // air & landing
   let ground=pp.y; try{ ground=H(pp.x,pp.z); }catch(e){}
-  const inAir=!riding&&!climbing&&pp.y-ground>.45&&dy*1>-99;
+  const inAir=PK.air||(!pkOn()&&!riding&&!climbing&&pp.y-ground>.45);
   if(inAir){ if(TSAM.air===0) TSAM.fallY=pp.y; TSAM.air+=dt; TSAM.fallY=Math.max(TSAM.fallY,pp.y); }
-  else if(TSAM.air>0){ const drop=TSAM.fallY-pp.y; if(drop>2.6){ TSAM.U.uDirt.value=Math.min(1,TSAM.U.uDirt.value+.18); if(A.hland) tsamPlay("hland",.2,1.3); } else if(TSAM.move==="rjump") TSAM.move=null; TSAM.air=0; }
-  if(inAir&&TSAM.air>.12&&A.rjump){ if(TSAM.move!=="rjump") tsamPlay("rjump",.25,1); if(A.rjump.time>.52) A.rjump.time=.52; }
+  else if(TSAM.air>0){ const drop=TSAM.fallY-pp.y; if(drop>2&&(PK.landSpd||0)>4&&A.jover){ TSAM.U.uDirt.value=Math.min(1,TSAM.U.uDirt.value+.12); tsamPlay("jover",1.32,1.6); } else if(drop>2.4){ TSAM.U.uDirt.value=Math.min(1,TSAM.U.uDirt.value+.18); if(A.hland) tsamPlay("hland",.2,1.3); } else if(TSAM.move==="rjump") TSAM.move=null; TSAM.air=0; }
+  if(inAir&&!PK.mode&&TSAM.air>.12&&A.rjump){ if(TSAM.move!=="rjump") tsamPlay("rjump",.25,1); if(A.rjump.time>.52) A.rjump.time=.52; }
   if(climbing&&A.climbloop){ if(TSAM.move!=="climbloop") tsamPlay("climbloop",0,1); A.climbloop.timeScale=Math.min(1.4,Math.abs(dy)/Math.max(dt,1e-3)*.9); }
-  else if(TSAM.move==="climbloop") TSAM.move=null;
+  else if(TSAM.move==="climbloop"&&PK.mode!=="wall") TSAM.move=null;
+  if(PK.mode==="wall"&&A.climbloop){ if(TSAM.move!=="climbloop") tsamPlay("climbloop",0,1); A.climbloop.timeScale=PK.climbV*1.15; }
+  else if(PK.mode==="hang"&&A.shimmy){ if(TSAM.move!=="shimmy") tsamPlay("shimmy",0,0); A.shimmy.timeScale=PK.shimV; }
+  else if(PK.mode==="move"&&A[PK.clip]){ const tag=PK.kind+PK.from.x.toFixed(3); if(TSAM.pkTag!==tag){ TSAM.pkTag=tag; tsamPlay(PK.clip,PK.c0,PK.cs); } }
+  if(!PK.mode&&["shimmy","hclimb","hang","vault"].includes(TSAM.move)) TSAM.move=null;
+  if(rolling&&A.jover&&TSAM.move!=="jover") tsamPlay("jover",1.3,1.55);
+  if(TSAM.move==="jover"&&!rolling&&A.jover.time>2.15) TSAM.move=null;
   if(TSAM.move==="hland"&&!A.hland.isRunning()) TSAM.move=null;
   // locomotion underneath, one-shot move layered on top
-  TSAM.mw+=((TSAM.move?1:0)-TSAM.mw)*(1-Math.exp(-dt*14)); const L=1-TSAM.mw, s=TSAM.spd;
+  // every one-shot fades in and out on its own weight, so nothing snaps
+  TSAM.W=TSAM.W||{}; let wsum=0; for(const n of TSAM_MOVES){ const a=A[n]; if(!a) continue; const tg=TSAM.move===n?1:0, w0=TSAM.W[n]||0; const w=w0+(tg-w0)*(1-Math.exp(-dt*(tg?(n==="hclimb"||n==="jover"?16:10):7))); TSAM.W[n]=w; a.setEffectiveWeight(w); wsum+=w; if(w<.005&&!tg&&a.isRunning()&&n!=="climbloop"&&n!=="shimmy") a.stop(); }
+  TSAM.mw=Math.min(1,wsum); const L=Math.max(0,1-wsum), s=TSAM.spd;
   const wI=Math.max(0,1-s/2.2), wR=Math.min(1,Math.max(0,(s-2.6)/3.4)), wW=Math.max(0,1-wI-wR);
   A.idle.setEffectiveWeight(wI*L); A.walk.setEffectiveWeight(wW*L); A.run.setEffectiveWeight(wR*L);
   A.walk.timeScale=Math.max(.6,s/1.9); A.run.timeScale=Math.max(.75,s/6.2);
-  for(const n of ["rjump","hland","climbloop","vault","climbup","shimmy","hurt"]) if(A[n]) A[n].setEffectiveWeight(TSAM.move===n?TSAM.mw:0);
   TSAM.mixer.update(dt);
   { const run=Math.min(1,Math.max(0,(TSAM.spd-2.6)/3)); const lantern=HANDL&&HANDL.g&&HANDL.g.visible;
     const grip=(side,amt)=>{ const sg=side==="Left"?-1:1; for(const f of ["Index","Middle","Ring","Pinky"]) for(let k=1;k<=3;k++){ const b=TSAM.bones[side+"Hand"+f+k]; if(!b) continue; _tq.setFromAxisAngle(_tAxZ,sg*amt*(k===1?.85:1.05)); b.quaternion.multiply(_tq); }
       const t=TSAM.bones[side+"HandThumb2"]; if(t){ _tq.setFromAxisAngle(_tAxY,-sg*amt*.45); t.quaternion.multiply(_tq); } };
     if(!TSAM.noGrip){ grip("Right",lantern?1.25:.45+run*.7); grip("Left",.38+run*.8); } }
-  m.position.copy(pp); m.rotation.set(0,TSAM.yaw,0); m.updateMatrixWorld(true);
+  m.position.copy(PK.mode==="move"?PK.anchor:pp); m.rotation.set(0,TSAM.yaw,0); m.updateMatrixWorld(true);
   if(riding) for(const k in TSAM_SIT) tsamAim(k,TSAM_SIT[k],.85);
-  if(rolling){ const u=Math.min(1,ROLL.t/ROLL_T); for(const k in TSAM_TUCK) tsamAim(k,TSAM_TUCK[k],Math.sin(u*Math.PI)); const ax=_tv2.set(Math.cos(TSAM.yaw),0,-Math.sin(TSAM.yaw)); m.position.y+=.55*Math.sin(u*Math.PI)*.6; m.quaternion.setFromAxisAngle(ax,u*Math.PI*2).multiply(_tq.setFromAxisAngle(_pup,TSAM.yaw)); }
+  if(rolling&&!A.jover){ const u=Math.min(1,ROLL.t/ROLL_T); for(const k in TSAM_TUCK) tsamAim(k,TSAM_TUCK[k],Math.sin(u*Math.PI)); const ax=_tv2.set(Math.cos(TSAM.yaw),0,-Math.sin(TSAM.yaw)); m.position.y+=.55*Math.sin(u*Math.PI)*.6; m.quaternion.setFromAxisAngle(ax,u*Math.PI*2).multiply(_tq.setFromAxisAngle(_pup,TSAM.yaw)); }
   // the lantern hangs from his right hand and swings
   try{ const h=TSAM.bones.RightHand; if(h&&HANDL.g.visible){ const hp=h.getWorldPosition(_tv2); if(!TSAM.ph) TSAM.ph=hp.clone(); const ax=(hp.x-TSAM.ph.x)/Math.max(dt,1e-3), az=(hp.z-TSAM.ph.z)/Math.max(dt,1e-3); TSAM.ph.copy(hp);
       const S=TSAM.lsw; S.vx+=(-S.ax*38-S.vx*4.5)*dt-(ax-(S.lx||0))*.9; S.vz+=(-S.az*38-S.vz*4.5)*dt-(az-(S.lz||0))*.9; S.lx=ax; S.lz=az; S.ax=clamp(S.ax+S.vx*dt,-.7,.7); S.az=clamp(S.az+S.vz*dt,-.7,.7);
@@ -6242,12 +6356,31 @@ $("#rJoin").addEventListener("click",async()=>{ const code=$("#rCode").value.rep
 document.querySelectorAll(".rb").forEach(b=>b.addEventListener("pointerdown",e=>{ e.preventDefault(); b.classList.add("down"); setTimeout(()=>b.classList.remove("down"),130); cEmit({b:b.dataset.b}); }));
 $("#rForm").addEventListener("submit",e=>{ e.preventDefault(); const t=$("#rInp").value.trim(); if(!t) return; $("#rInp").value=""; cEmit({say:t}); $("#rInp").blur(); });
 
+// v72 lag fix: shaders were compiling mid-play (each one a 0.3-2s freeze on Windows). Compile everything up front,
+// including hidden/culled things and the shadow-map variants, and compile anything built later off the main thread.
+const WARM={booted:false,busy:new Set()};
+function warmShaders(full){ const hid=[]; scene.traverse(o=>{ if(!o.visible&&!o.isLight){ hid.push(o); o.visible=true; } });
+  try{ renderer.compile(scene,camera); }catch(e){}
+  if(full){ const sc=sun.shadow.camera, b={l:sc.left,r:sc.right,t:sc.top,bt:sc.bottom,f:sc.far}; const rt=new THREE.WebGLRenderTarget(4,4);
+    sc.left=sc.bottom=-260; sc.right=sc.top=260; sc.far=Math.max(sc.far,900); sc.updateProjectionMatrix(); sun.shadow.needsUpdate=true;
+    const prev=renderer.getRenderTarget(), au=renderer.shadowMap.autoUpdate; renderer.shadowMap.autoUpdate=true; renderer.shadowMap.needsUpdate=true;
+    try{ renderer.setRenderTarget(rt); renderer.render(scene,camera); }catch(e){} renderer.setRenderTarget(prev); renderer.shadowMap.autoUpdate=au;
+    sc.left=b.l; sc.right=b.r; sc.top=b.t; sc.bottom=b.bt; sc.far=b.f; sc.updateProjectionMatrix(); rt.dispose(); }
+  hid.forEach(o=>o.visible=false); WARM.booted=true; }
+function warmNew(obj){ if(!WARM.booted||!obj||WARM.busy.has(obj)||!renderer.compileAsync||obj===player) return;
+  const was0=obj.visible; obj.visible=false; WARM.busy.add(obj);   // builders add an empty group, then fill it: check once they're done
+  Promise.resolve().then(()=>{ WARM.busy.delete(obj); obj.visible=was0; warmCheck(obj); }); }
+function warmCheck(obj){ let fresh=false;
+  obj.traverse(o=>{ if(fresh||!o.isMesh) return; const ms=Array.isArray(o.material)?o.material:[o.material]; for(const m of ms){ if(m&&!renderer.properties.get(m).currentProgram){ fresh=true; break; } } });
+  if(!fresh) return; const was=obj.visible; obj.visible=false; WARM.busy.add(obj);
+  renderer.compileAsync(obj,camera,scene).catch(()=>{}).finally(()=>{ WARM.busy.delete(obj); if(was&&!obj.userData._cull) obj.visible=true; }); }
+{ const add0=THREE.Scene.prototype.add; scene.add=function(...objs){ const r=add0.apply(this,objs); for(const o of objs) try{ warmNew(o); }catch(e){} return r; }; }
 // loading screen on launch: wait for the trees, rocks and fonts, and compile every shader once, so nothing pops in or stutters
 (function bootLoading(){ const el=$("#loadScr"); if(!el||remoteMode) return; $("#loadName").textContent=PAPER?"Paper Samurai":"Sensei Hakuun"; $("#loadTip").textContent="Preparing the world…"; el.classList.add("show","vis");
   const bar=$("#loadBar"); bar.style.transition="width .3s"; let p=0; const t0=performance.now(); let compiled=false;
   const tick=()=>{ const t=performance.now()-t0, ready=(typeof natReady!=="undefined"&&natReady)||t>20000;
     p=Math.min(ready?100:90,p+(ready?6:Math.max(.15,(90-p)*.02))); bar.style.width=p+"%";
-    if(ready&&!compiled){ compiled=true; try{ renderer.compile(scene,camera); }catch(e){} }
+    if(ready&&!compiled){ compiled=true; try{ warmShaders(true); }catch(e){ console.warn('warm',e); } }
     if(ready&&p>=100&&t>900){ setTimeout(()=>{ el.classList.remove("vis"); setTimeout(()=>el.classList.remove("show"),600); },120); return; }
     requestAnimationFrame(tick); }; requestAnimationFrame(tick); })();
 // run the starter-town clean-up after every part of the world has been built
