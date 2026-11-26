@@ -1,7 +1,7 @@
 {
- "version": 69,
+ "version": 70,
  "shellApi": 2,
- "notes": "Samurai pass 5: real hands with five fingers on the skeleton's finger bones (rounded palms, fingers that follow the mocap), the right hand curls around the lantern and both hands close into fists when he runs; kimono sleeves now trail and swing with his speed; hakama slimmer at the knees.",
+ "notes": "Fix: the freezes every few steps. The old paper-sprite system was still rebuilding sprite lighting maps behind the 3D samurai (spikes up to 0.8 s); it now stays idle while the 3D samurai is on. Shaders are warmed once at load. Clouds now sit high in the sky above wherever you are (no more clipping/flickering into mountain tops), and the soft clouds are back.",
  "files": [
   "brain-client.js",
   "core.js",
