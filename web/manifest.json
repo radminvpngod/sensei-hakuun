@@ -1,7 +1,7 @@
 {
- "version": 62,
+ "version": 63,
  "shellApi": 2,
- "notes": "Shirotae-machi becomes the Town of Ice Lanterns: hundreds of ice lanterns that glow at night, snow walls along the street, kamakura snow huts with candles inside, a giant Snow Koi sculpture at the gate (read its little sign), festival lanterns strung across the street, fluttering banners, chimney smoke, a roast-chestnut stall, snowmen, white storehouses, and houses of every size instead of a grid. Also: real mountain ranges ring the horizon, day and night, so the world never ends at a cut edge.",
+ "notes": "Walk-in shops: step through the noren of Shirotae-machi's four shops into real lit rooms. The clothier has stacks of folded cloth and a kimono rack, the tea house a hearth with a hanging kettle, the smithy a glowing forge and anvil, the goods shop barrels, rice sacks and paper rolls. The keeper stands behind the counter; talk to them across it. The roof and front wall lift away while you're inside so you can see.",
  "files": [
   "brain-client.js",
   "core.js",

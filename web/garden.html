@@ -3503,7 +3503,48 @@ function bridgeY(x,z){ for(const b of BRIDGES){ const dx=x-b.x, dz=z-b.z, u=dx*b
   const faceRoad=(side)=>Math.atan2(-snx*side,-snz*side);
   const shops=[{s:-13,side:1,id:"clothier",sign:"衣 Clothier",noren:"#2e5a8a"},{s:13,side:1,id:"tea",sign:"茶 Tea House",noren:"#b8302a"},{s:-13,side:-1,id:"smith",sign:"鍛 Smithy",noren:"#3a3a3a"},{s:13,side:-1,id:"store",sign:"萬 Goods",noren:"#3f6a3a"}];
   const houses=[[-40,1],[-27,1],[27,1],[40,1],[-40,-1],[-27,-1],[27,-1],[40,-1]];
-  shops.forEach(sh=>{ const [x,z]=at(sh.s,sh.side*10); machiya(x,z,faceRoad(sh.side),7,6,{noren:sh.noren,sign:sh.sign}); });
+  // ===== v63: walk-in shops: a real room behind the noren =====
+  const SHOPPOS={}; SFX.shops=[];
+  const shopHouse=(id,x,z,ry,o)=>{ const w=8.4, d=7.4, H3=3.3, y=TC.y, c=Math.cos(ry), sn=Math.sin(ry); const W2=(lx,lz)=>[x+lx*c+lz*sn,z-lx*sn+lz*c];
+    const root=keep(new THREE.Group()); root.position.set(x,y,z); root.rotation.y=ry; scene.add(root); const shell=new THREE.Group(), room=new THREE.Group(); root.add(shell,room);
+    const box=(grp,wd,ht,dp,lx,ly,lz,m)=>{ const b=new THREE.Mesh(new THREE.BoxGeometry(wd,ht,dp),m); b.position.set(lx,ly,lz); grp.add(b); return b; };
+    const DARK=T("#3a2418"), FLOOR=T("#a88a5e"), TATAMI=T("#c8c08a");
+    // floor, walls (back + sides stay; the front and roof fade when you're inside)
+    box(room,w,.12,d,0,.06,0,FLOOR); box(room,w-1.6,.06,d*.45,0,.14,-d*.2,TATAMI);
+    box(room,w,H3,.24,0,H3/2,-d/2,WOOD); box(room,.24,H3,d,-w/2,H3/2,0,WOOD); box(room,.24,H3,d,w/2,H3/2,0,WOOD);
+    const side=(w-2.6)/2; box(shell,side,H3,.24,-(1.3+side/2),H3/2,d/2,WOOD); box(shell,side,H3,.24,(1.3+side/2),H3/2,d/2,WOOD); box(shell,2.6,.8,.24,0,H3-.4,d/2,WOOD);
+    for(let i=0;i<6;i++){ box(shell,.08,2.3,.06,-(1.5+i*.45),1.5,d/2+.15,WOODL); box(shell,.08,2.3,.06,(1.5+i*.45),1.5,d/2+.15,WOODL); }
+    box(shell,w+.2,.3,d+.2,0,H3+.15,0,DARK); box(shell,w-.4,2.3,d-.6,0,H3+1.45,0,PLAST); [-1,1].forEach(s=>box(shell,w*.22,.8,.04,s*w*.22,H3+1.5,(d-.6)/2+.02,WARM));
+    const e1=gableRoof(w+1.4,d+1.2,.9,ROOFM); e1.position.y=H3+.1; shell.add(e1); const r2=gableRoof(w+1,d+.6,1.8,ROOFM); r2.position.y=H3+2.6; shell.add(r2); box(shell,w+1.1,.3,d*.3,0,H3+3.5,0,SNOWM);
+    for(let i=0;i<3;i++) box(shell,.62,.95,.03,(i-1)*.66,2.55,d/2+.3,T(o.noren));
+    { const cv=document.createElement("canvas"); cv.width=256; cv.height=96; const cx=cv.getContext("2d"); const draw=()=>{ cx.fillStyle="#2a2026"; cx.fillRect(0,0,256,96); cx.strokeStyle="#c8a060"; cx.lineWidth=6; cx.strokeRect(4,4,248,88); cx.fillStyle="#f6eedd"; cx.font='800 44px "Shippori Mincho",serif'; cx.textAlign="center"; cx.fillText(o.sign,128,64); }; draw(); const tx=new THREE.CanvasTexture(cv); tx.colorSpace=THREE.SRGBColorSpace; document.fonts&&document.fonts.ready.then(()=>{ draw(); tx.needsUpdate=true; });
+      const sm=new THREE.MeshToonMaterial({map:tx,gradientMap:gm}); const sb=new THREE.Mesh(new THREE.BoxGeometry(2.6,.9,.1),[WOOD,WOOD,WOOD,WOOD,sm,sm]); sb.position.set(0,H3+.75,d/2+.55); shell.add(sb); }
+    // the counter, and lamps that make the room glow
+    box(room,3.6,1.05,.8,0,.6,-1.2,WOODL); box(room,3.8,.1,1,0,1.15,-1.2,DARK);
+    [-1.8,1.8].forEach(lx=>{ const l=new THREE.Mesh(new THREE.CylinderGeometry(.22,.22,.45,10),new THREE.MeshToonMaterial({color:"#f4e0b0",emissive:new THREE.Color("#ffb050"),emissiveIntensity:.9,gradientMap:gm})); l.position.set(lx,2.6,.4); room.add(l); });
+    const pl=new THREE.PointLight(0xffb868,1.8,11,1.4); pl.position.set(0,2.4,0); room.add(pl);
+    // what each shop is full of
+    const shelf=(lx,lz,rot)=>{ const g=new THREE.Group(); g.position.set(lx,0,lz); g.rotation.y=rot; room.add(g); for(let k=0;k<3;k++) box(g,2.6,.08,.55,0,.7+k*.75,0,DARK); [-1.28,1.28].forEach(sx=>box(g,.08,2.4,.55,sx,1.2,0,DARK)); return g; };
+    const sA=shelf(-2.3,-d/2+.45,0), sB=shelf(2.3,-d/2+.45,0), sC=shelf(-w/2+.45,1.1,Math.PI/2);
+    const goods=(g,cols,shape)=>{ for(let k=0;k<3;k++) for(let i=0;i<5;i++){ const c=cols[(i+k)%cols.length]; const m=shape==="jar"?new THREE.Mesh(new THREE.CylinderGeometry(.13,.16,.3,8),T(c)):shape==="roll"?new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,.5,8),T(c)):new THREE.Mesh(new THREE.BoxGeometry(.4,.14+srand()*.12,.34),T(c)); if(shape==="roll") m.rotation.z=Math.PI/2; m.position.set(-1+i*.5,.86+k*.75,0); g.add(m); } };
+    if(id==="clothier"){ [sA,sB,sC].forEach(g=>goods(g,["#2e5a8a","#b8302a","#efe9dc","#e8c25a","#3f6a3a","#7a4a8a"],"fold"));
+      const rack=new THREE.Group(); rack.position.set(2.2,0,1.3); room.add(rack); box(rack,2.2,.08,.08,0,2.1,0,DARK); [-1.05,1.05].forEach(sx=>box(rack,.08,2.1,.08,sx,1.05,0,DARK)); ["#2c3f6e","#b8302a"].forEach((c,i)=>{ const k=new THREE.Mesh(new THREE.BoxGeometry(.9,1.4,.08),T(c)); k.position.set(-.5+i*1,1.35,0); rack.add(k); }); }
+    if(id==="tea"){ [sA,sB].forEach(g=>goods(g,["#5a7a4a","#8a5a3a","#2a2420","#c8a060"],"jar")); goods(sC,["#e8dcc0","#b8302a"],"fold");
+      const hearth=new THREE.Group(); hearth.position.set(2,0,1.4); room.add(hearth); box(hearth,1.6,.2,1.6,0,.1,0,STONE); const coal=new THREE.Mesh(new THREE.BoxGeometry(1.1,.08,1.1),new THREE.MeshBasicMaterial({color:"#ff7a30"})); coal.position.y=.22; hearth.add(coal);
+      const kettle=new THREE.Mesh(new THREE.SphereGeometry(.32,10,8),T("#2a2420")); kettle.position.y=.9; kettle.scale.y=.8; hearth.add(kettle); box(hearth,.03,1.6,.03,0,1.6,0,DARK); [-1,1].forEach(s=>{ const cu=new THREE.Mesh(new THREE.BoxGeometry(.5,.35,.5),T("#5a4a3a")); cu.position.set(s*1.4,.18,-.2); hearth.add(cu); }); }
+    if(id==="smith"){ goods(sA,["#5a5a62","#8a8a92","#3a3a42"],"fold"); goods(sB,["#8a6242","#5a5a62"],"roll");
+      const forge=new THREE.Group(); forge.position.set(2.9,0,.4); room.add(forge); box(forge,1.8,1.1,1.4,0,.55,0,STONE); const fire=new THREE.Mesh(new THREE.BoxGeometry(1.2,.1,.9),new THREE.MeshBasicMaterial({color:"#ff6a20"})); fire.position.y=1.12; forge.add(fire); box(forge,.55,1.1,.55,0,1.65,-.45,STONE);
+      const fl=new THREE.PointLight(0xff6a20,1.6,7,1.4); fl.position.y=1.6; forge.add(fl); SFX.forge=fl; const anvil=new THREE.Group(); anvil.position.set(.2,0,1.6); room.add(anvil); box(anvil,.4,.6,.4,0,.3,0,T("#2a2a30")); box(anvil,.8,.25,.35,0,.72,0,T("#3a3a42")); }
+    if(id==="store"){ [sA,sB].forEach(g=>goods(g,["#e8dcc0","#c8a060","#b8302a","#3f6a3a"],"roll")); goods(sC,["#8a6242","#e8dcc0"],"fold");
+      [[2.4,1.6],[1.6,2.4],[2.6,2.6]].forEach(([lx,lz])=>{ const b=new THREE.Mesh(new THREE.CylinderGeometry(.42,.38,.85,10),T("#8a6242")); b.position.set(lx,.43,lz); room.add(b); }); const sack=new THREE.Mesh(new THREE.SphereGeometry(.45,8,6),T("#e8dcc0")); sack.scale.y=.75; sack.position.set(-2.4,.35,2.4); room.add(sack); }
+    shadowy(root); room.traverse(m=>{ if(m.isMesh) m.receiveShadow=true; });
+    // walls you can't walk through (but the doorway is open)
+    const wallBox=(lx,lz,hw,hd)=>{ const [wx,wz]=W2(lx,lz); addBox(wx,wz,hw,hd,-ry); };
+    wallBox(0,-d/2,w/2,.18); wallBox(-w/2,0,.18,d/2); wallBox(w/2,0,.18,d/2); wallBox(-(1.3+side/2),d/2,side/2,.18); wallBox((1.3+side/2),d/2,side/2,.18); wallBox(0,-1.2,1.8,.45);
+    { const [cx,cz]=W2(0,-2.3); SHOPPOS[id]={x:cx,z:cz,ry}; const [ix,iz]=W2(0,-.35); SHOPPOS[id].ix=ix; SHOPPOS[id].iz=iz; }
+    SFX.shops.push({root,shell,x,z,ry,w,d,id}); return root; };
+
+  shops.forEach(sh=>{ const [x,z]=at(sh.s,sh.side*10.8); shopHouse(sh.id,x,z,faceRoad(sh.side),{noren:sh.noren,sign:sh.sign}); });
   houses.forEach(([s,side],i)=>{ const [x,z]=at(s+(srand()-.5)*3,side*(10+(srand()-.5)*2.4)); machiya(x,z,faceRoad(side)+(srand()-.5)*.16,5.5+srand()*2.6,5+srand()*1.6,{floors:srand()<.65?2:1,noren:[null,"#7a4a2a","#2e5a8a",null][i%4]}); });
   // ===== v62: Shirotae-machi, Town of Ice Lanterns =====
   { const ICE=new THREE.MeshToonMaterial({color:"#d8f0ff",emissive:new THREE.Color("#9ad8ff"),emissiveIntensity:.2,gradientMap:gm,transparent:true,opacity:.82});
@@ -3570,11 +3611,11 @@ function bridgeY(x,z){ for(const b of BRIDGES){ const dx=x-b.x, dz=z-b.z, u=dx*b
     tea:{n:"The Tea House",gift:"Hot tea: climbing tires you half as fast for three minutes.",wares:[["Sencha","5 mon"],["Hojicha","5 mon"],["Sweet red bean soup","12 mon"]]},
     smith:{n:"Kuma's Smithy",gift:"Kuma tunes your brush: bigger ink splashes, for good.",wares:[["Brush ferrule (iron)","90 mon"],["Sled runners","70 mon"],["Lantern frame","40 mon"]]},
     store:{n:"Pon's Goods",gift:"A bundle of crane paper and rumours: three new marks on your scroll.",wares:[["Crane paper (10)","10 mon"],["Rice balls","4 mon"],["Ink stick","15 mon"]]}};
-  FOLK.forEach(f=>{ const n=makeSpirit(f.o); const [x,z]=at(f.at[0],f.at[1]); placeSpirit(n,x,z,Math.atan2(-(snx*Math.sign(f.at[1])),-(snz*Math.sign(f.at[1])))); n.g.userData.keep=true; n.g.traverse(k=>k.userData.keep=true);
+  FOLK.forEach(f=>{ const n=makeSpirit(f.o); const SP=SHOPPOS[f.id]; let [x,z]=at(f.at[0],f.at[1]); let fr=Math.atan2(-(snx*Math.sign(f.at[1])),-(snz*Math.sign(f.at[1]))); if(SP){ x=SP.x; z=SP.z; fr=SP.ry; } placeSpirit(n,x,z,fr); n.g.userData.keep=true; n.g.traverse(k=>k.userData.keep=true);
     const shop=SHOP_WARES[f.id]; const tree={start:{say:[f.say],choices:shop?[{t:"Show me what you sell.",go:"shop"},{t:"Goodbye.",go:"end"}]:[{t:"What happened to the river?",go:"river"},{t:"Goodbye.",go:"end"}]},
       shop:{say:["Have a look."],fx:()=>setTimeout(()=>openShop(f.id),350),choices:[{t:"Thanks.",go:"end"}]},
       river:{say:["Follow it upstream, to the ridge. The spring there still steams on cold nights. Something keeps it warm."],fx:()=>mapRumor("hollow"),choices:[{t:"I'll go look.",go:"end"}]}};
-    addInteract({keep:true,x,z,r:2.6,k:"",label:"Talk to "+f.o.name,fn:()=>talkNpc(n,f.o,tree)}); });
+    const ix=SP?SP.ix:x, iz=SP?SP.iz:z; addInteract({keep:true,x:ix,z:iz,r:SP?1.9:2.6,k:"",label:SP?"Talk across the counter":"Talk to "+f.o.name,fn:()=>talkNpc(n,f.o,tree)}); });
   AREAS.unshift({id:"machi",k:"",n:"Shirotae-machi",test:(x,z)=>Math.hypot(x-TC.x,z-TC.z)<52});
   travel([{id:"machi",n:"Shirotae-machi",x:at(-46,0)[0],z:at(-46,0)[1]}],ALL_TR);
   window.SHOP_WARES=SHOP_WARES;
@@ -4503,7 +4544,7 @@ function horseCam(dt){ if(!horseFP()) return; const p=player.position, a=player.
   g.traverse(o=>{ o.userData.keep=true; o.userData.far=true; }); scene.add(g); SFX.ranges=g; }
 
 const _rD=new THREE.Color("#a6b2c6"), _rN=new THREE.Color("#252b3c"), _sD=new THREE.Color("#f4f8fc"), _sN=new THREE.Color("#5a6478");
-function v62Frame(dt){ if(SFX.rangeMats){ SFX.ranges.visible=player.position.x>300; const n=clamp(night,0,1); SFX.rangeMats[0].color.copy(_rD).lerp(_rN,n); SFX.rangeMats[1].color.copy(_sD).lerp(_sN,n); } if(SFX.kamaLights) SFX.kamaLights.forEach(l=>l.intensity=night*1.8); if(SFX.iceMats) SFX.iceMats.forEach(m=>m.emissiveIntensity=.2+night*1.4); if(SFX.banners&&Math.hypot(player.position.x-680,player.position.z)<160) SFX.banners.forEach((b,i)=>{ b.rotation.y=Math.sin(clock*2.2+i)*.25; b.rotation.z=Math.sin(clock*3.1+i)*.04; }); }
+function v62Frame(dt){ if(SFX.shops){ const px=player.position.x, pz=player.position.z; for(const sh of SFX.shops){ const dx=px-sh.x, dz=pz-sh.z, c=Math.cos(sh.ry), s=Math.sin(sh.ry); const lx=dx*c-dz*s, lz=dx*s+dz*c; const inside=Math.abs(lx)<sh.w/2+.2&&lz<sh.d/2+.6&&lz>-sh.d/2; if(sh.shell.visible===inside){ sh.shell.visible=!inside; } } if(SFX.forge) SFX.forge.intensity=1.4+Math.sin(clock*13)*.3; } if(SFX.rangeMats){ SFX.ranges.visible=player.position.x>300; const n=clamp(night,0,1); SFX.rangeMats[0].color.copy(_rD).lerp(_rN,n); SFX.rangeMats[1].color.copy(_sD).lerp(_sN,n); } if(SFX.kamaLights) SFX.kamaLights.forEach(l=>l.intensity=night*1.8); if(SFX.iceMats) SFX.iceMats.forEach(m=>m.emissiveIntensity=.2+night*1.4); if(SFX.banners&&Math.hypot(player.position.x-680,player.position.z)<160) SFX.banners.forEach((b,i)=>{ b.rotation.y=Math.sin(clock*2.2+i)*.25; b.rotation.z=Math.sin(clock*3.1+i)*.04; }); }
 /* ===================== boot ===================== */
 
 /* ===================== STARTER TOWN CLEAN-UP (v42) ===================== */
