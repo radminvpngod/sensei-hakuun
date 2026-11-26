@@ -1,7 +1,7 @@
 {
- "version": 66,
+ "version": 67,
  "shellApi": 2,
- "notes": "Samurai rework: a real painted anime face (big amber eyes with highlights, brows, blush), hair now covers the back of his head, and fabric textures everywhere: woven kimono with a cross print, wave-print hakama, hex-pattern silk obi and scarf, straw-weave hat, wood sandals. New costume pieces: hakama gathered into white leg wraps, dark forearm guards, a red inner collar, a gourd and a lacquered pouch on his belt, and a longer scarf.",
+ "notes": "Samurai pass 3: the waist now flows straight from chest into a wider hakama (no pinch), an older, sharper face (narrower determined eyes, heavier lids, angled brows, no cartoon blush), a longer jaw, and richer hand-made textures: worn indigo kimono with white sashiko stitching, pinstriped slate hakama, maroon brocade obi with gold lattice, sun-faded crimson scarf, travel-stained leg wraps. New: a family crest on the back of his kimono.",
  "files": [
   "brain-client.js",
   "core.js",
@@ -34,12 +34,13 @@
   "vendor/addons/controls/TransformControls.js",
   "assets/samurai.glb",
   "assets/samurai_moves.json",
-  "assets/sam_kimono.png",
-  "assets/sam_hakama.png",
-  "assets/sam_red.png",
-  "assets/sam_wrap.png",
-  "assets/sam_straw.png",
-  "assets/sam_wood.png"
+  "assets/sam_kimono.jpg",
+  "assets/sam_hakama.jpg",
+  "assets/sam_red.jpg",
+  "assets/sam_scarf.jpg",
+  "assets/sam_wrap.jpg",
+  "assets/sam_straw.jpg",
+  "assets/sam_wood.jpg"
  ],
  "minShell": "0.2.0"
 }
