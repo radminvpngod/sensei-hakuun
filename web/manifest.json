@@ -1,7 +1,7 @@
 {
- "version": 55,
+ "version": 56,
  "shellApi": 2,
- "notes": "Go anywhere: the invisible walls are gone. You can walk anywhere the land lets you (steep ground slows you, cliffs stop you, the world's edge is the land's edge). Footprints: deep in snow (they last 90s), faint on earth, hoofprints on horseback, twin tracks behind the sled. Your paper character and lantern no longer clip into walls and trees. Backdrop hills are solid now.",
+ "notes": "Animation polish: a tucked roll, a reach when you interact, a wave when a conversation starts. BotW-style climbing: push into a cliff to climb it (back view, arms reaching), with a stamina wheel; run out and you slide down. Fixes footprints, which weren't appearing in v55.",
  "files": [
   "brain-client.js",
   "core.js",

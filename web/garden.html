@@ -720,8 +720,8 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
     g.restore(); };
   // ================= BACK VIEW =================
   if(back){
-    sword(false); leg(-1,legA); leg(1,-legA);
-    hakama(g,X,legA,back,fillOL); arm(-1,armA); arm(1,-armA);
+    sword(false); if(pose==="climb"){ const c=o.ph?1:-1; leg(-1,.5+c*.25,48); leg(1,-.5+c*.25,48); } else { leg(-1,legA); leg(1,-legA); }
+    hakama(g,X,pose==="climb"?0:legA,back,fillOL,pose==="climb"?.5:0); if(pose==="climb"){ const c=o.ph?1:-1; arm(-1,-2.75+c*.3); arm(1,-2.75-c*.3); } else { arm(-1,armA); arm(1,-armA); }
     g.beginPath(); rr(g,X-46,136,92,64,22); fillOL("#2c3f6e",4); g.fillStyle="#3c5a8c"; g.fillRect(X-40,140,10,56);
     g.beginPath(); g.arc(X,166,17,0,TAU); fillOL("#efe6d0",3); g.fillStyle="#b8302a"; g.font='700 20px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("紙",X,173);
     g.beginPath(); rr(g,X-47,190,94,14,6); fillOL("#b8302a",3);
@@ -731,7 +731,8 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
     kasa(g,X,fillOL,true); g.restore(); return; }
   // ================= FRONT VIEW =================
   scarf(); sword(true);
-  if(pose==="ride"){ leg(-1,.95,46); leg(1,-.95,46); }
+  if(pose==="tuck"){ g.translate(X,236); g.scale(1,.8); g.translate(-X,-236); leg(-1,.9,32); leg(1,-.9,32); }
+  else if(pose==="ride"){ leg(-1,.95,46); leg(1,-.95,46); }
   else if(pose==="sled"){ leg(-1,.5,34); leg(1,-.5,34); }
   else { leg(-1,legA); leg(1,-legA); }
   hakama(g,X,pose==="ride"?0:legA,false,fillOL,pose==="ride"?1:pose==="sled"?.6:0);
@@ -739,6 +740,8 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
   const hold=pose==="swing"?"brush":null;
   if(pose==="ride"||pose==="sled"){ arm(-1,-.5); arm(1,-.5); }
   else if(pose==="swing"){ const k=o.k||0; arm(-1,.15); }
+  else if(pose==="tuck"){ arm(-1,-1.25); }
+  else if(pose==="reach"||pose==="wave"){ arm(-1,.12); }
   else { arm(-1,armA); }
   // torso: haori over kimono
   g.beginPath(); rr(g,X-46,134,92,66,22); fillOL("#2c3f6e",4);
@@ -754,6 +757,9 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
   // front arm
   if(pose==="ride"||pose==="sled"){ }
   else if(pose==="swing"){ const k=o.k||0; arm(1,[-2.6,-1.1,.6][Math.min(2,Math.floor(k*3))],"brush"); }
+  else if(pose==="tuck"){ arm(1,-1.25); }
+  else if(pose==="reach"){ arm(1,-1.55); }
+  else if(pose==="wave"){ arm(1,o.ph?-2.85:-2.35); }
   else arm(1,-armA);
   // head
   g.beginPath(); g.ellipse(X,100,44,42,0,0,TAU); fillOL("#f6d9bb",4);
@@ -762,7 +768,7 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
   const blink=pose==="idle"&&o.br; g.fillStyle=ink;
   [-1,1].forEach(d=>{ if(blink){ g.lineWidth=3; g.beginPath(); g.moveTo(X+d*16-6,106); g.lineTo(X+d*16+6,106); g.stroke(); } else { g.beginPath(); g.ellipse(X+d*16,106,6,9,0,0,TAU); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(X+d*16+2,102,2.6,0,TAU); g.fill(); g.fillStyle=ink; } });
   g.fillStyle="rgba(232,110,100,.5)"; g.beginPath(); g.ellipse(X-30,120,9,5,0,0,TAU); g.ellipse(X+30,120,9,5,0,0,TAU); g.fill();
-  g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); if(pose==="run"||pose==="swing"){ g.ellipse(X,123,5,4,0,0,TAU); g.fillStyle="#7a2a22"; g.fill(); g.stroke(); } else { g.arc(X,119,6,.25,Math.PI-.25); g.stroke(); }
+  g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); if(pose==="run"||pose==="swing"||pose==="tuck"){ g.ellipse(X,123,5,4,0,0,TAU); g.fillStyle="#7a2a22"; g.fill(); g.stroke(); } else { if(pose==="wave"){ g.arc(X,117,8,.1,Math.PI-.1); g.fillStyle="#7a2a22"; g.fill(); g.stroke(); } else { g.arc(X,119,6,.25,Math.PI-.25); g.stroke(); } }
   g.strokeStyle="#b8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(X-40,96); g.quadraticCurveTo(X-30,132,X,140); g.quadraticCurveTo(X+30,132,X+40,96); g.stroke();
   g.beginPath(); rr(g,X-37,126,74,15,7); fillOL("#d8402e",3);
   kasa(g,X,fillOL,false);
@@ -816,6 +822,10 @@ function buildSamFrames(){ if(SAMF) return SAMF; const mk=o=>{ const t=paperCut(
     ride:[0,1].map(i=>mk({pose:"ride",ph:i/2})),sled:[mk({pose:"sled"})],swing:[0,1,2].map(i=>mk({pose:"swing",k:(i+.5)/3}))}; return SAMF; }
 const SAMST={bt:0,br:0};
 function samFrame(P,dt){ const F=buildSamFrames(), back=P.back; SAMST.bt+=dt; if(SAMST.bt>(SAMST.br?.12:2.6)){ SAMST.bt=0; SAMST.br^=1; }
+  const F2=buildSamFrames2(); if(CLIMB.on) return F2.climb[Math.floor(walkPh/Math.PI)%2];
+  if(ROLL.t>=0) return F2.tuck[0];
+  if(ACT.wave>0) return F2.wave[Math.floor(clock*5)%2];
+  if(ACT.reach>0) return F2.reach[0];
   if(typeof RIDE!=="undefined"&&RIDE.mode==="horse") return F.ride[Math.floor(clock*6)%2];
   if(typeof RIDE!=="undefined"&&RIDE.mode==="sled") return F.sled[0];
   if(typeof _inkCd!=="undefined"&&_inkCd>0) return F.swing[Math.min(2,Math.floor((1-_inkCd/.45)*3))];
@@ -2206,7 +2216,7 @@ function paperTick(dt){
   const yaw=Math.atan2(camera.position.x-controls.target.x, camera.position.z-controls.target.z);
   const p=PAPERSP.p, P=PAPERX, rolling=ROLL.t>=0, moving=P.mag>.08||rolling;
   P.ft+=dt; if(moving&&P.ft>.14){ P.ft=0; P.step^=1; } if(!moving) P.step=0;
-  paperSetTex(p,samFrame(P,dt));
+  if(CLIMB.on) P.back=true; paperSetTex(p,samFrame(P,dt));
   P.sx+=Math.sign(P.face-P.sx)*Math.min(Math.abs(P.face-P.sx),dt*11);           // the paper flip
   const bob=moving&&!rolling?Math.abs(Math.sin(clock*13))*.07:0, breathe=moving?1:1+Math.sin(clock*2.2)*.012;
   p.scale.set(Math.abs(P.sx)<.02?.02*Math.sign(P.sx||1):P.sx, breathe, 1);
@@ -2662,7 +2672,7 @@ addEventListener("keydown",e=>{ if(!PRO.on) return; if(e.code==="Escape") proNex
 setTimeout(()=>{ const st=new THREE.Mesh(new THREE.BoxGeometry(.9,1.7,.28),new THREE.MeshToonMaterial({color:0x6d6a63})); const sx=CGATE.x-1.6, sz=CGATE.z+9.6; st.position.set(sx,groundY(sx,sz)+.8,sz); st.rotation.y=.35; st.castShadow=true; scene.add(st); addCircle(sx,sz,.6);
   const cap=new THREE.Mesh(new THREE.BoxGeometry(1.1,.16,.4),new THREE.MeshToonMaterial({color:0x4b4843})); cap.position.set(0,.92,0); st.add(cap);
   addInteract({x:sx,z:sz+.9,r:1.8,k:"巻",label:"Read the old story stone",fn:()=>showPrologue()}); },0);
-function doInteract(){ if(!entered||chatOpen||PRO.on||!nearest) return; if(ROLL.t>=0) return; avatarFor(nearest); nearest.fn(); }
+function doInteract(){ if(!entered||chatOpen||PRO.on||!nearest) return; if(ROLL.t>=0) return; avatarFor(nearest); ACT.reach=.5; nearest.fn(); }
 // ---- the avatar acts out what the prompt says: bow, sit, pray, soak, read, ring, feed ----
 const POSE={kind:null,t:0,hold:false,out:0};
 function avatarFor(it){ const L=String(it.label||"").toLowerCase(); let k=null, hold=false;
@@ -2877,7 +2887,7 @@ function frame(now){
   if(PAPER) paperTick(dt);
   try{ passFrame(dt); }catch(e){}
   try{ worldFrame(dt); }catch(e){ if(!window._wfe){ window._wfe=1; console.warn("[world]",e); } }
-  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); inkbarFrame(); finderFrame(dt); rideFrame(dt); inkFrame(dt); dlgBubbleFrame(); cullFrame(dt); footFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
+  for(const f of FRAME_SYS){ try{ f(dt); }catch(e){ if(!f._warned){ f._warned=1; console.warn('[frame]',f.name,e); } } }
   { const A=frame.ad||(frame.ad={t:0,n:0,s:0,pr:PR}); A.t+=dt; A.n++; A.s+=dt; if(A.t>2){ const avg=A.s/A.n; let pr=A.pr; if(avg>.021&&pr>1) pr=Math.max(1,pr-.25); else if(avg<.013&&pr<PR) pr=Math.min(PR,pr+.25); if(pr!==A.pr){ A.pr=pr; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); } A.t=0; A.n=0; A.s=0; } }
   padPoll(dt); golfFrame(dt); skyFxFrame(dt); lifeFrame(dt); advFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   const advMode=pmode==="climb"||pmode==="fall"||pmode==="glide"||pmode==="koi";
@@ -3914,9 +3924,9 @@ function cullFrame(dt){ if((CULL.t+=dt)<.4) return; CULL.t=0; if(typeof natReady
 // The world's edge is the edge of the land itself. Anything you can walk up, you can walk up; cliffs stop you, and steep ground slows you.
 function inWorld(x,z){ return (x>-186&&x<186&&Math.abs(z)<186)||(x>=186&&x<452&&Math.abs(z)<186)||(x>=452&&x<1395&&z>SF_DARK_Z+6&&z<495); }
 function roamLimit(p){ const o=player.position, dx=p.x-o.x, dz=p.z-o.z, d=Math.hypot(dx,dz); if(d<1e-5) return;
-  const test=(x,z)=>{ if(!inWorld(x,z)) return false; const g=(H(x,z)-H(o.x,o.z))/Math.max(.05,Math.hypot(x-o.x,z-o.z)); return g<1.35; };
+  const test=(x,z)=>{ if(!inWorld(x,z)) return false; const g=(H(x,z)-H(o.x,o.z))/Math.max(.05,Math.hypot(x-o.x,z-o.z)); return g<1.35||(g<9&&climbAllow()); };
   if(!test(p.x,p.z)){ if(test(p.x,o.z)){ p.z=o.z; } else if(test(o.x,p.z)){ p.x=o.x; } else { p.x=o.x; p.z=o.z; return; } }
-  const g=(H(p.x,p.z)-H(o.x,o.z))/Math.max(.05,Math.hypot(p.x-o.x,p.z-o.z)); if(g>.5){ const f=clamp(1-(g-.5)*.75,.35,1); p.x=o.x+(p.x-o.x)*f; p.z=o.z+(p.z-o.z)*f; } }
+  const g=(H(p.x,p.z)-H(o.x,o.z))/Math.max(.05,Math.hypot(p.x-o.x,p.z-o.z)); if(CLIMB.on){ const f=.34; p.x=o.x+(p.x-o.x)*f; p.z=o.z+(p.z-o.z)*f; } else if(g>.5){ const f=clamp(1-(g-.5)*.75,.35,1); p.x=o.x+(p.x-o.x)*f; p.z=o.z+(p.z-o.z)*f; } }
 // solid backdrop hills and peaks, now that you can reach them
 setTimeout(()=>{ try{ scene.children.forEach(o=>{ if(!o.isMesh) return; if(o.material===midMat){ const r=Math.min(o.scale.x,o.scale.z)*.82; if(inWorld(o.position.x,o.position.z)) circles.push({x:o.position.x,z:o.position.z,r}); }
   else if(o.material===farMat&&o.geometry.parameters&&o.geometry.parameters.radius){ circles.push({x:o.position.x,z:o.position.z,r:o.geometry.parameters.radius*.8}); } }); }catch(e){} },1500);
@@ -3932,13 +3942,39 @@ function footPlace(x,z,yaw,sx=1,sz=1){ const snow=x>95&&!(x>446&&z<-760); const 
   const d=FOOT.d; d.rotation.order="YXZ"; d.rotation.set(-Math.PI/2,yaw,0,"YXZ"); d.position.set(x,groundY(x,z)+.035,z); d.scale.set(sx,sz,1); d.updateMatrix(); im.setMatrixAt(i,d.matrix); im.instanceMatrix.needsUpdate=true;
   FOOT.life[i]={im,t:0,max:snow?90:14,x,z,yaw,sx,sz}; }
 let _footT=0;
-function footFrame(dt){ if(zone!=="world"||pmode!=="walk"||advMode) return; const p=player.position, a=player.rotation.y, rx=Math.cos(a), rz=-Math.sin(a);
+function footFrame(dt){ if(zone!=="world"||pmode!=="walk") return; const p=player.position, a=player.rotation.y, rx=Math.cos(a), rz=-Math.sin(a);
   if(RIDE.mode==="sled"){ FOOT.sledD+=RIDE.v.length()*dt; if(FOOT.sledD>.55){ FOOT.sledD=0; [-.38,.38].forEach(o=>footPlace(p.x+rx*o,p.z+rz*o,a,.35,1.3)); } }
   else if(speedNow>.4&&ROLL.t<0){ const ph=walkPh%Math.PI; if(ph<FOOT.lastPh){ if(RIDE.mode==="horse"){ [[-.35,.9],[.35,.9],[-.35,-.9],[.35,-.9]].forEach(([o,f])=>footPlace(p.x+rx*o+Math.sin(a)*f,p.z+rz*o+Math.cos(a)*f,a,.9,.55)); }
       else { FOOT.side*=-1; footPlace(p.x+rx*.16*FOOT.side,p.z+rz*.16*FOOT.side,a); } } FOOT.lastPh=ph; }
   if((_footT+=dt)<.5) return; const step=_footT; _footT=0;
   for(let i=0;i<FOOT.N;i++){ const L=FOOT.life[i]; if(!L) continue; L.t+=step; if(L.t>L.max){ const k=Math.max(0,1-(L.t-L.max)/4); const d=FOOT.d; d.rotation.set(-Math.PI/2,L.yaw,0,"YXZ"); d.position.set(L.x,groundY(L.x,L.z)+.035,L.z); d.scale.set(L.sx*k,L.sz*k,1); d.updateMatrix(); L.im.setMatrixAt(i,d.matrix); L.im.instanceMatrix.needsUpdate=true; if(k<=0) FOOT.life[i]=null; } } }
 
+
+/* ===================== v56: animation polish (tuck roll, reach, wave) and BotW-style climbing ===================== */
+const ACT={reach:0,wave:0};
+const CLIMB={on:false,push:0,st:1,blocked:false,flat:0,ring:null,slide:0};
+function buildSamFrames2(){ const F=buildSamFrames(); if(F.tuck) return F; const mk=o=>paperCut(256,320,(g,w,h)=>drawSamurai2(g,w,h,o),0);
+  F.tuck=[mk({pose:"tuck"})]; F.reach=[mk({pose:"reach"})]; F.wave=[0,1].map(i=>mk({pose:"wave",ph:i})); F.climb=[0,1].map(i=>mk({pose:"climb",ph:i/2,back:true})); return F; }
+(function(){ const st=document.createElement("style"); st.textContent=`#climbRing{position:fixed;width:46px;height:46px;z-index:7;pointer-events:none;opacity:0;transition:opacity .3s;transform:translate(-50%,-50%)}#climbRing.show{opacity:1}`; document.head.appendChild(st);
+  const d=document.createElement("div"); d.id="climbRing"; d.innerHTML=`<svg viewBox="0 0 46 46" width="46" height="46"><circle cx="23" cy="23" r="18" fill="rgba(239,230,208,.55)" stroke="rgba(42,36,32,.35)" stroke-width="6"/><circle class="arc" cx="23" cy="23" r="18" fill="none" stroke="#2c8a4a" stroke-width="6" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="0" transform="rotate(-90 23 23)"/></svg>`; document.body.appendChild(d); CLIMB.ring=d; })();
+// roamLimit asks this before refusing a step up a cliff
+function climbAllow(){ CLIMB.blocked=true; return CLIMB.on&&CLIMB.st>0; }
+const _crv=new THREE.Vector3();
+function climbFrame(dt,moving){ const p=player.position, e=1; const gr=Math.hypot(H(p.x+e,p.z)-H(p.x-e,p.z),H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e);
+  if(CLIMB.blocked&&moving&&!RIDE.mode) CLIMB.push+=dt; else CLIMB.push=Math.max(0,CLIMB.push-dt*2); CLIMB.blocked=false;
+  if(!CLIMB.on&&CLIMB.push>.3&&CLIMB.st>.15){ CLIMB.on=true; }
+  if(CLIMB.on){ if(moving) CLIMB.st-=dt/7; else CLIMB.st-=dt/22; if(gr<.9){ CLIMB.flat+=dt; if(CLIMB.flat>.25){ CLIMB.on=false; CLIMB.flat=0; } } else CLIMB.flat=0;
+    if(CLIMB.st<=0){ CLIMB.on=false; CLIMB.slide=1.2; toast("Out of breath. You slide back down."); } }
+  else { CLIMB.st=Math.min(1,CLIMB.st+dt/3.5); }
+  // sliding down a cliff when you run out
+  if(CLIMB.slide>0){ CLIMB.slide-=dt; const gx=(H(p.x+e,p.z)-H(p.x-e,p.z))/(2*e), gz=(H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e), gl=Math.hypot(gx,gz)||1; if(gr>.6){ p.x-=gx/gl*dt*7; p.z-=gz/gl*dt*7; } }
+  const r=CLIMB.ring; const show=CLIMB.on||CLIMB.st<.999; r.classList.toggle("show",show&&zone==="world");
+  if(show){ _crv.copy(p); _crv.y+=2.4; _crv.project(camera); r.style.left=((_crv.x*.5+.5)*innerWidth+46)+"px"; r.style.top=((-_crv.y*.5+.5)*innerHeight)+"px";
+    const a=r.querySelector(".arc"); a.setAttribute("stroke-dashoffset",String(113.1*(1-Math.max(0,CLIMB.st)))); a.setAttribute("stroke",CLIMB.st<.25?"#b8302a":"#2c8a4a"); } }
+function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,ACT.wave-dt);
+  if(zone==="world"&&pmode==="walk") climbFrame(dt,speedNow>.3); else { CLIMB.on=false; CLIMB.ring&&CLIMB.ring.classList.remove("show"); } }
+
+const FRAME_SYS=[handLanternFrame,paperTintFrame,craneFrame,memoryFrame,inkbarFrame,finderFrame,rideFrame,inkFrame,dlgBubbleFrame,cullFrame,footFrame,animFrame];
 /* ===================== boot ===================== */
 
 /* ===================== STARTER TOWN CLEAN-UP (v42) ===================== */
@@ -5189,7 +5225,7 @@ dlgEl.innerHTML=`<style>
 document.body.appendChild(dlgEl);
 const PORTRAITS={};
 function portraitOf(key,draw,w,h){ if(!PORTRAITS[key]){ try{ PORTRAITS[key]=paperCanvas(w,h,draw,6).toDataURL(); }catch(e){ PORTRAITS[key]=""; } } return PORTRAITS[key]; }
-function dlgStart(who,tree,start="start"){ DLG.open=true; DLG.who=who; DLG.tree=tree; dlgEl.querySelector(".nm").textContent=who.name; dlgEl.querySelector(".pt").style.backgroundImage=who.portrait?`url(${who.portrait})`:"none"; DLG.pitch=who.pitch||1; dlgEl.classList.add("show"); try{ document.exitPointerLock(); }catch(e){} dlgGo(start); }
+function dlgStart(who,tree,start="start"){ try{ ACT.wave=1.3; }catch(e){} DLG.open=true; DLG.who=who; DLG.tree=tree; dlgEl.querySelector(".nm").textContent=who.name; dlgEl.querySelector(".pt").style.backgroundImage=who.portrait?`url(${who.portrait})`:"none"; DLG.pitch=who.pitch||1; dlgEl.classList.add("show"); try{ document.exitPointerLock(); }catch(e){} dlgGo(start); }
 function dlgGo(id){ if(!id||id==="end"){ return dlgClose(); } const n=typeof DLG.tree[id]==="function"?DLG.tree[id]():DLG.tree[id]; if(!n) return dlgClose(); DLG.node=n; DLG.i=0; if(n.fx) try{ n.fx(); }catch(e){} dlgLine(); }
 function dlgLine(){ const n=DLG.node, says=[].concat(n.say||[]); const line=says[DLG.i]; DLG.full=typeof line==="function"?line():line; DLG.typing=0; dlgEl.querySelector(".ch").innerHTML=""; dlgEl.querySelector(".more").style.display="none"; try{ babble(DLG.full,DLG.pitch); }catch(e){} }
 function dlgShowChoices(){ const n=DLG.node, says=[].concat(n.say||[]); const box=dlgEl.querySelector(".ch"); const more=dlgEl.querySelector(".more");
