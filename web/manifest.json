@@ -1,7 +1,7 @@
 {
- "version": 59,
+ "version": 60,
  "shellApi": 2,
- "notes": "The ens\u014d: hold Tab (or LB) and a brushed circle draws itself with your tools around it: brush, horse, dog sled, lantern, Finder, scroll. Q (or X) uses the one you picked. The horse is now scribbled into the world in ink, you hop up onto it, and getting off crumples it into a paper ball. Dog sleds: four paper dogs pull you across the snow; hold run while turning to drift. You crumple on big drops, fold a paper crane if you stand still long enough, and flutter in blizzards. Hold the lantern high for more light. Full controller: A interact, B roll/run, X tool, Y horse, LB ens\u014d, RB Finder, LT scroll, Back journal, R3 re-centre camera; the journal and scroll work with a controller too. The app now checks for updates 20 seconds after it opens and every 5 minutes.",
+ "notes": "Shirotae gets lived in: Shirotae-machi, a snow town on the road with a Clothier, Tea House, Smithy and Goods shop (each gives a welcome gift: warm tea, a tuned brush, a scarf, rumours), townsfolk to talk to, a great shimenawa tree, a steaming foot bath and a travel lantern. A river now runs from a warm spring on the ridge down to K\u014dri Lake, with red bridges where the roads cross. Also: a sacred Cedar Grove, the Snow Arch, and a wild hot spring by the lake. The Withered Wood is now umber and violet, with fields of red spider lilies.",
  "files": [
   "brain-client.js",
   "core.js",
