@@ -684,7 +684,7 @@ function drawSamurai(g,W,H,back,step){
 }
 // ---------- Paper Samurai v2: a richer cutout, many poses, and real lighting on paper ----------
 // o: {back, ph (0..1 through a stride), pose: idle|walk|run|ride|sled|swing, k (pose progress), br (breath 0/1)}
-function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const X=128, ink="#1d1a22", back=!!o.back, pose=o.pose||"idle", ph=o.ph||0;
+function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const X=128, ink="#1d1a22", back=!!o.back, pose=o.pose||"idle", ph=o.ph||0; let A=null; try{ A=store.wear; }catch(e){} A=A||{hat:"kasa",scarf:"red",charm:"none"}; const SC=({red:["#d8402e","#b8302a"],indigo:["#3c5a8c","#2c3f6e"],white:["#efe9dc","#cfc6b4"],gold:["#f0b040","#c8802a"]})[A.scarf]||["#d8402e","#b8302a"];
   const S=Math.sin(ph*TAU), C=Math.cos(ph*TAU);
   const amp=pose==="run"?.62:pose==="walk"?.36:0, legA=S*amp, armA=-S*amp*.9, bob=pose==="run"?Math.abs(C)*-9:pose==="walk"?Math.abs(C)*-5:(o.br?-1.5:0);
   const tilt=pose==="run"?.07:0;
@@ -692,9 +692,9 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
   const fillOL=(c,w=4)=>{ g.fillStyle=c; g.fill(); OL(w); };
   g.translate(X,300); g.rotate(tilt); g.translate(-X,-300+bob);
   // ---- scarf tails (behind in front view) ----
-  const scarf=()=>{ const fl=pose==="run"?1:pose==="walk"?.55:pose==="ride"?1:.25, w=Math.sin(ph*TAU*2)*8*fl+Math.sin(performance.now?0:0);
-    g.beginPath(); g.moveTo(X+20,136); g.bezierCurveTo(X+50+fl*20,130+w,X+70+fl*36,146-w,X+86+fl*44,150+fl*-12+w); g.lineTo(X+80+fl*44,166+fl*-10+w*.6); g.bezierCurveTo(X+62+fl*30,160,X+44+fl*14,150+w*.5,X+18,150); g.closePath(); fillOL("#d8402e",3.5);
-    g.beginPath(); g.moveTo(X+18,144); g.bezierCurveTo(X+40+fl*10,152+w,X+52+fl*24,168,X+60+fl*30,180-fl*8+w); g.lineTo(X+50+fl*28,186-fl*8+w); g.bezierCurveTo(X+40,170,X+30,160,X+14,152); g.closePath(); fillOL("#b8302a",3.5); };
+  const scarf=()=>{ if(A.scarf==="none") return; const fl=pose==="run"?1:pose==="walk"?.55:pose==="ride"?1:.25, w=Math.sin(ph*TAU*2)*8*fl+Math.sin(performance.now?0:0);
+    g.beginPath(); g.moveTo(X+20,136); g.bezierCurveTo(X+50+fl*20,130+w,X+70+fl*36,146-w,X+86+fl*44,150+fl*-12+w); g.lineTo(X+80+fl*44,166+fl*-10+w*.6); g.bezierCurveTo(X+62+fl*30,160,X+44+fl*14,150+w*.5,X+18,150); g.closePath(); fillOL(SC[0],3.5);
+    g.beginPath(); g.moveTo(X+18,144); g.bezierCurveTo(X+40+fl*10,152+w,X+52+fl*24,168,X+60+fl*30,180-fl*8+w); g.lineTo(X+50+fl*28,186-fl*8+w); g.bezierCurveTo(X+40,170,X+30,160,X+14,152); g.closePath(); fillOL(SC[1],3.5); };
   // ---- katana ----
   const sword=(front)=>{ g.save(); g.translate(X,176); g.rotate(front?.78:-.78); const d=front?1:-1;
     g.beginPath(); g.rect(-100*d<0?-100:-10,-6,110,12); g.restore(); g.save(); g.translate(X,176); g.rotate(front?.78:-.78);
@@ -727,8 +727,8 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
     g.beginPath(); rr(g,X-47,190,94,14,6); fillOL("#b8302a",3);
     scarf();
     g.beginPath(); g.ellipse(X,100,44,42,0,0,TAU); fillOL("#2a2026",4); g.beginPath(); g.arc(X,62,11,0,TAU); fillOL("#1d161b",3); g.strokeStyle="#b8302a"; g.lineWidth=3; g.beginPath(); g.moveTo(X-9,66); g.lineTo(X+9,66); g.stroke();
-    g.beginPath(); rr(g,X-37,126,74,16,8); fillOL("#d8402e",3);
-    kasa(g,X,fillOL,true); g.restore(); return; }
+    if(A.scarf!=="none"){ g.beginPath(); rr(g,X-37,126,74,16,8); fillOL(SC[0],3); }
+    headwear(g,X,fillOL,true,A.hat); g.restore(); return; }
   // ================= FRONT VIEW =================
   scarf(); sword(true);
   if(pose==="tuck"){ g.translate(X,236); g.scale(1,.8); g.translate(-X,-236); leg(-1,.9,32); leg(1,-.9,32); }
@@ -769,15 +769,30 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
   [-1,1].forEach(d=>{ if(blink){ g.lineWidth=3; g.beginPath(); g.moveTo(X+d*16-6,106); g.lineTo(X+d*16+6,106); g.stroke(); } else { g.beginPath(); g.ellipse(X+d*16,106,6,9,0,0,TAU); g.fill(); g.fillStyle="#fff"; g.beginPath(); g.arc(X+d*16+2,102,2.6,0,TAU); g.fill(); g.fillStyle=ink; } });
   g.fillStyle="rgba(232,110,100,.5)"; g.beginPath(); g.ellipse(X-30,120,9,5,0,0,TAU); g.ellipse(X+30,120,9,5,0,0,TAU); g.fill();
   g.strokeStyle=ink; g.lineWidth=3; g.beginPath(); if(pose==="run"||pose==="swing"||pose==="tuck"){ g.ellipse(X,123,5,4,0,0,TAU); g.fillStyle="#7a2a22"; g.fill(); g.stroke(); } else { if(pose==="wave"){ g.arc(X,117,8,.1,Math.PI-.1); g.fillStyle="#7a2a22"; g.fill(); g.stroke(); } else { g.arc(X,119,6,.25,Math.PI-.25); g.stroke(); } }
-  g.strokeStyle="#b8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(X-40,96); g.quadraticCurveTo(X-30,132,X,140); g.quadraticCurveTo(X+30,132,X+40,96); g.stroke();
-  g.beginPath(); rr(g,X-37,126,74,15,7); fillOL("#d8402e",3);
-  kasa(g,X,fillOL,false);
+  if(A.hat==="kasa"){ g.strokeStyle="#b8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(X-40,96); g.quadraticCurveTo(X-30,132,X,140); g.quadraticCurveTo(X+30,132,X+40,96); g.stroke(); }
+  if(A.scarf!=="none"){ g.beginPath(); rr(g,X-37,126,74,15,7); fillOL(SC[0],3); }
+  headwear(g,X,fillOL,false,A.hat);
+  if(A.charm==="omamori"){ g.strokeStyle="#e8c25a"; g.lineWidth=2; g.beginPath(); g.moveTo(X+30,196); g.lineTo(X+33,206); g.stroke(); g.beginPath(); rr(g,X+26,205,15,20,3); fillOL("#c8302a",2.5); g.strokeStyle="#e8c25a"; g.lineWidth=1.6; g.beginPath(); g.moveTo(X+29,211); g.lineTo(X+38,211); g.stroke(); }
+  else if(A.charm==="bell"){ g.strokeStyle="#b8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(X+30,196); g.lineTo(X+32,206); g.stroke(); g.beginPath(); g.arc(X+32,212,7,0,TAU); fillOL("#e8c25a",2.5); g.fillStyle="#1d1a22"; g.fillRect(X+31,213,2,5); }
   if(pose==="swing"&&(o.k||0)>.3&&(o.k||0)<.7){ g.strokeStyle="rgba(21,19,26,.85)"; g.lineWidth=9; g.lineCap="round"; g.beginPath(); g.arc(X,150,104,-2.4,-.2); g.stroke(); g.lineWidth=3; g.beginPath(); g.arc(X,150,118,-2.1,-.5); g.stroke(); }
   g.restore(); }
 function hakama(g,X,legA,back,fillOL,spread=0){ const sw=legA*14, wd=50+spread*22;
   g.beginPath(); g.moveTo(X-38,190); g.lineTo(X+38,190); g.lineTo(X+wd+sw*.4,266); g.quadraticCurveTo(X+sw*.3,276,X-wd+sw*.4,266); g.closePath(); fillOL("#23283d",4);
   g.save(); g.clip(); g.strokeStyle="#3a4466"; g.lineWidth=2.2; for(let r=0;r<3;r++) for(let i=-4;i<=4;i++){ const cx=X+i*16+(r%2)*8, cy=262-r*9; for(let k=1;k<=3;k++){ g.beginPath(); g.arc(cx,cy,k*3.6,Math.PI,0); g.stroke(); } } g.restore();
   g.strokeStyle="rgba(10,10,20,.55)"; g.lineWidth=2.5; [-22,-8,8,22].forEach(d=>{ g.beginPath(); g.moveTo(X+d*.8,194); g.lineTo(X+d*1.3+sw*.3,262); g.stroke(); }); }
+function headwear(g,X,fillOL,back,hat){
+  if(hat==="jingasa"){ g.beginPath(); g.moveTo(X-92,70); g.lineTo(X,26); g.lineTo(X+92,70); g.quadraticCurveTo(X,62,X-92,70); fillOL("#1d1a22",4); g.strokeStyle="#7a1a14"; g.lineWidth=3; g.beginPath(); g.moveTo(X-84,68); g.quadraticCurveTo(X,58,X+84,68); g.stroke();
+    if(!back){ g.beginPath(); g.arc(X,52,9,0,TAU); fillOL("#e8c25a",2.5); g.fillStyle="#7a1a14"; g.font='700 11px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("紙",X,56); }
+    g.strokeStyle="#b8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(X-40,72); g.quadraticCurveTo(X-34,120,X-20,136); g.moveTo(X+40,72); g.quadraticCurveTo(X+34,120,X+20,136); g.stroke(); return; }
+  if(hat==="hachimaki"){ g.beginPath(); rr(g,X-46,74,92,12,5); fillOL("#efe9dc",3); if(!back){ g.beginPath(); g.arc(X,80,5,0,TAU); g.fillStyle="#c8302a"; g.fill(); }
+    g.beginPath(); g.moveTo(X+40,78); g.quadraticCurveTo(X+64,70,X+76,84); g.lineTo(X+70,90); g.quadraticCurveTo(X+60,80,X+42,86); g.closePath(); fillOL("#efe9dc",2.5);
+    g.beginPath(); g.moveTo(X+42,82); g.quadraticCurveTo(X+58,92,X+62,104); g.lineTo(X+55,106); g.quadraticCurveTo(X+52,94,X+40,88); g.closePath(); fillOL("#efe9dc",2.5); return; }
+  if(hat==="fox"){ if(back){ g.strokeStyle="#b8302a"; g.lineWidth=3; g.beginPath(); g.moveTo(X-44,92); g.lineTo(X+44,92); g.stroke(); return; }
+    g.save(); g.translate(X+42,82); g.rotate(.35); g.beginPath(); g.moveTo(-16,-8); g.lineTo(-12,-30); g.lineTo(-4,-14); g.lineTo(4,-14); g.lineTo(12,-30); g.lineTo(16,-8); g.quadraticCurveTo(18,14,0,26); g.quadraticCurveTo(-18,14,-16,-8); fillOL("#f6f0e2",3);
+    g.strokeStyle="#c8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(-10,0); g.lineTo(-3,3); g.moveTo(10,0); g.lineTo(3,3); g.moveTo(-8,-22); g.lineTo(-6,-14); g.moveTo(8,-22); g.lineTo(6,-14); g.stroke(); g.fillStyle="#c8302a"; g.beginPath(); g.arc(0,16,3,0,TAU); g.fill(); g.restore();
+    g.strokeStyle="#c8302a"; g.lineWidth=2.5; g.beginPath(); g.moveTo(X-44,88); g.lineTo(X+30,80); g.stroke(); return; }
+  if(hat==="none") return; kasa(g,X,fillOL,back); }
+
 function kasa(g,X,fillOL,back){ g.beginPath(); g.moveTo(X-100,74); g.quadraticCurveTo(X,0,X+100,74); g.quadraticCurveTo(X,60,X-100,74); fillOL("#d9b56b",4);
   g.save(); g.clip(); g.strokeStyle="#a8823e"; g.lineWidth=2.4; for(let i=-5;i<=5;i++){ g.beginPath(); g.moveTo(X+i*4,22); g.lineTo(X+i*22,74); g.stroke(); } for(let r=0;r<4;r++){ g.beginPath(); g.ellipse(X,72-r*12,92-r*20,9-r*1.5,0,Math.PI,TAU); g.stroke(); } g.restore();
   g.beginPath(); g.ellipse(X,67,100,7,0,0,TAU); fillOL("#8a6232",3); g.beginPath(); g.arc(X,22,5,0,TAU); fillOL("#8a6232",2.5); }
@@ -3805,7 +3820,7 @@ const _fsz=new THREE.Vector2();
 #journal canvas{display:block;margin:6px auto 10px}
 #inkbar .jrn{position:absolute;left:-46px;top:6px;width:36px;height:36px;border-radius:4px;display:grid;place-items:center;background:rgba(239,230,208,.92);border:2px solid #2a2420;color:#2a2420;font:700 17px "Shippori Mincho",serif;pointer-events:auto;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.3)}
 @media(max-width:600px){#journal .tabs{width:96px}#journal .tab{padding:10px 10px;font-size:14px}}`; document.head.appendChild(st);
-  const j=document.createElement("div"); j.id="journal"; j.className="panel"; j.innerHTML=`<div class="book"><div class="tabs">${[["地","Scroll","map"],["憶","Memories","mem"],["魂","Spirits","spirit"],["具","Items","items"],["設","Settings","set"]].map(([k,n,id])=>`<div class="tab" data-t="${id}"><b>${k}</b>${n}</div>`).join("")}</div><div class="pg"></div><div class="x">×</div></div>`;
+  const j=document.createElement("div"); j.id="journal"; j.className="panel"; j.innerHTML=`<div class="book"><div class="tabs">${[["地","Scroll","map"],["憶","Memories","mem"],["魂","Spirits","spirit"],["具","Items","items"],["衣","Wardrobe","wear"],["設","Settings","set"]].map(([k,n,id])=>`<div class="tab" data-t="${id}"><b>${k}</b>${n}</div>`).join("")}</div><div class="pg"></div><div class="x">×</div></div>`;
   document.body.appendChild(j);
   j.addEventListener("click",e=>{ const t=e.target.closest(".tab"); if(t) journalTab(t.dataset.t); if(e.target.classList.contains("x")||e.target===j) closeJournal(); const a=e.target.dataset.a;
     if(a==="scroll"){ closeJournal(); openScroll(); } else if(a==="settings"){ closeJournal(); showMenu(); setTimeout(()=>{ try{ $("#miSettings").click(); }catch(e){} },60); } else if(a==="horse"){ closeJournal(); toggleHorse(); } else if(a==="sled"){ closeJournal(); toggleSled(); } });
@@ -3832,6 +3847,8 @@ function journalTab(t){ JTAB=t; const j=document.getElementById("journal"); j.qu
     g.globalAlpha=.25; g.fillStyle="#2a2420"; g.font='700 40px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("封",100,140); }
   else if(t==="items"){ const row=(k,on,n,d,a)=>`<div class="row"><div class="key ${on?"":"off"}">${k}</div><div style="flex:1"><b>${n}</b><div style="font-size:13px;opacity:.8">${d}</div></div>${on&&a?`<div class="btn" style="margin:0" data-a="${a}">Use</div>`:""}</div>`;
     pg.innerHTML=`<h2>Items</h2><div class="sub">What you carry.</div>${row("H",true,"Paper horse","Fold it and it gallops. Press H to summon or dismiss it.","horse")}${row("T",!!it.sled,"Sled",it.sled?"For the snow. Press T on a snowy slope, and lean with A and D.":"There is one by the fishing hut at Kōri Lake.","sled")}${row("Q",true,"Ink brush","Press Q to swing. It splashes ink. (Its real use comes later.)")}${row("—",true,"Paper lantern","It lights itself when it gets dark.")}${row("F",true,"Finder","Locks onto rumours, seals and places you have not been.")}`; }
+  else if(t==="wear"){ const w=accStore(); const own=store.owned; pg.innerHTML=`<h2>Wardrobe</h2><div class="sub">Things you've found. Tap to wear.</div>`+Object.entries({hat:"Head",scarf:"Scarf",charm:"Charm"}).map(([slot,lab])=>`<h2 style="font-size:18px;margin-top:16px">${lab}</h2><div class="grid">${ACC_DEF[slot].map(it=>{ const has=own.includes(it.id); return `<div class="slot ${has?"":"lock"}" data-wear="${slot}:${it.id}" style="cursor:${has?"pointer":"default"};${w[slot]===it.id?"border-color:#b8302a;box-shadow:inset 0 0 0 2px #b8302a":""}"><div class="t">${has?esc(it.n):"???"}</div><div class="d">${has?esc(it.d):(it.where?"Somewhere around "+esc(it.where)+".":"")}</div></div>`; }).join("")}</div>`).join("");
+    pg.querySelectorAll("[data-wear]").forEach(el=>el.onclick=()=>{ const [slot,id]=el.dataset.wear.split(":"); if(!store.owned.includes(id)) return; accSet(slot,id); journalTab("wear"); }); }
   else if(t==="set"){ pg.innerHTML=`<h2>Settings</h2><div class="sub">Art style, sound, graphics.</div><div class="btn" data-a="settings">Open game settings</div><h2 style="font-size:20px;margin-top:24px">Keys</h2>${[["WASD","Walk"],["Shift","Run"],["Space","Roll"],["E","Interact"],["M","Scroll (map)"],["J","Journal"],["F","Finder"],["H","Paper horse"],["T","Sled"],["Q","Ink brush"]].map(([k,n])=>`<div class="row"><div class="key" style="min-width:56px">${k}</div><div>${n}</div></div>`).join("")}`; } }
 
 // ---------- speech bubbles, Tsushima style: the line floats over whoever is talking, replies sit at the bottom ----------
@@ -3975,6 +3992,25 @@ function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,
   if(zone==="world"&&pmode==="walk") climbFrame(dt,speedNow>.3); else { CLIMB.on=false; CLIMB.ring&&CLIMB.ring.classList.remove("show"); } }
 
 const FRAME_SYS=[handLanternFrame,paperTintFrame,craneFrame,memoryFrame,inkbarFrame,finderFrame,rideFrame,inkFrame,dlgBubbleFrame,cullFrame,footFrame,animFrame];
+
+/* ===================== v57: accessories. Hats, scarves and charms you find in the world, worn from the journal's Wardrobe ===================== */
+const ACC_DEF={
+  hat:[{id:"kasa",n:"Straw kasa",d:"The hat you came with."},{id:"jingasa",n:"Lacquered jingasa",d:"A black war hat with a gold crest.",at:[976,-1436],where:"Hōkai Castle"},{id:"hachimaki",n:"Hachimaki",d:"A headband for hard work.",at:[284,26],where:"Yukimura"},{id:"fox",n:"Fox mask",d:"Worn on the side of the head, festival-style.",at:[770,-1040],where:"Utsuro"},{id:"none",n:"No hat",d:"Wind in your hair."}],
+  scarf:[{id:"red",n:"Red scarf",d:"Long, and always in the wind."},{id:"indigo",n:"Indigo scarf",d:"Quiet, like the night."},{id:"white",n:"Snow scarf",d:"White as the summit.",at:[339,-26],where:"the Summit Shrine"},{id:"gold",n:"Ember scarf",d:"Warm to the touch. Always.",at:[797,366],where:"somewhere warm"},{id:"none",n:"No scarf",d:""}],
+  charm:[{id:"none",n:"No charm",d:""},{id:"omamori",n:"Red omamori",d:"A luck charm in a silk pouch."},{id:"bell",n:"Shrine bell",d:"It jingles when you walk.",at:null,where:"Kumo Shrine"}]};
+const SCARF_C={red:["#d8402e","#b8302a"],indigo:["#3c5a8c","#2c3f6e"],white:["#efe9dc","#cfc6b4"],gold:["#f0b040","#c8802a"]};
+function accStore(){ const w=store.wear||(store.wear={hat:"kasa",scarf:"red",charm:"none"}); store.owned=store.owned||["kasa","none","red","indigo","omamori"]; return w; }
+function accSet(slot,id){ accStore()[slot]=id; save(); try{ rebuildSamFrames(); }catch(e){} try{ chime(); }catch(e){} }
+function rebuildSamFrames(){ const old=SAMF; SAMF=null; buildSamFrames(); buildSamFrames2(); if(PAPERSP.p) paperSetTex(PAPERSP.p,SAMF.idleF[0]);
+  if(old) Object.values(old).flat().forEach(t=>{ try{ t.dispose(); t.userData.nm&&t.userData.nm.dispose(); }catch(e){} }); }
+// pick-ups out in the world: a little folded paper bundle that glints
+(function(){ const bell=ACC_DEF.charm.find(c=>c.id==="bell"); try{ bell.at=[SHR.x+3,SHR.z+3]; }catch(e){}
+  const glint=new THREE.MeshToonMaterial({color:"#f4ead4",emissive:new THREE.Color("#ffd27a"),emissiveIntensity:.5,gradientMap:gm});
+  for(const slot in ACC_DEF) for(const it of ACC_DEF[slot]){ if(!it.at) continue; const [x,z]=it.at; const g=new THREE.Group(); g.userData.keep=true; g.position.set(x,H(x,z),z); scene.add(g);
+    const b=new THREE.Mesh(new THREE.BoxGeometry(.5,.18,.4),glint); b.position.y=.2; b.rotation.y=.5; g.add(b); const t=new THREE.Mesh(new THREE.BoxGeometry(.52,.05,.08),toon("#b8302a")); t.position.y=.3; t.rotation.y=.5; g.add(t); g.userData.acc=it.id; it.mesh=g;
+    addInteract({keep:true,x,z,r:2.2,k:"",get label(){ return accStore()&&store.owned.includes(it.id)?"":"Pick up the paper bundle"; },fn:()=>{ accStore(); if(store.owned.includes(it.id)) return; store.owned.push(it.id); save(); g.visible=false; try{ chime(); }catch(e){} toast(`Found: ${it.n}. Wear it from the Journal (J), Wardrobe.`); }}); }
+  setTimeout(()=>{ accStore(); for(const slot in ACC_DEF) for(const it of ACC_DEF[slot]) if(it.mesh&&store.owned.includes(it.id)) it.mesh.visible=false; },1500); })();
+
 /* ===================== boot ===================== */
 
 /* ===================== STARTER TOWN CLEAN-UP (v42) ===================== */

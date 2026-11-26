@@ -1,7 +1,7 @@
 {
- "version": 56,
+ "version": 57,
  "shellApi": 2,
- "notes": "Animation polish: a tucked roll, a reach when you interact, a wave when a conversation starts. BotW-style climbing: push into a cliff to climb it (back view, arms reaching), with a stamina wheel; run out and you slide down. Fixes footprints, which weren't appearing in v55.",
+ "notes": "Accessories: a Wardrobe tab in the Journal. Hats (straw kasa, lacquered jingasa, hachimaki, festival fox mask, none), scarves (red, indigo, snow white, ember gold, none) and charms (red omamori, shrine bell). Find the rest as glinting paper bundles out in the world: Yukimura, the Summit Shrine, Kumo Shrine, Utsuro, H\u014dkai Castle and somewhere warm.",
  "files": [
   "brain-client.js",
   "core.js",
