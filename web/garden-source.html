@@ -2200,6 +2200,7 @@ if(PAPER){
 function paperSetTex(m,t){ if(m.material.map!==t){ m.material.map=t; if(m.userData.lit){ if(!t.userData.nm){ try{ t.userData.nm=paperNormalMap(t.image); }catch(e){} } m.material.normalMap=t.userData.nm||null; m.material.emissiveMap=t; } m.material.needsUpdate=true; if(m.customDepthMaterial){ m.customDepthMaterial.map=t; m.customDepthMaterial.needsUpdate=true; } } }
 const _pv=new THREE.Vector3(), _pax=new THREE.Vector3(), _pq=new THREE.Quaternion(), _pqy=new THREE.Quaternion(), _pup=new THREE.Vector3(0,1,0), _poff=new THREE.Vector3();
 let _sPrev=null, _sFace=1, _sSx=1;
+const _snv=new THREE.Vector3(); function spriteNudge(pos,k=.55){ return _snv.subVectors(camera.position,pos).normalize().multiplyScalar(k); }
 function paperTick(dt){
   if(!PAPER) return;
   const yaw=Math.atan2(camera.position.x-controls.target.x, camera.position.z-controls.target.z);
@@ -2215,7 +2216,7 @@ function paperTick(dt){
     _pax.set(ROLL.dir.z,0,-ROLL.dir.x).normalize(); _pq.setFromAxisAngle(_pax,th);
     p.quaternion.copy(_pq).multiply(_pqy); _poff.set(0,c,0).applyQuaternion(_pq);
     p.position.set(player.position.x-_poff.x, player.position.y+c-_poff.y+.12*Math.sin(Math.PI*u), player.position.z-_poff.z);
-  } else { p.quaternion.copy(_pqy); p.position.copy(player.position); p.position.y+=bob; }
+  } else { p.quaternion.copy(_pqy); p.position.copy(player.position); p.position.y+=bob; p.position.add(spriteNudge(p.position)); }
   const psc=player.scale.y; if(Math.abs(psc-1)>.001){ p.scale.multiplyScalar(psc); p.rotation.z+=0; }
   p.visible=!(typeof POSE!=="undefined"&&POSE.kind==="soak");
   if((PAPERX.hide=(PAPERX.hide||0)+dt)>1.5){ PAPERX.hide=0; hideFromCamera(sRig); hideFromCamera(pRig); }
@@ -2716,10 +2717,7 @@ function collide(p){
   for(const b of boxes){ const dx=p.x-b.x, dz=p.z-b.z; if(Math.abs(dx)>b.hw+b.hd+1||Math.abs(dz)>b.hw+b.hd+1) continue; let lx=dx*b.c-dz*b.s, lz=dx*b.s+dz*b.c; const hx=b.hw+PRAD, hz=b.hd+PRAD;
     if(Math.abs(lx)<hx&&Math.abs(lz)<hz){ if(hx-Math.abs(lx)<hz-Math.abs(lz)) lx=Math.sign(lx||1)*hx; else lz=Math.sign(lz||1)*hz; p.x=b.x+lx*b.c+lz*b.s; p.z=b.z-lx*b.s+lz*b.c; } }
   const ea=pondEllipse.a+PRAD, eb=pondEllipse.b+PRAD, e=Math.hypot(p.x/ea,p.z/eb); if(e<1&&e>1e-4){ p.x/=e; p.z/=e; }
-  const r=Math.hypot(p.x,p.z);
-  if(r>WALK_R||p.x>70){ if(worldWalk(p.x,p.z)||r<=WALK_R){ PASSL.x=p.x; PASSL.z=p.z; PASSL.ok=true; }
-    else if(PASSL.ok&&Math.hypot(p.x-PASSL.x,p.z-PASSL.z)<3){ if(worldWalk(p.x,PASSL.z)||Math.hypot(p.x,PASSL.z)<=WALK_R) p.z=PASSL.z; else if(worldWalk(PASSL.x,p.z)||Math.hypot(PASSL.x,p.z)<=WALK_R) p.x=PASSL.x; else { p.x=PASSL.x; p.z=PASSL.z; } }
-    else { p.x*=WALK_R/r; p.z*=WALK_R/r; } } else { PASSL.x=p.x; PASSL.z=p.z; PASSL.ok=true; }
+  roamLimit(p);   /* v55: go anywhere the land lets you */
 }
 function groundY(x,z){ if(zone==="sky"){ const y=skyWalk(x,z); return y===null?SKY.y:y; } if(zone==="hall") return HALL.y; if(zone==="balcony") return BALC.y; if(pmode==="boat") return -.05;
   if(onPier(x,z)&&lakeE(x,z)<1.3) return PIER.y+.05;
@@ -2879,7 +2877,7 @@ function frame(now){
   if(PAPER) paperTick(dt);
   try{ passFrame(dt); }catch(e){}
   try{ worldFrame(dt); }catch(e){ if(!window._wfe){ window._wfe=1; console.warn("[world]",e); } }
-  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); inkbarFrame(); finderFrame(dt); rideFrame(dt); inkFrame(dt); dlgBubbleFrame(); cullFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
+  try{ handLanternFrame(dt); paperTintFrame(); craneFrame(dt); memoryFrame(dt); inkbarFrame(); finderFrame(dt); rideFrame(dt); inkFrame(dt); dlgBubbleFrame(); cullFrame(dt); footFrame(dt); }catch(e){ if(!window._hle){ window._hle=1; console.warn("[lantern]",e); } }
   { const A=frame.ad||(frame.ad={t:0,n:0,s:0,pr:PR}); A.t+=dt; A.n++; A.s+=dt; if(A.t>2){ const avg=A.s/A.n; let pr=A.pr; if(avg>.021&&pr>1) pr=Math.max(1,pr-.25); else if(avg<.013&&pr<PR) pr=Math.min(PR,pr+.25); if(pr!==A.pr){ A.pr=pr; renderer.setPixelRatio(pr); composer.setPixelRatio(pr); resize(); } A.t=0; A.n=0; A.s=0; } }
   padPoll(dt); golfFrame(dt); skyFxFrame(dt); lifeFrame(dt); advFrame(dt); npcFrame(dt); p2Frame(dt); idleChat(dt);
   const advMode=pmode==="climb"||pmode==="fall"||pmode==="glide"||pmode==="koi";
@@ -3455,7 +3453,7 @@ function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"
   _hlR.setFromMatrixColumn(camera.matrixWorld,0); _hlR.y=0; _hlR.normalize();
   const moving=PAPER&&typeof PAPERX!=="undefined"?PAPERX.mag>.08:false; L.sw+=dt*(moving?9:2);
   L.g.position.set(player.position.x+_hlR.x*side*.62,player.position.y+1.08+(moving?Math.abs(Math.sin(L.sw))*.04:0),player.position.z+_hlR.z*side*.62);
-  L.g.rotation.z=Math.sin(L.sw)*(moving?.18:.05);
+  L.g.rotation.z=Math.sin(L.sw)*(moving?.18:.05); if(PAPER) L.g.position.add(spriteNudge(L.g.position,.6));
   const dark=clamp(night*1.15+(player.position.x>440?SFX.storm*.25:0),0,1);
   L.paper.emissiveIntensity=.1+dark*.32; L.light.intensity=dark*1.15; }
 function paperTintFrame(){ if(!PAPER) return; const k=1-night*.62;
@@ -3910,6 +3908,36 @@ function cullFrame(dt){ if((CULL.t+=dt)<.4) return; CULL.t=0; if(typeof natReady
     for(const o of scene.children){ if(skip.has(o)||o.isLight||o.isCamera||o.userData.keep||o.userData.paper||o.isPoints||!o.visible) continue; try{ bx.setFromObject(o); if(bx.isEmpty()) continue; bx.getBoundingSphere(sp); }catch(e){ continue; } if(sp.radius>140) continue; CULL.list.push({o,ox:sp.center.x-o.position.x,oz:sp.center.z-o.position.z,r:sp.radius}); } }
   for(const c of CULL.list){ const o=c.o; const d=Math.hypot(o.position.x+c.ox-px,o.position.z+c.oz-pz)-c.r; if(d>300){ if(o.visible){ o.visible=false; o.userData._cull=true; } } else if(o.userData._cull){ o.visible=true; o.userData._cull=false; } }
   for(const im of plantChunks){ if(!im.boundingSphere||im.userData.small) continue; im.castShadow=Math.hypot(im.boundingSphere.center.x-px,im.boundingSphere.center.z-pz)<110; } }
+
+
+/* ===================== v55: go anywhere (like BotW), footprints, no clipping ===================== */
+// The world's edge is the edge of the land itself. Anything you can walk up, you can walk up; cliffs stop you, and steep ground slows you.
+function inWorld(x,z){ return (x>-186&&x<186&&Math.abs(z)<186)||(x>=186&&x<452&&Math.abs(z)<186)||(x>=452&&x<1395&&z>SF_DARK_Z+6&&z<495); }
+function roamLimit(p){ const o=player.position, dx=p.x-o.x, dz=p.z-o.z, d=Math.hypot(dx,dz); if(d<1e-5) return;
+  const test=(x,z)=>{ if(!inWorld(x,z)) return false; const g=(H(x,z)-H(o.x,o.z))/Math.max(.05,Math.hypot(x-o.x,z-o.z)); return g<1.35; };
+  if(!test(p.x,p.z)){ if(test(p.x,o.z)){ p.z=o.z; } else if(test(o.x,p.z)){ p.x=o.x; } else { p.x=o.x; p.z=o.z; return; } }
+  const g=(H(p.x,p.z)-H(o.x,o.z))/Math.max(.05,Math.hypot(p.x-o.x,p.z-o.z)); if(g>.5){ const f=clamp(1-(g-.5)*.75,.35,1); p.x=o.x+(p.x-o.x)*f; p.z=o.z+(p.z-o.z)*f; } }
+// solid backdrop hills and peaks, now that you can reach them
+setTimeout(()=>{ try{ scene.children.forEach(o=>{ if(!o.isMesh) return; if(o.material===midMat){ const r=Math.min(o.scale.x,o.scale.z)*.82; if(inWorld(o.position.x,o.position.z)) circles.push({x:o.position.x,z:o.position.z,r}); }
+  else if(o.material===farMat&&o.geometry.parameters&&o.geometry.parameters.radius){ circles.push({x:o.position.x,z:o.position.z,r:o.geometry.parameters.radius*.8}); } }); }catch(e){} },1500);
+// ---------- footprints: deep in snow, faint on earth; hoofprints on horseback, twin tracks behind the sled ----------
+const FOOT={tex:null,hoof:null,snow:null,dirt:null,i:0,N:360,life:[],lastPh:0,side:1,sledD:0,d:new THREE.Object3D()};
+(function(){ const sole=document.createElement("canvas"); sole.width=32; sole.height=64; const g=sole.getContext("2d"); g.fillStyle="#fff"; g.beginPath(); g.ellipse(16,20,11,16,0,0,TAU); g.fill(); g.beginPath(); g.ellipse(16,48,9,12,0,0,TAU); g.fill();
+  FOOT.tex=new THREE.CanvasTexture(sole);
+  const mk=(col,op)=>{ const m=new THREE.InstancedMesh(new THREE.PlaneGeometry(.26,.5),new THREE.MeshBasicMaterial({map:FOOT.tex,color:col,transparent:true,opacity:op,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2}),FOOT.N); m.count=FOOT.N; m.frustumCulled=false; m.userData.keep=true; m.renderOrder=1;
+    const z=new THREE.Matrix4().makeScale(0,0,0); for(let i=0;i<FOOT.N;i++) m.setMatrixAt(i,z); scene.add(m); return m; };
+  FOOT.snow=mk("#8a98b0",.62); FOOT.dirt=mk("#4a3a2a",.22); FOOT.life=new Array(FOOT.N).fill(null); })();
+function footPlace(x,z,yaw,sx=1,sz=1){ const snow=x>95&&!(x>446&&z<-760); const im=snow?FOOT.snow:FOOT.dirt, i=FOOT.i=(FOOT.i+1)%FOOT.N;
+  const prev=FOOT.life[i]; if(prev&&prev.im!==im){ prev.im.setMatrixAt(i,new THREE.Matrix4().makeScale(0,0,0)); prev.im.instanceMatrix.needsUpdate=true; }
+  const d=FOOT.d; d.rotation.order="YXZ"; d.rotation.set(-Math.PI/2,yaw,0,"YXZ"); d.position.set(x,groundY(x,z)+.035,z); d.scale.set(sx,sz,1); d.updateMatrix(); im.setMatrixAt(i,d.matrix); im.instanceMatrix.needsUpdate=true;
+  FOOT.life[i]={im,t:0,max:snow?90:14,x,z,yaw,sx,sz}; }
+let _footT=0;
+function footFrame(dt){ if(zone!=="world"||pmode!=="walk"||advMode) return; const p=player.position, a=player.rotation.y, rx=Math.cos(a), rz=-Math.sin(a);
+  if(RIDE.mode==="sled"){ FOOT.sledD+=RIDE.v.length()*dt; if(FOOT.sledD>.55){ FOOT.sledD=0; [-.38,.38].forEach(o=>footPlace(p.x+rx*o,p.z+rz*o,a,.35,1.3)); } }
+  else if(speedNow>.4&&ROLL.t<0){ const ph=walkPh%Math.PI; if(ph<FOOT.lastPh){ if(RIDE.mode==="horse"){ [[-.35,.9],[.35,.9],[-.35,-.9],[.35,-.9]].forEach(([o,f])=>footPlace(p.x+rx*o+Math.sin(a)*f,p.z+rz*o+Math.cos(a)*f,a,.9,.55)); }
+      else { FOOT.side*=-1; footPlace(p.x+rx*.16*FOOT.side,p.z+rz*.16*FOOT.side,a); } } FOOT.lastPh=ph; }
+  if((_footT+=dt)<.5) return; const step=_footT; _footT=0;
+  for(let i=0;i<FOOT.N;i++){ const L=FOOT.life[i]; if(!L) continue; L.t+=step; if(L.t>L.max){ const k=Math.max(0,1-(L.t-L.max)/4); const d=FOOT.d; d.rotation.set(-Math.PI/2,L.yaw,0,"YXZ"); d.position.set(L.x,groundY(L.x,L.z)+.035,L.z); d.scale.set(L.sx*k,L.sz*k,1); d.updateMatrix(); L.im.setMatrixAt(i,d.matrix); L.im.instanceMatrix.needsUpdate=true; if(k<=0) FOOT.life[i]=null; } } }
 
 /* ===================== boot ===================== */
 

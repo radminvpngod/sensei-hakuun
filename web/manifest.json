@@ -1,7 +1,7 @@
 {
- "version": 54,
+ "version": 55,
  "shellApi": 2,
- "notes": "The Paper Samurai redesign: a richer cutout (patterned hakama, haori with \u7d19 crests, tasselled katana, flowing scarf, woven kasa), 6-frame walk and run, idle blinking, ride, sled and brush-swing poses, and back views. Paper characters are now lit by the sun, lanterns and your hand lantern, and catch shadows like BotW. New origami war-horse with 4-frame gallop and red lacquer armour. No horse or sled in the home town.",
+ "notes": "Go anywhere: the invisible walls are gone. You can walk anywhere the land lets you (steep ground slows you, cliffs stop you, the world's edge is the land's edge). Footprints: deep in snow (they last 90s), faint on earth, hoofprints on horseback, twin tracks behind the sled. Your paper character and lantern no longer clip into walls and trees. Backdrop hills are solid now.",
  "files": [
   "brain-client.js",
   "core.js",
