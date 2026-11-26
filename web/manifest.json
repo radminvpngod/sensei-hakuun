@@ -1,7 +1,7 @@
 {
- "version": 58,
+ "version": 59,
  "shellApi": 2,
- "notes": "New camera (BotW/souls style): it lifts over hills instead of diving into them or zooming in on you, follows with a little weight, and keeps a sane distance (3-15). Far terrain fades into fog, so no more hard edges on the horizon, and the Edge of the Dark is real darkness now, not flat panels. Round snowflakes. The horse is now a 3D origami model that faces where you ride, with you seated on it. Your hand lantern no longer burns a hot spot on your paper.",
+ "notes": "The ens\u014d: hold Tab (or LB) and a brushed circle draws itself with your tools around it: brush, horse, dog sled, lantern, Finder, scroll. Q (or X) uses the one you picked. The horse is now scribbled into the world in ink, you hop up onto it, and getting off crumples it into a paper ball. Dog sleds: four paper dogs pull you across the snow; hold run while turning to drift. You crumple on big drops, fold a paper crane if you stand still long enough, and flutter in blizzards. Hold the lantern high for more light. Full controller: A interact, B roll/run, X tool, Y horse, LB ens\u014d, RB Finder, LT scroll, Back journal, R3 re-centre camera; the journal and scroll work with a controller too. The app now checks for updates 20 seconds after it opens and every 5 minutes.",
  "files": [
   "brain-client.js",
   "core.js",

@@ -550,5 +550,6 @@ module.exports = function core(ctx) {
   app.on('second-instance', () => togglePalette(true));
   app.on('window-all-closed', () => {});
   app.on('will-quit', () => { globalShortcut.unregisterAll(); if (ps) try { ps.kill(); } catch (e) {} });
-  setInterval(async () => afterUpdate(await checkUpdates(), false), 20 * 60 * 1000);
+  setTimeout(async () => afterUpdate(await checkUpdates(), false), 20 * 1000);
+  setInterval(async () => afterUpdate(await checkUpdates(), false), 5 * 60 * 1000);
 };

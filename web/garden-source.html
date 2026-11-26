@@ -841,6 +841,7 @@ function samFrame(P,dt){ const F=buildSamFrames(), back=P.back; SAMST.bt+=dt; if
   if(ROLL.t>=0) return F2.tuck[0];
   if(ACT.wave>0) return F2.wave[Math.floor(clock*5)%2];
   if(ACT.reach>0) return F2.reach[0];
+  if(typeof RIDE!=="undefined"&&RIDE.mode==="horse"&&RIDE.lift<1.35&&RIDE.fold>.4) return F2.tuck[0];
   if(typeof RIDE!=="undefined"&&RIDE.mode==="horse"){ const F3=buildSamFrames2(); return (back?F3.rideB:F.ride)[speedNow>.5?Math.floor(clock*(speedNow>9?9:6))%2:0]; }
   if(typeof RIDE!=="undefined"&&RIDE.mode==="sled") return F.sled[0];
   if(typeof _inkCd!=="undefined"&&_inkCd>0) return F.swing[Math.min(2,Math.floor((1-_inkCd/.45)*3))];
@@ -2868,14 +2869,17 @@ function padPoll(dt){ if(!navigator.getGamepads) return; const gps=[...navigator
       golf.padX=golf.padXs[0]+golf.padXs[1]; golf.padA=golf.padAs[0]||golf.padAs[1]; PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; }
     const pointerMode=!!MG||shodoOpen;
     if(i===0){
+      if(document.getElementById("journal").classList.contains("show")){ if(edge(1)||edge(8)) closeJournal(); const tabs=[...document.querySelectorAll("#journal .tab")].map(t=>t.dataset.t), ci=tabs.indexOf(JTAB); if(edge(13)||edge(5)) journalTab(tabs[(ci+1)%tabs.length]); if(edge(12)||edge(4)) journalTab(tabs[(ci-1+tabs.length)%tabs.length]); PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; }
+      if(SCROLL.open){ if(edge(1)||edge(6)) closeScroll(); const s=scrollScale(); SCROLL.cx+=(ax+rx)*dt*420/s; SCROLL.cz+=(ay+ry)*dt*420/s; if(b(7)) SCROLL.zoom=Math.min(4,SCROLL.zoom*(1+dt*1.5)); if(b(5)) SCROLL.zoom=Math.max(.25,SCROLL.zoom/(1+dt*1.5)); if(edge(0)&&SCROLL.travel){ const t=TRAVEL.filter(t=>isLit(t.id)).sort((a,b)=>Math.hypot(a.x-SCROLL.cx,a.z-SCROLL.cz)-Math.hypot(b.x-SCROLL.cx,b.z-SCROLL.cz))[0]; if(t&&Math.hypot(t.x-SCROLL.cx,t.z-SCROLL.cz)<60){ closeScroll(); travelTo(t); } } PADS.prev[i]=gp.buttons.map(x=>x.pressed); return; }
       if(edge(9)){ if(MG) mgClose(); else if(pmode==="golf") golfEnd(); else if(chatOpen) closeChat(); else if(menuOpen) hideMenu(); else showMenu&&showMenu(); }
       if(pointerMode){ const c=PADS.cur[0]; const sp=(b(5)?1.4:.75)*dt; if(mx||my||rx||ry){ c.x=clamp(c.x+(mx+rx)*sp,0,1); c.y=clamp(c.y+(my+ry)*sp,0,1); } padCursor(0,true);
         if(MG===TAIKO){ if(edge(0)||edge(2)) TAIKO.drum("don",0); if(edge(1)||edge(3)) TAIKO.drum("ka",0); }
         else if(MG){ if(mx||my||rx||ry) MG.move&&MG.move(c.x,c.y,{buttons:b(0)?1:0}); if(edge(0)) MG.down&&MG.down(c.x,c.y,{buttons:1}); if(rel(0)) MG.up&&MG.up(c.x,c.y,{}); if(MG.key){ if(edge(0)) MG.key("Space",true); if(rel(0)) MG.key("Space",false); } }
         else if(shodoOpen){ const r=shC.getBoundingClientRect(); const lx=(c.x*innerWidth-r.left)/r.width, ly=(c.y*innerHeight-r.top)/r.height; if(b(0)&&lx>=0&&ly>=0&&lx<=1&&ly<=1) shStroke(lx,ly,true); else if(rel(0)) shStroke(0,0,false); }
       } else { padCursor(0,false); PAD1.x=mx; PAD1.y=my; if(edge(1)) PADS.bT=performance.now(); if(rel(1)&&performance.now()-(PADS.bT||0)<260) startRoll(); PAD1.run=(b(1)&&performance.now()-(PADS.bT||0)>260)||b(7)||b(10);
-        if(rx||ry){ const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=rx*dt*2.4; sph.phi=clamp(sph.phi+ry*dt*1.6,controls.minPolarAngle+.05,controls.maxPolarAngle-.05); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); }
-        if(edge(0)) doInteract(); if(edge(2)) tossFood(.6); if(edge(3)&&!chatOpen) openChat(); if(edge(4)||edge(8)){ const tp=$("#travelPanel"); tp.classList.contains("show")?tp.classList.remove("show"):openTravel(); } }
+        if((rx||ry)&&!ENSO.open){ const off=camera.position.clone().sub(controls.target); const sph=new THREE.Spherical().setFromVector3(off); sph.theta-=rx*dt*2.4; sph.phi=clamp(sph.phi+ry*dt*1.6,controls.minPolarAngle+.05,controls.maxPolarAngle-.05); off.setFromSpherical(sph); camera.position.copy(controls.target).add(off); }
+        if(b(4)){ if(!ENSO.open) ensoOpen(); if(Math.hypot(rx,ry)>.5) ensoAim(Math.atan2(ry,rx)); } else if(rel(4)) ensoClose(true);
+        if(!ENSO.open){ if(edge(0)){ if(RIDE.mode) rideEnd(); else doInteract(); } if(edge(2)) useTool(); if(edge(3)) toggleHorse(); if(edge(5)) finderNext(); if(edge(6)) openScroll(); if(edge(8)) openJournal(); if(edge(11)){ const a=player.rotation.y, off=camera.position.clone().sub(controls.target), L=Math.hypot(off.x,off.z); camera.position.x=controls.target.x-Math.sin(a)*L; camera.position.z=controls.target.z-Math.cos(a)*L; } } }
     } else {
       if(pointerMode){ const c=PADS.cur[1]; if(mx||my||rx||ry){ c.x=clamp(c.x+(mx+rx)*.75*dt,0,1); c.y=clamp(c.y+(my+ry)*.75*dt,0,1); p2Aim(c.x,c.y); }
         if(MG===TAIKO&&TAIKO.duel){ if(edge(0)||edge(2)) TAIKO.drum("don",1); if(edge(1)||edge(3)) TAIKO.drum("ka",1); }
@@ -2911,7 +2915,7 @@ function frame(now){
     let iz=(keys.KeyS||keys.ArrowDown?1:0)-(keys.KeyW||keys.ArrowUp?1:0)+joy.y+rjoy.y+P1J.y+PAD1.y;
     const mag=Math.min(1,Math.hypot(ix,iz));
     if(PAPER) paperInput(ix,iz,mag);
-    if(RIDE.mode==="sled"&&ROLL.t<0){ sledMove(dt,ix,iz); } else if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
+    if(RIDE.mode==="sled"&&ROLL.t<0){ dogSledMove(dt,ix,iz); } else if(ROLL.t>=0) { rollMove(dt); } else if(mag>.08){
       if(POSE.kind) poseEnd();
       const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
       let mx=(rx*ix - fwd.x*iz), mz=(rz*ix - fwd.z*iz); const ml=Math.hypot(mx,mz); mx/=ml; mz/=ml;
@@ -3481,7 +3485,7 @@ function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"
   L.g.position.set(player.position.x+_hlR.x*side*.62,player.position.y+1.08+(moving?Math.abs(Math.sin(L.sw))*.04:0),player.position.z+_hlR.z*side*.62);
   L.g.rotation.z=Math.sin(L.sw)*(moving?.18:.05); if(PAPER) L.g.position.add(spriteNudge(L.g.position,.6)); L.light.position.copy(L.g.position).add(spriteNudge(L.g.position,1.6)); L.light.position.y+=.5;
   const dark=clamp(night*1.15+(player.position.x>440?SFX.storm*.25:0),0,1);
-  L.paper.emissiveIntensity=.1+dark*.32; L.light.intensity=dark*.85; }
+  const hi=LANT.raise>0; if(hi) L.g.position.y+=.75; L.paper.emissiveIntensity=.1+dark*(hi?.6:.32); L.light.intensity=Math.max(dark,hi?.35:0)*(hi?1.9:.85); L.light.distance=hi?22:12; }
 function paperTintFrame(){ if(!PAPER) return; const k=1-night*.62;
   for(const m of PAPER_MESHES){ if(m.userData.lit) continue; const c=m.material.color; c.setRGB(k,k,k);
     if(HANDL.light.intensity>0){ const d=m.position.distanceTo(HANDL.g.position), w=HANDL.light.intensity/1.15*(1-smooth(1,9,d)); c.r=Math.min(1,c.r+w*.55); c.g=Math.min(1,c.g+w*.36); c.b=Math.min(1,c.b+w*.12); } } }
@@ -3830,7 +3834,7 @@ const _fsz=new THREE.Vector2();
     const jo=document.getElementById("journal").classList.contains("show");
     if(jo&&(e.code==="Escape"||e.code==="KeyJ")){ e.preventDefault(); e.stopImmediatePropagation(); closeJournal(); return; }
     if(!entered||chatOpen||e.repeat) return; if(uiBlock()) return;
-    if(e.code==="KeyJ"){ e.preventDefault(); openJournal(); } else if(e.code==="KeyH"){ toggleHorse(); } else if(e.code==="KeyT"){ toggleSled(); } else if(e.code==="KeyQ"){ inkSwing(); } },true);
+    if(e.code==="KeyJ"){ e.preventDefault(); openJournal(); } else if(e.code==="KeyH"){ toggleHorse(); } else if(e.code==="KeyT"){ toggleSled(); } else if(e.code==="KeyQ"){ useTool(); } },true);
 })();
 let JTAB="map";
 function openJournal(t){ const j=document.getElementById("journal"); j.classList.add("show"); try{ document.exitPointerLock(); }catch(e){} journalTab(t||JTAB); }
@@ -3886,23 +3890,23 @@ const RIDE={mode:null,horse:null,sled:null,lift:0,v:new THREE.Vector2(),fold:0,f
 const inHomeTown=()=>{ const r=regionAt(player.position.x,player.position.z); return !!r&&r.id==="valley"; };
 function toggleHorse(){ if(RIDE.mode==="horse"){ rideEnd(); return; } if(inHomeTown()){ toast("The home town is for walking. Your horse waits outside it."); return; } if(zone!=="world"||pmode!=="walk"){ toast("No room for a horse here."); return; } if(RIDE.mode) rideEnd();
   if(!RIDE.horse){ RIDE.frames=[]; RIDE.horse=buildOrigamiHorse(); RIDE.horse.userData.keep=true; scene.add(RIDE.horse); }
-  RIDE.mode="horse"; RIDE.fold=0; RIDE.horse.visible=true; if(!RIDE.horse.parent) scene.add(RIDE.horse); RIDE.horse.rotation.y=player.rotation.y; try{ chime(); }catch(e){} toast("You unfold the paper horse. (H to fold it away)"); }
+  RIDE.mode="horse"; RIDE.fold=-2.1; RIDE.horse.visible=true; if(!RIDE.horse.parent) scene.add(RIDE.horse); RIDE.horse.rotation.y=player.rotation.y; RIDE.horse.scale.setScalar(.01); SCRIB.bt=-1; scribbleHorse(player.position.x,player.position.y,player.position.z,player.rotation.y); for(let i=0;i<10;i++) addInkPuff(player.position.x,player.position.y+1.4,player.position.z); try{ chime(); }catch(e){} }
 function toggleSled(){ if(RIDE.mode==="sled"){ rideEnd(); return; } const it=store.items||{}; if(!it.sled){ toast("You don't have a sled. There's one by the fishing hut at Kōri Lake."); return; }
   if(player.position.x<90){ toast("A sled needs snow."); return; } if(zone!=="world"||pmode!=="walk") return; if(RIDE.mode) rideEnd();
   if(!RIDE.sled){ const s=new THREE.Group(); const d=new THREE.Mesh(new THREE.BoxGeometry(.9,.1,2),toon("#8a6242")); d.position.y=.3; s.add(d); [-.38,.38].forEach(x=>{ const r=new THREE.Mesh(new THREE.BoxGeometry(.07,.22,2.2),toon("#8a2a20")); r.position.set(x,.12,0); s.add(r); const c=new THREE.Mesh(new THREE.TorusGeometry(.18,.035,5,10,Math.PI/2),toon("#8a2a20")); c.rotation.y=Math.PI/2; c.position.set(x,.3,1.1); s.add(c); }); s.userData.keep=true; scene.add(s); RIDE.sled=s; }
-  RIDE.mode="sled"; RIDE.v.set(0,0); RIDE.sled.visible=true; toast("Sled out. A and D lean, W pushes, T gets off."); }
-function rideEnd(){ if(RIDE.horse) RIDE.horse.visible=false; if(RIDE.sled) RIDE.sled.visible=false; RIDE.mode=null; RIDE.lift=0; }
+  RIDE.mode="sled"; RIDE.v.set(0,0); RIDE.sled.visible=true; DOGS.yaw=player.rotation.y; DOGS.vx=DOGS.vz=0; dogTeamShow(true); try{ chime(); }catch(e){} toast("Mush! W to run, A and D to steer, hold Shift while turning to drift."); }
+function rideEnd(){ if(RIDE.mode==="horse"&&RIDE.horse&&RIDE.horse.visible){ SCRIB.bt=0; try{ chime(); }catch(e){} } else if(RIDE.horse) RIDE.horse.visible=false; if(RIDE.sled) RIDE.sled.visible=false; try{ dogTeamShow(false); }catch(e){} RIDE.mode=null; }
 function sledMove(dt,ix,iz){ const p=player.position, e=1.2; const gx=(H(p.x+e,p.z)-H(p.x-e,p.z))/(2*e), gz=(H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e);
   const fwd=tmpV.subVectors(controls.target,camera.position).setY(0).normalize(); const rx=-fwd.z, rz=fwd.x;
   RIDE.v.x+=(-gx*16+(rx*ix-fwd.x*iz)*3.2)*dt; RIDE.v.y+=(-gz*16+(rz*ix-fwd.z*iz)*3.2)*dt; RIDE.v.multiplyScalar(Math.pow(.62,dt)); const sp=RIDE.v.length(); if(sp>24) RIDE.v.multiplyScalar(24/sp);
   const np={x:p.x+RIDE.v.x*dt,z:p.z+RIDE.v.y*dt}; collide(np); if(Math.abs(np.x-(p.x+RIDE.v.x*dt))>.01||Math.abs(np.z-(p.z+RIDE.v.y*dt))>.01) RIDE.v.multiplyScalar(.3);
   p.x=np.x; p.z=np.z; speedNow=Math.min(9,RIDE.v.length()); if(RIDE.v.length()>.4) player.rotation.y=angLerp(player.rotation.y,Math.atan2(RIDE.v.x,RIDE.v.y),Math.min(1,dt*6)); if(p.x<90) rideEnd(); }
 function rideFrame(dt){ const p=player.position; if(RIDE.mode&&inHomeTown()){ rideEnd(); toast("You fold your ride away. The home town is for walking."); }
-  if(RIDE.mode==="horse"&&RIDE.horse){ RIDE.fold=Math.min(1,RIDE.fold+dt*3); RIDE.lift=lerp(RIDE.lift,1.62,Math.min(1,dt*8)); const h=RIDE.horse; h.position.set(p.x,p.y-RIDE.lift,p.z); h.rotation.y=angLerp(h.rotation.y,player.rotation.y,Math.min(1,dt*10)); h.scale.setScalar(Math.max(.01,RIDE.fold)); horseAnimate(h,dt,speedNow,clock);
+  if(RIDE.mode==="horse"&&RIDE.horse){ RIDE.fold=Math.min(1,RIDE.fold+dt*3); RIDE.lift=RIDE.fold<.6?lerp(RIDE.lift,0,Math.min(1,dt*8)):lerp(RIDE.lift,1.62,Math.min(1,dt*7)); const h=RIDE.horse; h.position.set(p.x,p.y-RIDE.lift,p.z); h.rotation.y=angLerp(h.rotation.y,player.rotation.y,Math.min(1,dt*10)); h.scale.setScalar(Math.max(.01,RIDE.fold)); horseAnimate(h,dt,speedNow,clock);
     if(zone!=="world"||pmode!=="walk") rideEnd(); }
   else if(RIDE.mode==="sled"&&RIDE.sled){ RIDE.lift=lerp(RIDE.lift,.32,Math.min(1,dt*8)); RIDE.sled.position.set(p.x,p.y-RIDE.lift,p.z); RIDE.sled.rotation.y=player.rotation.y;
     if(RIDE.v.length()>3&&srand()<dt*20) addInkPuff(p.x,p.y-RIDE.lift+.1,p.z,"#ffffff"); }
-  else RIDE.lift=lerp(RIDE.lift,0,Math.min(1,dt*8)); }
+  else RIDE.lift=lerp(RIDE.lift,0,Math.min(1,dt*7)); }
 // the sled lives at Kōri Lake
 addInteract({keep:true,x:SF_LAKE.x+17,z:SF_LAKE.z-7,r:2.6,k:"",get label(){ return (store.items||{}).sled?"The sled's spot":"Take the sled"; },fn:()=>{ store.items=store.items||{}; if(!store.items.sled){ store.items.sled=1; save(); try{ chime(); }catch(e){} toast("You got the sled. Press T on any snowy slope."); } else toast("You already have the sled. Press T on snow."); }});
 
@@ -3988,7 +3992,7 @@ function climbFrame(dt,moving){ const p=player.position, e=1; const gr=Math.hypo
 function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,ACT.wave-dt);
   if(zone==="world"&&pmode==="walk") climbFrame(dt,speedNow>.3); else { CLIMB.on=false; CLIMB.ring&&CLIMB.ring.classList.remove("show"); } }
 
-const FRAME_SYS=[handLanternFrame,paperTintFrame,craneFrame,memoryFrame,inkbarFrame,finderFrame,rideFrame,inkFrame,dlgBubbleFrame,cullFrame,footFrame,animFrame];
+const FRAME_SYS=[horseFx,paperAnimFrame,dogFrame,handLanternFrame,paperTintFrame,craneFrame,memoryFrame,inkbarFrame,finderFrame,rideFrame,inkFrame,dlgBubbleFrame,cullFrame,footFrame,animFrame];
 
 /* ===================== v57: accessories. Hats, scarves and charms you find in the world, worn from the journal's Wardrobe ===================== */
 const ACC_DEF={
@@ -4050,6 +4054,118 @@ function horseAnimate(H3,dt,speed,t){ const u=H3.userData, gallop=speed>9, f=gal
   u.legs.forEach((L,i)=>{ const ph=t*f+(L.front?0:Math.PI*.9)+(L.x>0?0:(gallop?.4:Math.PI)); L.hip.rotation.x=Math.sin(ph)*a; L.knee.rotation.x=Math.max(0,-Math.cos(ph))*a*1.3; });
   u.body.position.y=1.35+(speed>.5?Math.abs(Math.sin(t*f))*(gallop?.12:.05):Math.sin(t*1.5)*.012); u.body.rotation.x=speed>.5?Math.sin(t*f*2)*(gallop?.05:.02):0;
   u.neck.rotation.x=-.75+(speed>.5?Math.sin(t*f*2+1)*(gallop?.1:.05):Math.sin(t*.8)*.03); u.tail.rotation.x=.6+(speed>.5?.5:0)+Math.sin(t*3)*.08; u.tail.rotation.z=Math.sin(t*2.3)*.15; }
+
+
+/* ===================== v59: the ensō swapper, scribbled horse, paper animations, dog sleds, full controller ===================== */
+// ---------- the ensō: hold Tab (or LB), a brushed circle draws itself, your tools sit around it ----------
+const TOOLS=[
+  {id:"brush",k:"筆",n:"Ink brush",d:"Splash ink. Its true use comes later.",use:()=>inkSwing()},
+  {id:"horse",k:"馬",n:"Paper horse",d:"Scribble it into the world, and ride.",use:()=>toggleHorse()},
+  {id:"sled",k:"橇",n:"Dog sled",d:"On snow only. Hold run to drift.",use:()=>toggleSled(),need:()=>(store.items||{}).sled},
+  {id:"lantern",k:"灯",n:"Lantern",d:"Hold it high: a wider, warmer light.",use:()=>raiseLantern()},
+  {id:"finder",k:"探",n:"Finder",d:"Lock onto rumours, seals and unvisited places.",use:()=>finderNext()},
+  {id:"scroll",k:"地",n:"The Scroll",d:"Your ink map.",use:()=>openScroll()}];
+const ENSO={open:false,sel:0,cur:0,el:null,t:0};
+(function(){ const st=document.createElement("style"); st.textContent=`
+#enso{position:fixed;inset:0;z-index:40;display:none;pointer-events:none}
+#enso.show{display:block}
+#enso .dim{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(20,18,24,.25),rgba(20,18,24,.62));}
+#enso svg{position:absolute;left:50%;top:50%;width:min(64vmin,460px);height:min(64vmin,460px);transform:translate(-50%,-50%);overflow:visible}
+#enso .ring{fill:none;stroke:#15131a;stroke-width:22;stroke-linecap:round;stroke-dasharray:1200;stroke-dashoffset:1200;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+#enso.show .ring{animation:ensoDraw .32s cubic-bezier(.4,.1,.2,1) forwards}@keyframes ensoDraw{to{stroke-dashoffset:110}}
+#enso .t{position:absolute;width:74px;height:74px;margin:-37px 0 0 -37px;display:grid;place-items:center;border-radius:6px;background:rgba(244,236,216,.94);border:3px solid #2a2420;font:800 30px "Shippori Mincho",serif;color:#2a2420;transition:transform .12s,background .12s;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+#enso .t.on{background:#b8302a;color:#f6eedd;border-color:#7a1a14;transform:scale(1.16)}
+#enso .t.off{opacity:.4}
+#enso .mid{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;font-family:"Shippori Mincho",serif;color:#f6eedd;width:200px;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+#enso .mid b{display:block;font-size:22px;font-weight:800}#enso .mid span{font-size:13px;opacity:.9}
+#toolBadge{position:fixed;right:calc(env(safe-area-inset-right) + 18px);bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:7;display:flex;align-items:center;gap:8px;pointer-events:none;font-family:"Shippori Mincho",serif}
+#toolBadge .ic{width:54px;height:54px;display:grid;place-items:center;border-radius:50%;background:rgba(244,236,216,.93);border:3px solid #15131a;font:800 26px "Shippori Mincho",serif;color:#15131a;box-shadow:0 4px 14px rgba(0,0,0,.35);position:relative}
+#toolBadge .ic:after{content:attr(data-k);position:absolute;right:-6px;bottom:-6px;min-width:20px;height:20px;padding:0 4px;display:grid;place-items:center;background:#b8302a;color:#f6eedd;font:700 11px system-ui;border-radius:3px}
+#toolBadge .nm{font-weight:700;font-size:13px;color:#2a2420;background:rgba(244,236,216,.88);padding:4px 10px;border-radius:2px}
+body.photo #toolBadge{visibility:hidden}`; document.head.appendChild(st);
+  const e=document.createElement("div"); e.id="enso"; e.innerHTML=`<div class="dim"></div><svg viewBox="-200 -200 400 400"><path class="ring" d="M 30 -168 C 120 -150 172 -70 165 20 C 158 110 80 170 -10 166 C -100 162 -168 90 -166 0 C -164 -88 -100 -150 -18 -165"/></svg><div class="mid"><b></b><span></span></div>`+TOOLS.map((t,i)=>`<div class="t" data-i="${i}">${t.k}</div>`).join("");
+  document.body.appendChild(e); ENSO.el=e;
+  const b=document.createElement("div"); b.id="toolBadge"; b.innerHTML=`<div class="nm"></div><div class="ic" data-k="Q"></div>`; document.body.appendChild(b);
+  addEventListener("keydown",ev=>{ if(ev.code==="Tab"&&entered&&!ev.repeat&&!uiBlock()&&!chatOpen){ ev.preventDefault(); ensoOpen(); } },true);
+  addEventListener("keyup",ev=>{ if(ev.code==="Tab"&&ENSO.open){ ev.preventDefault(); ensoClose(true); } },true);
+  addEventListener("mousemove",ev=>{ if(!ENSO.open) return; ENSO.mx=(ENSO.mx||0)+(ev.movementX||0); ENSO.my=(ENSO.my||0)+(ev.movementY||0); if(Math.hypot(ENSO.mx,ENSO.my)>30) ensoAim(Math.atan2(ENSO.my,ENSO.mx)); });
+})();
+function ensoLayout(){ const r=Math.min(innerWidth,innerHeight)*.32, cx=innerWidth/2, cy=innerHeight/2; ENSO.el.querySelectorAll(".t").forEach((el,i)=>{ const a=-Math.PI/2+i/TOOLS.length*TAU; el.style.left=(cx+Math.cos(a)*Math.min(r,230))+"px"; el.style.top=(cy+Math.sin(a)*Math.min(r,230))+"px"; const t=TOOLS[i]; el.classList.toggle("off",!!(t.need&&!t.need())); }); }
+function ensoOpen(){ ENSO.open=true; ENSO.sel=ENSO.cur; ENSO.mx=ENSO.my=0; ensoLayout(); ENSO.el.classList.remove("show"); void ENSO.el.offsetWidth; ENSO.el.classList.add("show"); ensoMark(); try{ chime(); }catch(e){} }
+function ensoAim(a){ let best=0,bd=9; TOOLS.forEach((t,i)=>{ const ta=-Math.PI/2+i/TOOLS.length*TAU; let d=Math.abs(((a-ta)%TAU+TAU*1.5)%TAU-Math.PI); if(d<bd){ bd=d; best=i; } }); if(best!==ENSO.sel){ ENSO.sel=best; ensoMark(); } }
+function ensoMark(){ ENSO.el.querySelectorAll(".t").forEach((el,i)=>el.classList.toggle("on",i===ENSO.sel)); const t=TOOLS[ENSO.sel]; ENSO.el.querySelector(".mid b").textContent=t.n; ENSO.el.querySelector(".mid span").textContent=t.need&&!t.need()?"Not found yet.":t.d; }
+function ensoClose(pick){ if(!ENSO.open) return; ENSO.open=false; ENSO.el.classList.remove("show"); if(pick){ const t=TOOLS[ENSO.sel]; if(!(t.need&&!t.need())){ ENSO.cur=ENSO.sel; toolBadge(); } } }
+function toolBadge(){ const t=TOOLS[ENSO.cur], b=document.getElementById("toolBadge"); if(!b) return; b.querySelector(".ic").textContent=t.k; b.querySelector(".nm").textContent=t.n; b.style.display=entered?"":"none"; }
+function useTool(){ const t=TOOLS[ENSO.cur]; if(t.need&&!t.need()){ toast(t.n+": not found yet."); return; } t.use(); }
+setInterval(()=>{ try{ toolBadge(); }catch(e){} },800);
+const LANT={raise:0}; function raiseLantern(){ LANT.raise=6; toast("You hold the lantern high."); }
+
+// ---------- the horse is scribbled into the world, and crumples into a ball when you get off ----------
+const SCRIB={plane:null,t:-1,tex:null,cv:null,ball:null,bt:-1,mount:-1,dis:-1};
+function scribbleHorse(x,y,z,yaw){ if(!SCRIB.cv){ SCRIB.cv=document.createElement("canvas"); SCRIB.cv.width=512; SCRIB.cv.height=360; SCRIB.tex=new THREE.CanvasTexture(SCRIB.cv); SCRIB.plane=new THREE.Mesh(new THREE.PlaneGeometry(4.2,2.95),new THREE.MeshBasicMaterial({map:SCRIB.tex,transparent:true,depthWrite:false,side:THREE.DoubleSide})); SCRIB.plane.userData.keep=true; scene.add(SCRIB.plane); }
+  SCRIB.plane.position.set(x,y+1.45,z); SCRIB.plane.rotation.set(0,yaw+Math.PI/2,0); SCRIB.plane.visible=true; SCRIB.plane.material.opacity=1; SCRIB.t=0; }
+function scribbleDraw(u){ const g=SCRIB.cv.getContext("2d"); g.clearRect(0,0,512,360); g.strokeStyle="#15131a"; g.lineCap=g.lineJoin="round";
+  const P=[[60,170,110,120,200,110,330,112,380,60,430,40,470,70,440,95,400,100,380,170,360,250,330,330,310,250,250,200,170,210,150,300,120,330,110,240,80,200,40,230,30,190,60,170],[330,112,346,60,360,104],[380,170,410,250,400,330],[170,210,190,300,180,330]];
+  let total=0; P.forEach(p=>{ for(let i=2;i<p.length;i+=2) total+=Math.hypot(p[i]-p[i-2],p[i+1]-p[i-1]); }); let left=total*u;
+  P.forEach((p,pi)=>{ g.lineWidth=pi?7:11; g.beginPath(); g.moveTo(p[0]+Math.sin(pi)*2,p[1]); for(let i=2;i<p.length&&left>0;i+=2){ const L=Math.hypot(p[i]-p[i-2],p[i+1]-p[i-1]); const f=Math.min(1,left/L); g.lineTo(p[i-2]+(p[i]-p[i-2])*f+Math.sin(i*1.7)*2.5,p[i-1]+(p[i+1]-p[i-1])*f+Math.cos(i*1.3)*2.5); left-=L; } g.stroke(); });
+  if(u>.95){ g.globalAlpha=.25; g.lineWidth=3; for(let i=0;i<14;i++){ g.beginPath(); g.moveTo(256,180); const a=i/14*TAU; g.lineTo(256+Math.cos(a)*260,180+Math.sin(a)*180); g.stroke(); } g.globalAlpha=1; }
+  SCRIB.tex.needsUpdate=true; }
+function makePaperBall(){ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.3,1),new THREE.MeshToonMaterial({color:"#f2ecde",gradientMap:gm,flatShading:true})); const p=m.geometry.attributes.position; for(let i=0;i<p.count;i++){ const v=new THREE.Vector3().fromBufferAttribute(p,i).multiplyScalar(.75+srand()*.5); p.setXYZ(i,v.x,v.y,v.z); } m.geometry.computeVertexNormals(); m.add(new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry,10),new THREE.LineBasicMaterial({color:"#1d1a22"}))); m.userData.keep=true; m.visible=false; scene.add(m); return m; }
+function horseFx(dt){ const p=player.position;
+  if(SCRIB.t>=0){ SCRIB.t+=dt; const u=Math.min(1,SCRIB.t/.7); scribbleDraw(u); SCRIB.plane.quaternion.copy(camera.quaternion); if(SCRIB.t>.7){ SCRIB.plane.material.opacity=Math.max(0,1-(SCRIB.t-.7)/.35); if(RIDE.horse){ RIDE.horse.visible=true; } }
+    if(SCRIB.t>1.05){ SCRIB.t=-1; SCRIB.plane.visible=false; } }
+  if(SCRIB.bt>=0){ SCRIB.bt+=dt; const b=SCRIB.ball||(SCRIB.ball=makePaperBall()); const u=SCRIB.bt/.65; b.visible=true;
+    if(u<.45){ const k=u/.45; RIDE.horse.scale.setScalar(Math.max(.02,1-k)); RIDE.horse.rotation.y+=dt*9; b.position.copy(RIDE.horse.position).add(new THREE.Vector3(0,1.2,0)); b.scale.setScalar(k*1.4); }
+    else { RIDE.horse.visible=false; const k=(u-.45)/.55; b.position.lerpVectors(b.position,new THREE.Vector3(p.x,p.y+1,p.z),Math.min(1,dt*10)); b.rotation.x+=dt*12; b.scale.setScalar(1.4*(1-k)); }
+    if(u>=1){ SCRIB.bt=-1; b.visible=false; } } }
+// mount: a hop up and a fold onto the saddle; dismount: a hop off to the side
+const MOUNT={t:-1,dir:1};
+
+// ---------- paper animations for you: crumple on a big drop, fold a crane when idle, flutter in a storm ----------
+const PAN={yHist:[],crumple:0,idle:0,fold:-1,crane:null,flut:0};
+function paperAnimFrame(dt){ const p=player.position, P=PAPERSP&&PAPERSP.p; if(!P) return;
+  PAN.yHist.push([clock,p.y]); while(PAN.yHist.length&&clock-PAN.yHist[0][0]>.45) PAN.yHist.shift();
+  if(PAN.crumple<=0&&PAN.yHist.length>3&&PAN.yHist[0][1]-p.y>3.2&&!RIDE.mode&&!CLIMB.on){ PAN.crumple=.7; try{ chime(); }catch(e){} for(let i=0;i<8;i++) addInkPuff(p.x,p.y+.2,p.z,"#d8d0c0"); }
+  if(PAN.crumple>0){ PAN.crumple-=dt; const u=1-PAN.crumple/.7; const sy=u<.25?1-u/.25*.55:.45+Math.min(1,(u-.25)/.4)*.55+Math.sin(u*18)*.06*(1-u), sx=u<.25?1+u/.25*.3:1.3-Math.min(1,(u-.25)/.4)*.3; P.scale.set(P.scale.x<0?-sx:sx,sy,1); P.rotation.z=Math.sin(u*30)*.12*(1-u); if(PAN.crumple<=0){ P.scale.set(P.scale.x<0?-1:1,1,1); P.rotation.z=0; } }
+  const still=speedNow<.2&&!RIDE.mode&&!CLIMB.on&&!DLG.open&&ROLL.t<0; PAN.idle=still?PAN.idle+dt:0;
+  if(PAN.idle>12&&PAN.fold<0){ PAN.fold=0; PAN.idle=-20; }
+  if(PAN.fold>=0){ PAN.fold+=dt; if(!still){ PAN.fold=-1; } else if(PAN.fold>1.6){ PAN.fold=-1; const c=makeCrane(); c.scale.setScalar(.35); c.position.set(p.x,p.y+1.3,p.z); scene.add(c); PAN.crane={c,t:0}; } }
+  if(PAN.crane){ const C=PAN.crane; C.t+=dt; C.c.position.y+=dt*(1.2+C.t); C.c.position.x+=Math.sin(C.t*2)*dt*1.5; C.c.rotation.y+=dt*1.2; const f=Math.sin(C.t*14)*.7; C.c.userData.w[0].rotation.z=f; C.c.userData.w[1].rotation.z=-f; if(C.t>5){ scene.remove(C.c); PAN.crane=null; } }
+  const storm=player.position.x>440?SFX.storm:0; if(PAN.crumple<=0&&storm>.35) P.rotation.z=Math.sin(clock*11)*.05*storm+Math.sin(clock*3.1)*.04*storm;
+  if(LANT.raise>0) LANT.raise-=dt; }
+
+// ---------- dog sled: four paper dogs, real steering, and drifting ----------
+function buildPaperDog(){ const g=new THREE.Group(); const paper=new THREE.MeshToonMaterial({color:"#f2ecde",gradientMap:gm,flatShading:true}), grey=new THREE.MeshToonMaterial({color:"#7a7680",gradientMap:gm,flatShading:true}), ink=new THREE.LineBasicMaterial({color:"#1d1a22"});
+  const F=(geo,m)=>{ geo=geo.toNonIndexed(); geo.computeVertexNormals(); const o=new THREE.Mesh(geo,m); o.castShadow=true; o.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo,20),ink)); return o; };
+  const body=F(new THREE.BoxGeometry(.32,.3,.75),grey); body.position.y=.5; g.add(body); const belly=F(new THREE.BoxGeometry(.28,.12,.6),paper); belly.position.y=.36; g.add(belly);
+  const head=new THREE.Group(); head.position.set(0,.72,.42); g.add(head); head.add(F(new THREE.BoxGeometry(.26,.24,.28),grey)); const snout=F(new THREE.BoxGeometry(.14,.12,.2),paper); snout.position.set(0,-.04,.2); head.add(snout);
+  [-1,1].forEach(s=>{ const e=F(new THREE.ConeGeometry(.06,.16,4),grey); e.position.set(s*.08,.18,-.04); head.add(e); });
+  const tail=F(new THREE.ConeGeometry(.05,.34,4),grey); tail.position.set(0,.68,-.42); tail.rotation.x=-.9; g.add(tail);
+  const legs=[[.1,.28],[-.1,.28],[.1,-.28],[-.1,-.28]].map(([x,z])=>{ const L=new THREE.Group(); L.position.set(x,.38,z); const m=F(new THREE.BoxGeometry(.08,.36,.09),paper); m.position.y=-.18; L.add(m); g.add(L); return L; });
+  const scarf=new THREE.Mesh(new THREE.TorusGeometry(.14,.035,4,10),toon("#b8302a")); scarf.position.set(0,.62,.33); scarf.rotation.x=Math.PI/2.4; g.add(scarf);
+  g.userData={legs,tail,head}; g.traverse(o=>o.userData.keep=true); return g; }
+const DOGS={team:null,ropes:null,yaw:0,v:0,vx:0,vz:0,drift:0};
+function dogTeamShow(on){ if(on&&!DOGS.team){ DOGS.team=[0,1,2,3].map(()=>{ const d=buildPaperDog(); scene.add(d); return d; }); DOGS.ropes=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:"#5a3a28"})); DOGS.ropes.userData.keep=true; DOGS.ropes.frustumCulled=false; scene.add(DOGS.ropes); }
+  if(DOGS.team){ DOGS.team.forEach(d=>d.visible=on); DOGS.ropes.visible=on; } }
+function dogSledMove(dt,ix,iz){ const p=player.position; const run=keys.ShiftLeft||keys.ShiftRight||PAD1.run;
+  const fwd=-iz, turn=ix; DOGS.yaw-=turn*dt*(run?2.6:1.7)*(DOGS.v>1?1:.6);
+  const e=1.2, gx=(H(p.x+e,p.z)-H(p.x-e,p.z))/(2*e), gz=(H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e);
+  const hx=Math.sin(DOGS.yaw), hz=Math.cos(DOGS.yaw);
+  const pull=fwd>0?fwd*15:fwd*4; let ax=hx*pull-gx*9, az=hz*pull-gz*9;
+  DOGS.vx+=ax*dt; DOGS.vz+=az*dt;
+  // tyre-like grip: when drifting the sled keeps sliding sideways; otherwise it snaps to the heading
+  const along=DOGS.vx*hx+DOGS.vz*hz, side=DOGS.vx*hz-DOGS.vz*hx; const grip=run&&Math.abs(turn)>.2?1.2:7; const side2=side*Math.exp(-grip*dt);
+  DOGS.drift=lerp(DOGS.drift,Math.abs(side2),Math.min(1,dt*6)); const along2=along*Math.pow(.75,dt);
+  DOGS.vx=hx*along2+hz*side2; DOGS.vz=hz*along2-hx*side2; const sp=Math.hypot(DOGS.vx,DOGS.vz), max=run?26:18; if(sp>max){ DOGS.vx*=max/sp; DOGS.vz*=max/sp; }
+  const np={x:p.x+DOGS.vx*dt,z:p.z+DOGS.vz*dt}; collide(np); if(Math.hypot(np.x-(p.x+DOGS.vx*dt),np.z-(p.z+DOGS.vz*dt))>.01){ DOGS.vx*=.3; DOGS.vz*=.3; }
+  p.x=np.x; p.z=np.z; DOGS.v=Math.hypot(DOGS.vx,DOGS.vz); speedNow=Math.min(9,DOGS.v); player.rotation.y=DOGS.yaw; RIDE.v.set(DOGS.vx,DOGS.vz);
+  if(DOGS.drift>2.5&&srand()<dt*40){ for(let i=0;i<2;i++) addInkPuff(p.x-hx*1.2,p.y+.2,p.z-hz*1.2,"#ffffff"); }
+  if(p.x<90){ rideEnd(); toast("No snow here. The dogs sit down."); } }
+function dogFrame(dt){ if(RIDE.mode!=="sled"||!DOGS.team) return; const p=player.position, hx=Math.sin(DOGS.yaw), hz=Math.cos(DOGS.yaw), rx=hz, rz=-hx; const pos=[];
+  DOGS.team.forEach((d,i)=>{ const row=Math.floor(i/2), side=i%2?1:-1; const dist=2.2+row*1.3; const x=p.x+hx*dist+rx*side*.45, z=p.z+hz*dist+rz*side*.45; d.position.set(x,H(x,z),z); d.rotation.y=DOGS.yaw+DOGS.drift*.04*side;
+    const t=clock*(DOGS.v>1?14:3)+i; d.userData.legs.forEach((L,k)=>{ L.rotation.x=Math.sin(t+(k<2?0:Math.PI))*(DOGS.v>1?.8:.08); }); d.userData.tail.rotation.z=Math.sin(clock*6+i)*.4; d.userData.head.rotation.y=Math.sin(clock*.7+i)*.15;
+    pos.push(p.x+hx*.9,p.y+.4,p.z+hz*.9,x,d.position.y+.55,z); });
+  DOGS.ropes.geometry.setAttribute("position",new THREE.Float32BufferAttribute(pos,3)); DOGS.ropes.geometry.computeBoundingSphere(); }
 
 /* ===================== boot ===================== */
 
