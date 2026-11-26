@@ -606,7 +606,7 @@ scene.fog=new THREE.Fog(0xcccccc,70,360);
 const camera=new THREE.PerspectiveCamera(50,1,.1,2000);
 const controls=new OrbitControls(camera,canvas);
 controls.enableDamping=true; controls.dampingFactor=.08; controls.enablePan=false; controls.rotateSpeed=.55;
-controls.minDistance=2.4; controls.maxDistance=42; controls.zoomSpeed=.7; controls.enableDamping=true; controls.dampingFactor=.12; controls.minPolarAngle=.3; controls.maxPolarAngle=1.88;
+controls.minDistance=3.2; controls.maxDistance=15; controls.zoomSpeed=.7; controls.enableDamping=true; controls.dampingFactor=.12; controls.minPolarAngle=.35; controls.maxPolarAngle=1.78;
 controls.autoRotate=true; controls.autoRotateSpeed=.4;
 camera.position.set(0,9,26); controls.target.set(0,2.5,0);
 const composer=new EffectComposer(renderer); composer.setPixelRatio(PR);
@@ -720,8 +720,8 @@ function drawSamurai2(g,W,H,o={}){ const s=W/256; g.save(); g.scale(s,s); const 
     g.restore(); };
   // ================= BACK VIEW =================
   if(back){
-    sword(false); if(pose==="climb"){ const c=o.ph?1:-1; leg(-1,.5+c*.25,48); leg(1,-.5+c*.25,48); } else { leg(-1,legA); leg(1,-legA); }
-    hakama(g,X,pose==="climb"?0:legA,back,fillOL,pose==="climb"?.5:0); if(pose==="climb"){ const c=o.ph?1:-1; arm(-1,-2.75+c*.3); arm(1,-2.75-c*.3); } else { arm(-1,armA); arm(1,-armA); }
+    sword(false); if(pose==="ride"){ leg(-1,.95,46); leg(1,-.95,46); } else if(pose==="climb"){ const c=o.ph?1:-1; leg(-1,.5+c*.25,48); leg(1,-.5+c*.25,48); } else { leg(-1,legA); leg(1,-legA); }
+    hakama(g,X,pose==="climb"||pose==="ride"?0:legA,back,fillOL,pose==="climb"?.5:pose==="ride"?1:0); if(pose==="ride"){ arm(-1,-.45+(o.ph?.08:0)); arm(1,-.45-(o.ph?.08:0)); } else if(pose==="climb"){ const c=o.ph?1:-1; arm(-1,-2.75+c*.3); arm(1,-2.75-c*.3); } else { arm(-1,armA); arm(1,-armA); }
     g.beginPath(); rr(g,X-46,136,92,64,22); fillOL("#2c3f6e",4); g.fillStyle="#3c5a8c"; g.fillRect(X-40,140,10,56);
     g.beginPath(); g.arc(X,166,17,0,TAU); fillOL("#efe6d0",3); g.fillStyle="#b8302a"; g.font='700 20px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("紙",X,173);
     g.beginPath(); rr(g,X-47,190,94,14,6); fillOL("#b8302a",3);
@@ -841,7 +841,7 @@ function samFrame(P,dt){ const F=buildSamFrames(), back=P.back; SAMST.bt+=dt; if
   if(ROLL.t>=0) return F2.tuck[0];
   if(ACT.wave>0) return F2.wave[Math.floor(clock*5)%2];
   if(ACT.reach>0) return F2.reach[0];
-  if(typeof RIDE!=="undefined"&&RIDE.mode==="horse") return F.ride[Math.floor(clock*6)%2];
+  if(typeof RIDE!=="undefined"&&RIDE.mode==="horse"){ const F3=buildSamFrames2(); return (back?F3.rideB:F.ride)[speedNow>.5?Math.floor(clock*(speedNow>9?9:6))%2:0]; }
   if(typeof RIDE!=="undefined"&&RIDE.mode==="sled") return F.sled[0];
   if(typeof _inkCd!=="undefined"&&_inkCd>0) return F.swing[Math.min(2,Math.floor((1-_inkCd/.45)*3))];
   const fi=Math.floor(((walkPh/TAU)%1+1)%1*6)%6;
@@ -2932,11 +2932,12 @@ function frame(now){
   if(CAMFIX.free&&entered&&pmode!=="golf"&&!advMode) camera.position.copy(CAMFIX.free);
   try{ camSettle(dt,advMode); }catch(e){}
   if(entered&&pmode!=="golf"&&!advMode) applyMouseLook(); else { PL.ax=PL.ay=0; }
-  if(entered&&pmode!=="golf"){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); if(P2.on&&pmode==="walk"){ tgt.add(P2.g.position).multiplyScalar(.5); tgt.y+=.85; const sep=P2.g.position.distanceTo(player.position); const want=clamp(9+sep*.9,9,26); const off=camera.position.clone().sub(controls.target); const L=off.length(); if(L<want-.3) camera.position.copy(controls.target).addScaledVector(off.normalize(),lerp(L,want,.05)); } const delta=tgt.clone().sub(controls.target); controls.target.add(delta); camera.position.add(delta); }
+  if(entered&&pmode!=="golf"){ const tgt=tmpV.set(player.position.x,player.position.y+1.7,player.position.z); if(P2.on&&pmode==="walk"){ tgt.add(P2.g.position).multiplyScalar(.5); tgt.y+=.85; const sep=P2.g.position.distanceTo(player.position); const want=clamp(9+sep*.9,9,26); const off=camera.position.clone().sub(controls.target); const L=off.length(); if(L<want-.3) camera.position.copy(controls.target).addScaledVector(off.normalize(),lerp(L,want,.05)); } const delta=tgt.clone().sub(controls.target); if(delta.length()<6) delta.multiplyScalar(Math.min(1,dt*11)); if(typeof RIDE!=="undefined"&&RIDE.mode==="horse") delta.y+=0; controls.target.add(delta); camera.position.add(delta); }
   if(pmode!=="golf"&&pmode!=="koi"&&pmode!=="climb"&&pmode!=="fall") controls.update();
   advCam(dt); koiCam(dt);
   if(entered&&pmode!=="golf"&&!advMode&&(zone==="world")){ CAMFIX.free=camera.position.clone(); const tg=controls.target, dir=tmpV.subVectors(camera.position,tg); const dist=dir.length(); if(dist>1){ dir.divideScalar(dist); const rc=CAMFIX.ray; rc.set(tg,dir); rc.far=dist; rc.near=.3; const objs=CAMBLOCK.filter(o=>o.visible); const h=rc.intersectObjects(objs,false)[0];
-      if(h){ const want=Math.max(1.2,h.distance-.35); CAMFIX.d=lerp(CAMFIX.d||dist,want,.5); } else CAMFIX.d=lerp(CAMFIX.d||dist,dist,.15); if(CAMFIX.d<dist-.05) camera.position.copy(tg).addScaledVector(dir,CAMFIX.d); } } else CAMFIX.free=null;
+      if(h){ const want=Math.max(2.8,h.distance-.35); CAMFIX.d=lerp(CAMFIX.d||dist,want,.5); } else CAMFIX.d=lerp(CAMFIX.d||dist,dist,.15); if(CAMFIX.d<dist-.05) camera.position.copy(tg).addScaledVector(dir,CAMFIX.d);
+      /* terrain between you and the camera: lift the camera over it instead of pulling it in */ { let need=0; const cp=camera.position; for(let i=1;i<=10;i++){ const t=i/10, x=tg.x+(cp.x-tg.x)*t, z=tg.z+(cp.z-tg.z)*t, y=tg.y+(cp.y-tg.y)*t, gh=H(x,z)+.7; if(y<gh) need=Math.max(need,(gh-y)/t); } CAMFIX.lift=lerp(CAMFIX.lift||0,Math.min(need,14),need>(CAMFIX.lift||0)?.6:.1); if(CAMFIX.lift>.01) cp.y+=CAMFIX.lift; } } } else CAMFIX.free=null;
   if(zone==="hall"){ camera.position.x=clamp(camera.position.x,HALL.x-HALL.w/2+.5,HALL.x+HALL.w/2-.5); camera.position.z=clamp(camera.position.z,HALL.z-HALL.d/2+.5,HALL.z+HALL.d/2-.5); camera.position.y=clamp(camera.position.y,HALL.y+.6,HALL.y+6.4); }
   else { const cg=(zone==="sky"?SKY.y-6:zone==="balcony"?Math.max(BALC.y,H(camera.position.x,camera.position.z)):Math.max(H(camera.position.x,camera.position.z),lakeE(camera.position.x,camera.position.z)<1?-.25:-99))+.4; if(camera.position.y<cg) camera.position.y=cg;
     }
@@ -3145,7 +3146,7 @@ const PASSFX={snow:null,base:null,last:null,steam:[]};
     for(let k=0;k<70;k++){ const x=rand(96,430), z=rand(-120,120); if(passTrailDist(x,z)<5||passFlat(x,z,3)) continue; const rs=rand(.35,.75); plant("Rock_"+(1+Math.floor(srand()*7)),x,z,rs,{y:H(x,z)-.15,tint:"#d6dde6"}); circles.push({x,z,r:1.4*rs}); } }
   // falling snow, only up here
   { const N=1600, geo=new THREE.BufferGeometry(), p=new Float32Array(N*3); for(let i=0;i<N;i++){ p[i*3]=rand(-30,30); p[i*3+1]=rand(0,26); p[i*3+2]=rand(-30,30); } geo.setAttribute("position",new THREE.BufferAttribute(p,3));
-    const sm=new THREE.PointsMaterial({color:0xffffff,size:.13,transparent:true,opacity:0,depthWrite:false}); const pts=new THREE.Points(geo,sm); pts.frustumCulled=false; pts.userData.keep=true; scene.add(pts); PASSFX.snow=pts; }
+    const sm=new THREE.PointsMaterial({color:0xffffff,size:.1,transparent:true,opacity:0,depthWrite:false,map:(()=>{ const c=document.createElement("canvas"); c.width=c.height=32; const g=c.getContext("2d"); const gr=g.createRadialGradient(16,16,0,16,16,16); gr.addColorStop(0,"rgba(255,255,255,1)"); gr.addColorStop(.45,"rgba(255,255,255,.8)"); gr.addColorStop(1,"rgba(255,255,255,0)"); g.fillStyle=gr; g.fillRect(0,0,32,32); return new THREE.CanvasTexture(c); })(),alphaTest:.02}); const pts=new THREE.Points(geo,sm); pts.frustumCulled=false; pts.userData.keep=true; scene.add(pts); PASSFX.snow=pts; }
   // the top of the pass: Yukidake peak, with a cairn, prayer flags, a bench and a view of everything
   { const f=PASS_FLATS.find(f=>f.id==="peak"); const pg=keep(new THREE.Group()); pg.position.set(f.x,f.y,f.z); scene.add(pg);
     for(let i=0;i<6;i++){ const r=new THREE.Mesh(new THREE.DodecahedronGeometry(.6-i*.08,0),STONE); r.position.set(0,.4+i*.55,0); r.rotation.y=i; pg.add(r); }
@@ -3427,8 +3428,8 @@ const SFX={tiles:[],fogSaved:null,storm:0,embers:null,seal:null,brazier:null,bra
   { const zw=SF_DARK_Z; const N=24, W=920/N; const mcv=document.createElement("canvas"); mcv.width=64; mcv.height=256; { const g=mcv.getContext("2d"); const im=g.createImageData(64,256); for(let y=0;y<256;y++) for(let x=0;x<64;x++){ const v=1-y/255, hx=Math.sin(Math.PI*x/63); const a=Math.pow(1-smooth(.25,1,v),1)*hx; const i=(y*64+x)*4; im.data[i]=6; im.data[i+1]=5; im.data[i+2]=10; im.data[i+3]=255*a; } g.putImageData(im,0,0); }
     const mtx=new THREE.CanvasTexture(mcv); const mist=new THREE.MeshBasicMaterial({map:mtx,transparent:true,opacity:.95,depthWrite:false,side:THREE.DoubleSide,fog:false});
     const wall=far(new THREE.Group()); scene.add(wall);
-    for(let i=0;i<N;i++){ const x=470+(i+.5)*W, y=H(x,zw); const p=new THREE.Mesh(new THREE.PlaneGeometry(W*1.9,160),mist); p.position.set(x,y+40,zw-srand()*6); wall.add(p); }
-    const fade=new THREE.MeshBasicMaterial({map:mtx,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,fog:false}); for(let i=0;i<N;i++){ const x=470+(i+.5)*W; const p=new THREE.Mesh(new THREE.PlaneGeometry(W*1.9,120),fade); p.position.set(x,H(x,zw+14)+30,zw+14); wall.add(p); }
+
+    const fade=new THREE.MeshBasicMaterial({map:mtx,transparent:true,opacity:.5,depthWrite:false,side:THREE.DoubleSide,fog:false}); 
     SFX.dark=wall;
     const SP=T("#08070c"); for(let i=0;i<18;i++){ const x=520+srand()*820, z=zw-30-srand()*80, hh=40+srand()*70; const sp=new THREE.Mesh(new THREE.ConeGeometry(2+srand()*4,hh,4),SP); sp.position.set(x,H(x,zw)+hh/2+20,z); wall.add(sp); }
     { const N2=260, geo=new THREE.BufferGeometry(), p=new Float32Array(N2*3); for(let i=0;i<N2;i++){ p[i*3]=480+srand()*900; p[i*3+1]=srand()*40; p[i*3+2]=zw+srand()*30; } geo.setAttribute("position",new THREE.BufferAttribute(p,3));
@@ -3447,13 +3448,13 @@ const SFX={tiles:[],fogSaved:null,storm:0,embers:null,seal:null,brazier:null,bra
 }
 const _sfGrey=new THREE.Color("#8a8680"), _sfDark=new THREE.Color("#16131c");
 function worldFrame(dt){ const px=player.position.x, pz=player.position.z, inSF=px>440;
-  for(const t of SFX.tiles){ const b=t.userData.box; t.visible=px>300&&px>b.x0-700&&px<b.x1+700&&pz>b.z0-700&&pz<b.z1+700; }
+  for(const t of SFX.tiles){ const b=t.userData.box; t.visible=px>300&&px>b.x0-520&&px<b.x1+520&&pz>b.z0-520&&pz<b.z1+520; }
   // weather: long clear spells, then a blizzard rolls through
   const w=clamp((Math.sin(clock*.011)+Math.sin(clock*.0047+1.3)*.6-.7)*1.6,0,1); SFX.storm+=(w-SFX.storm)*Math.min(1,dt*.3);
-  if(scene.fog&&zone!=="hall"){ if(inSF){ if(!SFX.fogSaved) SFX.fogSaved=[scene.fog.near,scene.fog.far]; scene.fog.near=lerp(70,8,SFX.storm); scene.fog.far=lerp(720,110,SFX.storm); }
+  if(scene.fog&&zone!=="hall"){ if(inSF){ if(!SFX.fogSaved) SFX.fogSaved=[scene.fog.near,scene.fog.far]; const dk=smooth(-1250,-1585,pz); scene.fog.near=lerp(lerp(60,8,SFX.storm),2,dk); scene.fog.far=lerp(lerp(440,110,SFX.storm),34,dk); }
     else if(SFX.fogSaved){ scene.fog.near=SFX.fogSaved[0]; scene.fog.far=SFX.fogSaved[1]; SFX.fogSaved=null; } }
-  if(PASSFX.snow&&inSF){ const p=PASSFX.snow.geometry.attributes.position.array; const wind=SFX.storm*dt*9; for(let i=0;i<p.length;i+=3){ p[i]+=wind; p[i+1]-=dt*SFX.storm*3; if(p[i]>30) p[i]-=60; } PASSFX.snow.material.size=.13+SFX.storm*.07; }
-  const wt=inSF?sfWither(pz):0; if(PASSFX.snow){ PASSFX.snow.material.color.setRGB(1-wt*.45,1-wt*.47,1-wt*.44); if(!inSF) PASSFX.snow.material.size=.13; }
+  if(PASSFX.snow&&inSF){ const p=PASSFX.snow.geometry.attributes.position.array; const wind=SFX.storm*dt*9; for(let i=0;i<p.length;i+=3){ p[i]+=wind; p[i+1]-=dt*SFX.storm*3; if(p[i]>30) p[i]-=60; } PASSFX.snow.material.size=.1+SFX.storm*.05; }
+  const wt=inSF?sfWither(pz):0; if(PASSFX.snow){ PASSFX.snow.material.color.setRGB(1-wt*.45,1-wt*.47,1-wt*.44); if(!inSF) PASSFX.snow.material.size=.1; }
   if(scene.fog&&wt>0){ scene.fog.color.lerp(_sfGrey,wt*.7*(1-smooth(-1300,-1590,pz))).lerp(_sfDark,smooth(-1300,-1590,pz)*.85); PASSFX.last=scene.fog.color.clone(); if(inSF){ scene.fog.far=Math.min(scene.fog.far,lerp(720,260,smooth(-900,-1550,pz))); } }
   if(SFX.motes&&pz<-1200){ const p=SFX.motes.pts.geometry.attributes.position.array; for(let i=0;i<p.length;i+=3){ p[i+1]+=dt*.5; p[i]+=Math.sin(clock*.5+i)*dt*.4; if(p[i+1]>40) p[i+1]=0; } SFX.motes.pts.geometry.attributes.position.needsUpdate=true; }
   if(SFX.dark){ SFX.dark.visible=inSF&&pz<-1150; if(SFX.motes) SFX.motes.pts.visible=SFX.dark.visible; }
@@ -3469,7 +3470,7 @@ const HANDL=(()=>{ const g=new THREE.Group(); g.userData.keep=true;
   const capM=toon("#2b2420"); [-.12,-.56].forEach(y=>{ const c=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.06,10),capM); c.position.y=y; g.add(c); });
   for(let i=0;i<3;i++){ const r=new THREE.Mesh(new THREE.TorusGeometry(.172,.008,4,16),toon("#8a3a2a")); r.rotation.x=Math.PI/2; r.position.y=-.34+(i-1)*.1; r.scale.set(1-Math.abs(i-1)*.12,1-Math.abs(i-1)*.12,1); g.add(r); }
   const pole=new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,.34,5),toon("#5a3a28")); pole.position.y=-.02; g.add(pole);
-  const light=new THREE.PointLight(0xffa850,0,11,1.4); light.position.set(0,-.2,.9); g.add(light);
+  const light=new THREE.PointLight(0xffa850,0,12,.9); scene.add(light);
   scene.add(g); return {g,paper,light,sw:0}; })();
 const _hlR=new THREE.Vector3();
 function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"&&zone!=="sky"&&!(typeof ROLL!=="undefined"&&ROLL.t>=0);
@@ -3478,9 +3479,9 @@ function handLanternFrame(dt){ const L=HANDL, show=pmode!=="koi"&&pmode!=="boat"
   _hlR.setFromMatrixColumn(camera.matrixWorld,0); _hlR.y=0; _hlR.normalize();
   const moving=PAPER&&typeof PAPERX!=="undefined"?PAPERX.mag>.08:false; L.sw+=dt*(moving?9:2);
   L.g.position.set(player.position.x+_hlR.x*side*.62,player.position.y+1.08+(moving?Math.abs(Math.sin(L.sw))*.04:0),player.position.z+_hlR.z*side*.62);
-  L.g.rotation.z=Math.sin(L.sw)*(moving?.18:.05); if(PAPER) L.g.position.add(spriteNudge(L.g.position,.6));
+  L.g.rotation.z=Math.sin(L.sw)*(moving?.18:.05); if(PAPER) L.g.position.add(spriteNudge(L.g.position,.6)); L.light.position.copy(L.g.position).add(spriteNudge(L.g.position,1.6)); L.light.position.y+=.5;
   const dark=clamp(night*1.15+(player.position.x>440?SFX.storm*.25:0),0,1);
-  L.paper.emissiveIntensity=.1+dark*.32; L.light.intensity=dark*1.15; }
+  L.paper.emissiveIntensity=.1+dark*.32; L.light.intensity=dark*.85; }
 function paperTintFrame(){ if(!PAPER) return; const k=1-night*.62;
   for(const m of PAPER_MESHES){ if(m.userData.lit) continue; const c=m.material.color; c.setRGB(k,k,k);
     if(HANDL.light.intensity>0){ const d=m.position.distanceTo(HANDL.g.position), w=HANDL.light.intensity/1.15*(1-smooth(1,9,d)); c.r=Math.min(1,c.r+w*.55); c.g=Math.min(1,c.g+w*.36); c.b=Math.min(1,c.b+w*.12); } } }
@@ -3884,8 +3885,8 @@ function drawHorse(g,W,H,step){ g.save(); g.translate(W/2,H/2); const s=W/260; g
 const RIDE={mode:null,horse:null,sled:null,lift:0,v:new THREE.Vector2(),fold:0,frames:null,ft:0,step:0};
 const inHomeTown=()=>{ const r=regionAt(player.position.x,player.position.z); return !!r&&r.id==="valley"; };
 function toggleHorse(){ if(RIDE.mode==="horse"){ rideEnd(); return; } if(inHomeTown()){ toast("The home town is for walking. Your horse waits outside it."); return; } if(zone!=="world"||pmode!=="walk"){ toast("No room for a horse here."); return; } if(RIDE.mode) rideEnd();
-  if(!RIDE.frames){ RIDE.frames=[0,1,2,3].map(st=>paperCut(320,240,(g,w,h)=>drawHorse2(g,w,h,st),0)); RIDE.horse=paperPlane(RIDE.frames[0],3.6,2.7,{ty:1.0,shadow:true}); RIDE.horse.userData.keep=true; scene.add(RIDE.horse); }
-  RIDE.mode="horse"; RIDE.fold=0; RIDE.horse.visible=true; try{ chime(); }catch(e){} toast("You unfold the paper horse. (H to fold it away)"); }
+  if(!RIDE.horse){ RIDE.frames=[]; RIDE.horse=buildOrigamiHorse(); RIDE.horse.userData.keep=true; scene.add(RIDE.horse); }
+  RIDE.mode="horse"; RIDE.fold=0; RIDE.horse.visible=true; if(!RIDE.horse.parent) scene.add(RIDE.horse); RIDE.horse.rotation.y=player.rotation.y; try{ chime(); }catch(e){} toast("You unfold the paper horse. (H to fold it away)"); }
 function toggleSled(){ if(RIDE.mode==="sled"){ rideEnd(); return; } const it=store.items||{}; if(!it.sled){ toast("You don't have a sled. There's one by the fishing hut at Kōri Lake."); return; }
   if(player.position.x<90){ toast("A sled needs snow."); return; } if(zone!=="world"||pmode!=="walk") return; if(RIDE.mode) rideEnd();
   if(!RIDE.sled){ const s=new THREE.Group(); const d=new THREE.Mesh(new THREE.BoxGeometry(.9,.1,2),toon("#8a6242")); d.position.y=.3; s.add(d); [-.38,.38].forEach(x=>{ const r=new THREE.Mesh(new THREE.BoxGeometry(.07,.22,2.2),toon("#8a2a20")); r.position.set(x,.12,0); s.add(r); const c=new THREE.Mesh(new THREE.TorusGeometry(.18,.035,5,10,Math.PI/2),toon("#8a2a20")); c.rotation.y=Math.PI/2; c.position.set(x,.3,1.1); s.add(c); }); s.userData.keep=true; scene.add(s); RIDE.sled=s; }
@@ -3897,11 +3898,7 @@ function sledMove(dt,ix,iz){ const p=player.position, e=1.2; const gx=(H(p.x+e,p
   const np={x:p.x+RIDE.v.x*dt,z:p.z+RIDE.v.y*dt}; collide(np); if(Math.abs(np.x-(p.x+RIDE.v.x*dt))>.01||Math.abs(np.z-(p.z+RIDE.v.y*dt))>.01) RIDE.v.multiplyScalar(.3);
   p.x=np.x; p.z=np.z; speedNow=Math.min(9,RIDE.v.length()); if(RIDE.v.length()>.4) player.rotation.y=angLerp(player.rotation.y,Math.atan2(RIDE.v.x,RIDE.v.y),Math.min(1,dt*6)); if(p.x<90) rideEnd(); }
 function rideFrame(dt){ const p=player.position; if(RIDE.mode&&inHomeTown()){ rideEnd(); toast("You fold your ride away. The home town is for walking."); }
-  if(RIDE.mode==="horse"&&RIDE.horse){ RIDE.fold=Math.min(1,RIDE.fold+dt*3); RIDE.lift=lerp(RIDE.lift,1.05,Math.min(1,dt*8)); const h=RIDE.horse;
-    h.position.set(p.x,p.y-RIDE.lift+Math.abs(Math.sin(clock*(speedNow>6?14:8)))*(speedNow>.5?.12:0),p.z);
-    const yaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z); h.rotation.set(0,yaw,0);
-    const face=(typeof PAPERX!=="undefined"?PAPERX.face:1)<0?-1:1; h.scale.set(face*RIDE.fold,RIDE.fold,1);
-    RIDE.ft+=dt*(speedNow>.5?speedNow*.9:0); if(RIDE.ft>1){ RIDE.ft=0; RIDE.step=(RIDE.step+1)%4; paperSetTex(h,RIDE.frames[RIDE.step]); }
+  if(RIDE.mode==="horse"&&RIDE.horse){ RIDE.fold=Math.min(1,RIDE.fold+dt*3); RIDE.lift=lerp(RIDE.lift,1.62,Math.min(1,dt*8)); const h=RIDE.horse; h.position.set(p.x,p.y-RIDE.lift,p.z); h.rotation.y=angLerp(h.rotation.y,player.rotation.y,Math.min(1,dt*10)); h.scale.setScalar(Math.max(.01,RIDE.fold)); horseAnimate(h,dt,speedNow,clock);
     if(zone!=="world"||pmode!=="walk") rideEnd(); }
   else if(RIDE.mode==="sled"&&RIDE.sled){ RIDE.lift=lerp(RIDE.lift,.32,Math.min(1,dt*8)); RIDE.sled.position.set(p.x,p.y-RIDE.lift,p.z); RIDE.sled.rotation.y=player.rotation.y;
     if(RIDE.v.length()>3&&srand()<dt*20) addInkPuff(p.x,p.y-RIDE.lift+.1,p.z,"#ffffff"); }
@@ -3971,7 +3968,7 @@ function footFrame(dt){ if(zone!=="world"||pmode!=="walk") return; const p=playe
 const ACT={reach:0,wave:0};
 const CLIMB={on:false,push:0,st:1,blocked:false,flat:0,ring:null,slide:0};
 function buildSamFrames2(){ const F=buildSamFrames(); if(F.tuck) return F; const mk=o=>paperCut(256,320,(g,w,h)=>drawSamurai2(g,w,h,o),0);
-  F.tuck=[mk({pose:"tuck"})]; F.reach=[mk({pose:"reach"})]; F.wave=[0,1].map(i=>mk({pose:"wave",ph:i})); F.climb=[0,1].map(i=>mk({pose:"climb",ph:i/2,back:true})); return F; }
+  F.tuck=[mk({pose:"tuck"})]; F.rideB=[0,1].map(i=>mk({pose:"ride",ph:i/2,back:true})); F.reach=[mk({pose:"reach"})]; F.wave=[0,1].map(i=>mk({pose:"wave",ph:i})); F.climb=[0,1].map(i=>mk({pose:"climb",ph:i/2,back:true})); return F; }
 (function(){ const st=document.createElement("style"); st.textContent=`#climbRing{position:fixed;width:46px;height:46px;z-index:7;pointer-events:none;opacity:0;transition:opacity .3s;transform:translate(-50%,-50%)}#climbRing.show{opacity:1}`; document.head.appendChild(st);
   const d=document.createElement("div"); d.id="climbRing"; d.innerHTML=`<svg viewBox="0 0 46 46" width="46" height="46"><circle cx="23" cy="23" r="18" fill="rgba(239,230,208,.55)" stroke="rgba(42,36,32,.35)" stroke-width="6"/><circle class="arc" cx="23" cy="23" r="18" fill="none" stroke="#2c8a4a" stroke-width="6" stroke-linecap="round" stroke-dasharray="113.1" stroke-dashoffset="0" transform="rotate(-90 23 23)"/></svg>`; document.body.appendChild(d); CLIMB.ring=d; })();
 // roamLimit asks this before refusing a step up a cliff
@@ -3985,7 +3982,7 @@ function climbFrame(dt,moving){ const p=player.position, e=1; const gr=Math.hypo
   else { CLIMB.st=Math.min(1,CLIMB.st+dt/3.5); }
   // sliding down a cliff when you run out
   if(CLIMB.slide>0){ CLIMB.slide-=dt; const gx=(H(p.x+e,p.z)-H(p.x-e,p.z))/(2*e), gz=(H(p.x,p.z+e)-H(p.x,p.z-e))/(2*e), gl=Math.hypot(gx,gz)||1; if(gr>.6){ p.x-=gx/gl*dt*7; p.z-=gz/gl*dt*7; } }
-  const r=CLIMB.ring; const show=CLIMB.on||CLIMB.st<.999; r.classList.toggle("show",show&&zone==="world");
+  const r=CLIMB.ring; const show=CLIMB.on||(CLIMB.st<.97&&!RIDE.mode); r.classList.toggle("show",show&&zone==="world");
   if(show){ _crv.copy(p); _crv.y+=2.4; _crv.project(camera); r.style.left=((_crv.x*.5+.5)*innerWidth+46)+"px"; r.style.top=((-_crv.y*.5+.5)*innerHeight)+"px";
     const a=r.querySelector(".arc"); a.setAttribute("stroke-dashoffset",String(113.1*(1-Math.max(0,CLIMB.st)))); a.setAttribute("stroke",CLIMB.st<.25?"#b8302a":"#2c8a4a"); } }
 function animFrame(dt){ ACT.reach=Math.max(0,ACT.reach-dt); ACT.wave=Math.max(0,ACT.wave-dt);
@@ -4010,6 +4007,49 @@ function rebuildSamFrames(){ const old=SAMF; SAMF=null; buildSamFrames(); buildS
     const b=new THREE.Mesh(new THREE.BoxGeometry(.5,.18,.4),glint); b.position.y=.2; b.rotation.y=.5; g.add(b); const t=new THREE.Mesh(new THREE.BoxGeometry(.52,.05,.08),toon("#b8302a")); t.position.y=.3; t.rotation.y=.5; g.add(t); g.userData.acc=it.id; it.mesh=g;
     addInteract({keep:true,x,z,r:2.2,k:"",get label(){ return accStore()&&store.owned.includes(it.id)?"":"Pick up the paper bundle"; },fn:()=>{ accStore(); if(store.owned.includes(it.id)) return; store.owned.push(it.id); save(); g.visible=false; try{ chime(); }catch(e){} toast(`Found: ${it.n}. Wear it from the Journal (J), Wardrobe.`); }}); }
   setTimeout(()=>{ accStore(); for(const slot in ACC_DEF) for(const it of ACC_DEF[slot]) if(it.mesh&&store.owned.includes(it.id)) it.mesh.visible=false; },1500); })();
+
+
+/* ===================== v58: the origami horse (a real folded-paper 3D model that faces where you ride) ===================== */
+function paperTexture(base,fib){ const c=document.createElement("canvas"); c.width=c.height=256; const g=c.getContext("2d"); g.fillStyle=base; g.fillRect(0,0,256,256);
+  for(let i=0;i<900;i++){ g.fillStyle=`rgba(${fib},${srand()*.08})`; g.fillRect(srand()*256,srand()*256,1+srand()*7,1); }
+  for(let i=0;i<14;i++){ g.strokeStyle=`rgba(${fib},.08)`; g.lineWidth=1; g.beginPath(); const x=srand()*256; g.moveTo(x,0); g.lineTo(x+(srand()-.5)*60,256); g.stroke(); }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.colorSpace=THREE.SRGBColorSpace; return t; }
+function buildOrigamiHorse(){ const H3=new THREE.Group(); H3.userData.keep=true;
+  const paper=new THREE.MeshToonMaterial({color:"#f6f0e2",map:paperTexture("#ffffff","120,100,70"),gradientMap:gm,flatShading:true});
+  const paperD=new THREE.MeshToonMaterial({color:"#ddd3bf",map:paper.map,gradientMap:gm,flatShading:true});
+  const ink=new THREE.LineBasicMaterial({color:"#1d1a22"}), red=toon("#b8302a",{flatShading:true}), gold=toon("#e8c25a"), blue=toon("#2c3f6e",{flatShading:true}), black=toon("#15131a",{side:THREE.DoubleSide});
+  const fold=(geo,mat,jit=.04)=>{ const p=geo.attributes.position; for(let i=0;i<p.count;i++){ p.setXYZ(i,p.getX(i)+(srand()-.5)*jit,p.getY(i)+(srand()-.5)*jit,p.getZ(i)+(srand()-.5)*jit); } geo=geo.toNonIndexed(); geo.computeVertexNormals(); const m=new THREE.Mesh(geo,mat); m.castShadow=true; const e=new THREE.LineSegments(new THREE.EdgesGeometry(geo,20),ink); m.add(e); return m; };
+  const body=new THREE.Group(); body.position.y=1.35; H3.add(body);
+  const torso=fold(new THREE.BoxGeometry(.82,.78,2.1,2,2,3),paper); body.add(torso);
+  const chest=fold(new THREE.CylinderGeometry(.42,.38,.6,5,1),paperD); chest.rotation.x=Math.PI/2; chest.position.set(0,-.02,1.06); body.add(chest);
+  const rump=fold(new THREE.SphereGeometry(.5,5,3),paper); rump.scale.set(.9,.85,.9); rump.position.set(0,.05,-.98); body.add(rump);
+  const neck=new THREE.Group(); neck.position.set(0,.25,.95); neck.rotation.x=-.75; body.add(neck);
+  const nk=fold(new THREE.BoxGeometry(.42,1.1,.5,1,2,1),paper); nk.position.y=.5; nk.scale.set(1,1,1); neck.add(nk);
+  const head=new THREE.Group(); head.position.set(0,1.05,.08); head.rotation.x=1.6; neck.add(head);
+  const hd=fold(new THREE.CylinderGeometry(.16,.27,.85,4,1),paper); hd.rotation.y=Math.PI/4; hd.position.y=.38; head.add(hd);
+  [-1,1].forEach(s=>{ const ear=fold(new THREE.ConeGeometry(.08,.26,4),paperD,.01); ear.position.set(s*.12,-.04,-.18); ear.rotation.x=-1.9; head.add(ear);
+    const eye=new THREE.Mesh(new THREE.SphereGeometry(.04,6,4),black); eye.position.set(s*.2,.18,-.08); head.add(eye); });
+  // mane: brush strokes of black paper down the neck
+  for(let i=0;i<7;i++){ const m=new THREE.Mesh(new THREE.PlaneGeometry(.06,.42),black); m.position.set(0,.15+i*.14,-.27); m.rotation.set(.5,0,(i%2?.25:-.25)); neck.add(m); }
+  const tail=new THREE.Group(); tail.position.set(0,.2,-1.32); body.add(tail); for(let i=0;i<5;i++){ const t=new THREE.Mesh(new THREE.PlaneGeometry(.12,1.1),black); t.position.y=-.45; t.rotation.set(0,i*.6,(i-2)*.08); tail.add(t); } tail.rotation.x=.6;
+  // red lacquer chest plate, saddle cloth with the 紙 crest, tassels
+  const plate=fold(new THREE.BoxGeometry(.9,.6,.12),red,.01); plate.position.set(0,-.12,1.32); plate.rotation.x=.25; body.add(plate);
+  [[-.25,-.1],[0,-.2],[.25,-.1]].forEach(([x,y])=>{ const s=new THREE.Mesh(new THREE.SphereGeometry(.045,6,4),gold); s.position.set(x,y-.12,1.4); body.add(s); });
+  const cloth=fold(new THREE.BoxGeometry(.95,.5,.9),blue,.01); cloth.position.set(0,.2,-.05); body.add(cloth);
+  const crest=new THREE.Mesh(new THREE.CircleGeometry(.14,16),new THREE.MeshToonMaterial({map:(()=>{ const c=document.createElement("canvas"); c.width=c.height=64; const g=c.getContext("2d"); g.fillStyle="#efe6d0"; g.beginPath(); g.arc(32,32,31,0,TAU); g.fill(); g.fillStyle="#b8302a"; g.font='700 40px "Shippori Mincho",serif'; g.textAlign="center"; g.fillText("紙",32,46); const t=new THREE.CanvasTexture(c); t.colorSpace=THREE.SRGBColorSpace; return t; })(),gradientMap:gm,side:THREE.DoubleSide}));
+  [-1,1].forEach(s=>{ const c=crest.clone(); c.position.set(s*.485,.18,-.05); c.rotation.y=s*Math.PI/2; body.add(c); });
+  const saddle=fold(new THREE.BoxGeometry(.6,.2,.75),toon("#5a3a28",{flatShading:true}),.02); saddle.position.set(0,.48,-.05); body.add(saddle);
+  [[.5,.95],[-.5,.95],[.5,-.6],[-.5,-.6]].forEach(([x,z])=>{ const t=fold(new THREE.ConeGeometry(.07,.35,5),toon("#d8402e",{flatShading:true}),.01); t.position.set(x,-.15,z); t.rotation.x=Math.PI; body.add(t); });
+  // legs: two segments each, folded paper, with dark hooves
+  const legs=[]; [[.28,.75,1],[-.28,.75,1],[.28,-.8,0],[-.28,-.8,0]].forEach(([x,z,front])=>{ const hip=new THREE.Group(); hip.position.set(x,-.25,z); body.add(hip);
+    const up=fold(new THREE.BoxGeometry(.24,.62,.3),front?paper:paperD); up.position.y=-.3; hip.add(up);
+    const knee=new THREE.Group(); knee.position.y=-.6; hip.add(knee); const lo=fold(new THREE.BoxGeometry(.17,.55,.2),front?paper:paperD); lo.position.y=-.27; knee.add(lo);
+    const hoof=new THREE.Mesh(new THREE.BoxGeometry(.2,.12,.24),toon("#2a2420")); hoof.position.y=-.58; hoof.castShadow=true; knee.add(hoof); legs.push({hip,knee,front,x}); });
+  H3.userData={body,legs,neck,tail,head}; H3.traverse(o=>{ o.userData.keep=true; }); return H3; }
+function horseAnimate(H3,dt,speed,t){ const u=H3.userData, gallop=speed>9, f=gallop?9:6, a=speed>.5?(gallop?.75:.45):0;
+  u.legs.forEach((L,i)=>{ const ph=t*f+(L.front?0:Math.PI*.9)+(L.x>0?0:(gallop?.4:Math.PI)); L.hip.rotation.x=Math.sin(ph)*a; L.knee.rotation.x=Math.max(0,-Math.cos(ph))*a*1.3; });
+  u.body.position.y=1.35+(speed>.5?Math.abs(Math.sin(t*f))*(gallop?.12:.05):Math.sin(t*1.5)*.012); u.body.rotation.x=speed>.5?Math.sin(t*f*2)*(gallop?.05:.02):0;
+  u.neck.rotation.x=-.75+(speed>.5?Math.sin(t*f*2+1)*(gallop?.1:.05):Math.sin(t*.8)*.03); u.tail.rotation.x=.6+(speed>.5?.5:0)+Math.sin(t*3)*.08; u.tail.rotation.z=Math.sin(t*2.3)*.15; }
 
 /* ===================== boot ===================== */
 

@@ -1,7 +1,7 @@
 {
- "version": 57,
+ "version": 58,
  "shellApi": 2,
- "notes": "Accessories: a Wardrobe tab in the Journal. Hats (straw kasa, lacquered jingasa, hachimaki, festival fox mask, none), scarves (red, indigo, snow white, ember gold, none) and charms (red omamori, shrine bell). Find the rest as glinting paper bundles out in the world: Yukimura, the Summit Shrine, Kumo Shrine, Utsuro, H\u014dkai Castle and somewhere warm.",
+ "notes": "New camera (BotW/souls style): it lifts over hills instead of diving into them or zooming in on you, follows with a little weight, and keeps a sane distance (3-15). Far terrain fades into fog, so no more hard edges on the horizon, and the Edge of the Dark is real darkness now, not flat panels. Round snowflakes. The horse is now a 3D origami model that faces where you ride, with you seated on it. Your hand lantern no longer burns a hot spot on your paper.",
  "files": [
   "brain-client.js",
   "core.js",
